@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm install
 
 # Copy source files
 COPY ./src ./src
@@ -17,4 +17,4 @@ COPY ./src ./src
 EXPOSE 3000
 
 # Start the API server
-CMD ["node", "src/server.js"]
+CMD ["npx", "nodemon", "src/server.js"]
