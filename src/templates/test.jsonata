@@ -1,0 +1,5 @@
+{
+    "identifier": [identifier, summary.doiName], 
+    "name": summary.title, 
+    "description": summary.abstract 
+}

@@ -1,0 +1,69 @@
+{
+  "required": {
+    "gatewayId": extra.id,
+    "gatewayPid": extra.pid,
+    "issued": input.issued,
+    "modified": input.modified,
+    "revisions": input.revisions^{
+      "version": $.version,
+      "url": $.url
+    }
+  },
+  "summary": {
+    "abstract": input.summary.abstract,
+    "contactPoint": input.summary.contactPoint,
+    "keywords": input.summary.keywords,
+    "controlledKeywords": (input.summary.keywords | $[extra.controlledKeyWords]),
+    "datasetType": extra.datasetType,
+    "description": input.documentation.description,
+    "doiName": input.summary.doiName,
+    "shortTitle": input.summary.title,
+    "title": input.summary.abstract
+  },
+  "publisher": {
+    "publisherName": input.summary.publisher.name,
+    "publisherGatewayId": "bf12345"
+  },
+  "coverage": {
+    "pathway": input.coverage.pathway,
+    "pathwayDescription": extra.pathwayDescription,
+    "physicalSampleAvailability": (input.coverage.physicalSampleAvailability | $join(' ')),
+    "spatial": input.coverage.spatial
+  },
+  "provenance": {
+    "origin": {
+      "purpose": input.provenance.origin.purpose,
+      "source": input.provenance.origin.purpose
+    },
+    "temporal": {
+      "endDate": input.provenance.temporal.endDate,
+      "startDate": input.provenance.temporal.endDate
+    }
+  },
+  "accessibility": {
+    "access": {
+      "jurisdiction": input.accessibility.access.jurisdiction,
+      "dataController": input.accessibility.access.dataController,
+      "dataProcessor": input.accessibility.access.dataProcessor,
+      "accessRights": (input.accessibility.access.accessRights | $join(' ')),
+      "accessService": input.accessibility.access.accessService,
+      "accessRequestCost": input.accessibility.access.accessRequestCost
+    },
+    "usage": {
+      "dataUseLimitation": input.accessibility.usage.dataUseLimitation,
+      "dataUseRequirement": input.accessibility.usage.dataUseRequirements,
+      "resourceCreator": input.accessibility.usage.resourceCreator
+    },
+    "formatAndStandards": {
+      "vocabularyEncodingScheme": input.accessibility.formatAndStandards.vocabularyEncodingScheme,
+      "conformsTo": input.accessibility.formatAndStandards.conformsTo,
+      "language": input.accessibility.formatAndStandards.language
+    }
+  },
+  "linkage": {
+    "IsGeneratedUsing": extra.IsGeneratedUsing,
+    "associatedMedia": input.documentation.associatedMedia[0].url,
+    "dataUses": extra.dataUses,
+    "isReferenceIn": (input.accessibility.usage.isReferencedBy | $join(' '))
+  }
+}
