@@ -1,5 +1,8 @@
 const express = require('express');
 const jsonata = require('jsonata');
+const Ajv = require("ajv");
+const path = require('path');
+const ajv = new Ajv({ strict: false });
 const fs = require('fs');
 
 const router = express.Router();
@@ -25,8 +28,22 @@ fs.readFile('./src/templates/GDMv1/HDRUKv211.jsonata', 'utf8', (err, data) => {
 });
 
 
+const schemaPath = path.resolve('./src/schemas/hdruk_2_1_1.json');
+console.log(schemaPath);
+const validate_hdruk211 = ajv.compile(require(schemaPath));
+
+
 router.post('/', async (req, res) => {
     const body = req.body;
+
+    const isValid = validate_hdruk211(body.metadata);
+
+    if (!isValid) {
+        return res.status(400).json({ 
+            error: 'Validation failed', 
+            details: validate_hdruk211.errors 
+        });
+    }
 
     const source = {
         input: body.metadata,
