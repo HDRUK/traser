@@ -16,5 +16,5 @@ COPY ./src ./src
 # Expose the API port
 EXPOSE 3000
 
-# Start the API server
-CMD ["npx", "nodemon", "src/server.js"]
+# Start the API server in dev
+CMD ["npm","run","dev"]
