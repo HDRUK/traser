@@ -4,16 +4,20 @@
     "gatewayPid": extra.pid,
     "issued": input.issued,
     "modified": input.modified,
-    "revisions": input.revisions^{
-      "version": $.version,
-      "url": $.url
-    }
+    "revisions": $map(input.revisions,function($r) {
+      {
+        "version": $r.version,
+        "url": $r.url
+      }
+    })
   },
   "summary": {
     "abstract": input.summary.abstract,
     "contactPoint": input.summary.contactPoint,
     "keywords": input.summary.keywords,
-    "controlledKeywords": (input.summary.keywords | $[extra.controlledKeyWords]),
+    "controlledKeywords": [$filter(input.summary.keywords, function($v) {
+      $v in extra.controlledKeyWords
+    })],
     "datasetType": extra.datasetType,
     "description": input.documentation.description,
     "doiName": input.summary.doiName,
@@ -27,7 +31,7 @@
   "coverage": {
     "pathway": input.coverage.pathway,
     "pathwayDescription": extra.pathwayDescription,
-    "physicalSampleAvailability": (input.coverage.physicalSampleAvailability | $join(' ')),
+    "physicalSampleAvailability": $join(input.coverage.physicalSampleAvailability,' '),
     "spatial": input.coverage.spatial
   },
   "provenance": {
@@ -45,7 +49,7 @@
       "jurisdiction": input.accessibility.access.jurisdiction,
       "dataController": input.accessibility.access.dataController,
       "dataProcessor": input.accessibility.access.dataProcessor,
-      "accessRights": (input.accessibility.access.accessRights | $join(' ')),
+      "accessRights": $join(input.accessibility.access.accessRights, ' '),
       "accessService": input.accessibility.access.accessService,
       "accessRequestCost": input.accessibility.access.accessRequestCost
     },
@@ -64,6 +68,6 @@
     "IsGeneratedUsing": extra.IsGeneratedUsing,
     "associatedMedia": input.documentation.associatedMedia[0].url,
     "dataUses": extra.dataUses,
-    "isReferenceIn": (input.accessibility.usage.isReferencedBy | $join(' '))
+    "isReferenceIn": $join(input.accessibility.usage.isReferencedBy, ' ')
   }
 }
