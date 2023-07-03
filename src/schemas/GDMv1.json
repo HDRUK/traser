@@ -1,0 +1,617 @@
+{
+    "title": "GDMv1",
+    "type": "object",
+    "properties": {
+        "required": {
+            "$ref": "#/definitions/Required"
+        },
+        "summary": {
+            "title": "Summary",
+            "default": {
+                "title": null,
+                "shortTitle": null,
+                "doiName": null,
+                "abstract": null,
+                "keywords": [],
+                "controlledKeywords": [],
+                "contactPoint": null,
+                "datasetType": null,
+                "description": null,
+                "publisher": {
+                    "publisherName": null,
+                    "publisherGatewayId": null
+                }
+            },
+            "allOf": [
+                {
+                    "$ref": "#/definitions/Summary"
+                }
+            ]
+        },
+        "coverage": {
+            "title": "Coverage",
+            "default": {
+                "spatial": null,
+                "physicalSampleAvailability": [],
+                "pathway": null,
+                "pathwayDescription": null,
+                "followup": {
+                    "maxFollowup": -1,
+                    "minFollowup": -1
+                },
+                "typicalAgeRange": {
+                    "minAge": -1,
+                    "maxAge": -1
+                }
+            },
+            "allOf": [
+                {
+                    "$ref": "#/definitions/Coverage"
+                }
+            ]
+        },
+        "provenance": {
+            "title": "Provenance",
+            "default": {
+                "origin": {
+                    "purpose": null,
+                    "source": null
+                },
+                "temporal": {
+                    "endDate": "2023-07-03",
+                    "startDate": "2023-07-03"
+                }
+            },
+            "allOf": [
+                {
+                    "$ref": "#/definitions/Provenance"
+                }
+            ]
+        },
+        "accessibility": {
+            "title": "Accessibility",
+            "default": {
+                "access": {
+                    "deliveryLeadTime": {
+                        "minDeliveryLeadTime": -1,
+                        "maxDeliveryLeadTime": -1
+                    },
+                    "jurisdiction": null,
+                    "dataController": null,
+                    "dataProcessor": null,
+                    "accessRights": null,
+                    "accessService": null,
+                    "accessRequestCost": null
+                },
+                "usage": {
+                    "dataUseLimitation": null,
+                    "dataUseRequirement": null,
+                    "resourceCreator": null
+                },
+                "formatAndStandards": {
+                    "vocabularyEncodingScheme": null,
+                    "conformsTo": null,
+                    "language": null
+                }
+            },
+            "allOf": [
+                {
+                    "$ref": "#/definitions/Accessibility"
+                }
+            ]
+        },
+        "observations": {
+            "title": "Observations",
+            "default": {
+                "observationsList": []
+            },
+            "allOf": [
+                {
+                    "$ref": "#/definitions/Observations"
+                }
+            ]
+        },
+        "linkage": {
+            "title": "Linkage",
+            "default": {
+                "isReferenceIn": null,
+                "IsGeneratedUsing": null,
+                "dataUses": null,
+                "associatedMedia": null,
+                "datasetLinkage": {
+                    "isDerivedFrom": null,
+                    "isPartOf": null,
+                    "isMemberOf": null
+                }
+            },
+            "allOf": [
+                {
+                    "$ref": "#/definitions/Linkage"
+                }
+            ]
+        }
+    },
+    "required": [
+        "required"
+    ],
+    "definitions": {
+        "Required": {
+            "title": "Required",
+            "type": "object",
+            "properties": {
+                "gatewayId": {
+                    "title": "Gatewayid",
+                    "description": "Need a field in Mauro that captures the datasetID to link to gateway database - or can we just use the one created in Mauro?",
+                    "type": "string"
+                },
+                "gatewayPid": {
+                    "title": "Gatewaypid",
+                    "description": "Need a field in Mauro that captures the dataset pid to link to gateway database",
+                    "type": "string"
+                },
+                "issued": {
+                    "title": "Issued",
+                    "description": "Aren't issued and modified always the same because of versioning? Is that fine to duplicate because datasets in dcat might look different?",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "modified": {
+                    "title": "Modified",
+                    "description": "Aren't issued and modified always the same because of versioning? Is that fine to duplicate because datasets in dcat might look different?",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "revisions": {
+                    "title": "Revisions",
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                }
+            },
+            "required": [
+                "gatewayId",
+                "gatewayPid",
+                "issued",
+                "modified",
+                "revisions"
+            ]
+        },
+        "Publisher": {
+            "title": "Publisher",
+            "type": "object",
+            "properties": {
+                "publisherName": {
+                    "title": "Publishername",
+                    "type": "string"
+                },
+                "publisherGatewayId": {
+                    "title": "Publishergatewayid",
+                    "type": "string"
+                }
+            }
+        },
+        "Summary": {
+            "title": "Summary",
+            "type": "object",
+            "properties": {
+                "title": {
+                    "title": "Title",
+                    "type": "string"
+                },
+                "shortTitle": {
+                    "title": "Shorttitle",
+                    "type": "string"
+                },
+                "doiName": {
+                    "title": "Doiname",
+                    "type": "string"
+                },
+                "abstract": {
+                    "title": "Abstract",
+                    "type": "string"
+                },
+                "keywords": {
+                    "title": "Keywords",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "controlledKeywords": {
+                    "title": "Controlledkeywords",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "contactPoint": {
+                    "title": "Contactpoint",
+                    "type": "string"
+                },
+                "datasetType": {
+                    "title": "Dataset type",
+                    "type": "string"
+                },
+                "description": {
+                    "title": "Description",
+                    "type": "string"
+                },
+                "publisher": {
+                    "title": "Publisher",
+                    "default": {
+                        "publisherName": null,
+                        "publisherGatewayId": null
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Publisher"
+                        }
+                    ]
+                }
+            }
+        },
+        "FollowUp": {
+            "title": "FollowUp",
+            "type": "object",
+            "properties": {
+                "maxFollowup": {
+                    "title": "Maxfollowup",
+                    "default": -1,
+                    "type": "integer"
+                },
+                "minFollowup": {
+                    "title": "Minfollowup",
+                    "default": -1,
+                    "type": "integer"
+                }
+            }
+        },
+        "TypicalAgeRange": {
+            "title": "TypicalAgeRange",
+            "type": "object",
+            "properties": {
+                "minAge": {
+                    "title": "Minage",
+                    "default": -1,
+                    "type": "integer"
+                },
+                "maxAge": {
+                    "title": "Maxage",
+                    "default": -1,
+                    "type": "integer"
+                }
+            }
+        },
+        "Coverage": {
+            "title": "Coverage",
+            "type": "object",
+            "properties": {
+                "spatial": {
+                    "title": "Spatial",
+                    "type": "string"
+                },
+                "physicalSampleAvailability": {
+                    "title": "Physicalsampleavailability",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "pathway": {
+                    "title": "Pathway",
+                    "type": "string"
+                },
+                "pathwayDescription": {
+                    "title": "Pathwaydescription",
+                    "type": "string"
+                },
+                "followup": {
+                    "title": "Followup",
+                    "default": {
+                        "maxFollowup": -1,
+                        "minFollowup": -1
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/FollowUp"
+                        }
+                    ]
+                },
+                "typicalAgeRange": {
+                    "title": "Typicalagerange",
+                    "default": {
+                        "minAge": -1,
+                        "maxAge": -1
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/TypicalAgeRange"
+                        }
+                    ]
+                }
+            }
+        },
+        "Origin": {
+            "title": "Origin",
+            "type": "object",
+            "properties": {
+                "purpose": {
+                    "title": "Purpose",
+                    "type": "string"
+                },
+                "source": {
+                    "title": "Source",
+                    "type": "string"
+                }
+            }
+        },
+        "Temporal": {
+            "title": "Temporal",
+            "type": "object",
+            "properties": {
+                "endDate": {
+                    "title": "Enddate",
+                    "default": "2023-07-03",
+                    "type": "string",
+                    "format": "date"
+                },
+                "startDate": {
+                    "title": "Startdate",
+                    "default": "2023-07-03",
+                    "type": "string",
+                    "format": "date"
+                }
+            }
+        },
+        "Provenance": {
+            "title": "Provenance",
+            "type": "object",
+            "properties": {
+                "origin": {
+                    "title": "Origin",
+                    "default": {
+                        "purpose": null,
+                        "source": null
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Origin"
+                        }
+                    ]
+                },
+                "temporal": {
+                    "title": "Temporal",
+                    "default": {
+                        "endDate": "2023-07-03",
+                        "startDate": "2023-07-03"
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Temporal"
+                        }
+                    ]
+                }
+            }
+        },
+        "DeliveryLeadTime": {
+            "title": "DeliveryLeadTime",
+            "type": "object",
+            "properties": {
+                "minDeliveryLeadTime": {
+                    "title": "Mindeliveryleadtime",
+                    "default": -1,
+                    "type": "integer"
+                },
+                "maxDeliveryLeadTime": {
+                    "title": "Maxdeliveryleadtime",
+                    "default": -1,
+                    "type": "integer"
+                }
+            }
+        },
+        "Access": {
+            "title": "Access",
+            "type": "object",
+            "properties": {
+                "deliveryLeadTime": {
+                    "title": "Deliveryleadtime",
+                    "default": {
+                        "minDeliveryLeadTime": -1,
+                        "maxDeliveryLeadTime": -1
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/DeliveryLeadTime"
+                        }
+                    ]
+                },
+                "jurisdiction": {
+                    "title": "Jurisdiction",
+                    "type": "string"
+                },
+                "dataController": {
+                    "title": "Datacontroller",
+                    "type": "string"
+                },
+                "dataProcessor": {
+                    "title": "Dataprocessor",
+                    "type": "string"
+                },
+                "accessRights": {
+                    "title": "Accessrights",
+                    "type": "string"
+                },
+                "accessService": {
+                    "title": "Accessservice",
+                    "type": "string"
+                },
+                "accessRequestCost": {
+                    "title": "Accessrequestcost",
+                    "type": "string"
+                }
+            }
+        },
+        "Usage": {
+            "title": "Usage",
+            "type": "object",
+            "properties": {
+                "dataUseLimitation": {
+                    "title": "Datauselimitation",
+                    "type": "string"
+                },
+                "dataUseRequirement": {
+                    "title": "Datauserequirement",
+                    "type": "string"
+                },
+                "resourceCreator": {
+                    "title": "Resourcecreator",
+                    "type": "string"
+                }
+            }
+        },
+        "FormatAndStandards": {
+            "title": "FormatAndStandards",
+            "type": "object",
+            "properties": {
+                "vocabularyEncodingScheme": {
+                    "title": "Vocabularyencodingscheme",
+                    "type": "string"
+                },
+                "conformsTo": {
+                    "title": "Conformsto",
+                    "type": "string"
+                },
+                "language": {
+                    "title": "Language",
+                    "type": "string"
+                }
+            }
+        },
+        "Accessibility": {
+            "title": "Accessibility",
+            "type": "object",
+            "properties": {
+                "access": {
+                    "title": "Access",
+                    "default": {
+                        "deliveryLeadTime": {
+                            "minDeliveryLeadTime": -1,
+                            "maxDeliveryLeadTime": -1
+                        },
+                        "jurisdiction": null,
+                        "dataController": null,
+                        "dataProcessor": null,
+                        "accessRights": null,
+                        "accessService": null,
+                        "accessRequestCost": null
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Access"
+                        }
+                    ]
+                },
+                "usage": {
+                    "title": "Usage",
+                    "default": {
+                        "dataUseLimitation": null,
+                        "dataUseRequirement": null,
+                        "resourceCreator": null
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/Usage"
+                        }
+                    ]
+                },
+                "formatAndStandards": {
+                    "title": "Formatandstandards",
+                    "default": {
+                        "vocabularyEncodingScheme": null,
+                        "conformsTo": null,
+                        "language": null
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/FormatAndStandards"
+                        }
+                    ]
+                }
+            }
+        },
+        "Observations": {
+            "title": "Observations",
+            "type": "object",
+            "properties": {
+                "observationsList": {
+                    "title": "Observationslist",
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "DatasetLinkage": {
+            "title": "DatasetLinkage",
+            "type": "object",
+            "properties": {
+                "isDerivedFrom": {
+                    "title": "Isderivedfrom",
+                    "type": "string"
+                },
+                "isPartOf": {
+                    "title": "Ispartof",
+                    "type": "string"
+                },
+                "isMemberOf": {
+                    "title": "Ismemberof",
+                    "type": "string"
+                }
+            }
+        },
+        "Linkage": {
+            "title": "Linkage",
+            "type": "object",
+            "properties": {
+                "isReferenceIn": {
+                    "title": "Isreferencein",
+                    "type": "string"
+                },
+                "IsGeneratedUsing": {
+                    "title": "Generated by using tool?",
+                    "type": "string"
+                },
+                "dataUses": {
+                    "title": "What data uses this?",
+                    "type": "string"
+                },
+                "associatedMedia": {
+                    "title": "Associatedmedia",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "datasetLinkage": {
+                    "title": "Datasetlinkage",
+                    "default": {
+                        "isDerivedFrom": null,
+                        "isPartOf": null,
+                        "isMemberOf": null
+                    },
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/DatasetLinkage"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
