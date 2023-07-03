@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/HDRUK/translation-service-poc-jsonata/issues"
   },
-  "homepage": "https://github.com/HDRUK/translation-service-poc-jsonata#readme"
+  "homepage": "https://github.com/HDRUK/translation-service-poc-jsonata#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
 }
