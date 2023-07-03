@@ -296,10 +296,7 @@
                 "physicalSampleAvailability": {
                     "title": "Physicalsampleavailability",
                     "default": [],
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "pathway": {
                     "title": "Pathway",

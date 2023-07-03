@@ -1,47 +1,29 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const Ajv = require("ajv");
-const path = require('path');
-const ajv = new Ajv({ strict: false });
 const fs = require('fs');
+const path = require('path');
+const config = require('./config');
+
+const Ajv = require("ajv");
+const ajv = new Ajv({ strict: false });
+
 
 const router = express.Router();
 
-
-// Path to the template file
-const templatePath = './src/templates/test.jsonata';
-let templateData = {GDMv1:{}};
-fs.readFile(templatePath, 'utf8', (err, data) => {
-    if (err) {
-        console.error('Failed to load the JSONata template:', err);
-        return;
-    }
-    templateData['test'] = data;
-});
-
-fs.readFile('./src/templates/GDMv1/HDRUKv211.jsonata', 'utf8', (err, data) => {
-    if (err) {
-        console.error('Failed to load the JSONata template:', err);
-        return;
-    }
-    templateData.GDMv1.HDRUKv211 = data;
-});
-
-
-const schemaPath = path.resolve('./src/schemas/hdruk_2_1_1.json');
-console.log(schemaPath);
-const validate_hdruk211 = ajv.compile(require(schemaPath));
+// Load files using the config module
+config.loadData();
 
 
 router.post('/', async (req, res) => {
     const body = req.body;
 
-    const isValid = validate_hdruk211(body.metadata);
+    const input_validator = config.getSchemas()['hdrukv211'].validator;
 
+    let isValid = input_validator(body.metadata);
     if (!isValid) {
         return res.status(400).json({ 
             error: 'Validation failed', 
-            details: validate_hdruk211.errors 
+            details: input_validator.errors 
         });
     }
 
@@ -50,9 +32,20 @@ router.post('/', async (req, res) => {
         extra: body.extra
     }
 
+    const output_validator = config.getSchemas()['gdmv1'].validator;
+
+    const template = config.getTemplates()['hdrukv211'].template;
+
     try{
-        const expression = jsonata(templateData.GDMv1.HDRUKv211);
+        const expression = jsonata(template);
         const result = await expression.evaluate(source);
+        isValid = output_validator(result);
+        if (!isValid) {
+            return res.status(400).json({ 
+                error: 'Validation failed', 
+                details: output_validator.errors 
+            });
+        }
         res.send(result);
     }
     catch (err) { 
@@ -60,6 +53,7 @@ router.post('/', async (req, res) => {
     }
 
 });
+
 
 
 router.get('/test', async (req, res) => {
