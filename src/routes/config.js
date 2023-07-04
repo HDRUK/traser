@@ -31,28 +31,40 @@ function loadTemplate(filePath) {
 }
 
 let templates = {
-    test: {
-        fpath:'./src/templates/test.jsonata',
-        template:null
+    gdmv1: {
+        hdrukv211:{
+            fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
+            template:null
+        }
     },
-    hdrukv211:{
-        fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
-        template:null
-    }
+    /*gdmv0: {
+        test:{
+            fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
+            template:null
+        }
+    }*/
 }
 
-
-
+//load templates asynchronously
+//bit messy? bit of an overkill?
 const loadTemplates = async () => {
     const updatedTemplates = {};
-    const promises = Object.entries(templates).map(([key, value]) => {
-        return loadTemplate(value.fpath)
-        .then((template) => {
-            updatedTemplates[key] = { ...value, template };
-        });
+    const promises = Object.entries(templates)
+    .map(async ([oname, inputs]) => {
+        await Promise.all(
+            Object.entries(inputs).map( async ([iname,obj]) => {
+                return loadTemplate(obj.fpath)
+                .then((template) => {
+                    if(!Object.keys(updatedTemplates).includes(oname)){
+                        updatedTemplates[oname] = {}
+                    }
+                    updatedTemplates[oname][iname] = { ...obj, template };
+                });
+            })
+        );
     });
     await Promise.all(promises);
-    Object.assign(templates, updatedTemplates);
+    Object.assign(templates, updatedTemplates); 
 };
 
 
@@ -85,7 +97,7 @@ const getTemplates = () => templates;
 const getSchemas = () => schemas;
 
 //update soon with output 
-const getTemplate = (input, output) => templates[input].template;
+const getTemplate = (output,input) => templates[output][input].template;
 
 module.exports = {
     loadData,

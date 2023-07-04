@@ -116,7 +116,14 @@ router.post('/', async (req, res) => {
         extra: extra //validate this based on the input/output (?)
     }
 
-    const template = config.getTemplate(input_model_name);
+    const template = config.getTemplate(output_model_name,input_model_name);
+
+    if (template == null){
+        return res.status(400).json({ 
+            error: 'Template file is null!', 
+            details: `Could not retrieve the template for output:${output_model_name} input:${input_model_name}`
+        });
+    }
 
     try{
         const expression = jsonata(template);
