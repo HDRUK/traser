@@ -84,8 +84,12 @@ const loadData = async () => {
 const getTemplates = () => templates;
 const getSchemas = () => schemas;
 
+//update soon with output 
+const getTemplate = (input, output) => templates[input].template;
+
 module.exports = {
     loadData,
     getTemplates,
+    getTemplate,
     getSchemas,
 };

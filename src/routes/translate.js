@@ -37,12 +37,14 @@ router.post('/', async (req, res) => {
 
     //retrieve all allowed schemas 
     const schemas = config.getSchemas();
-
+    // key names are the schemas we are going to check
     let schemas_to_check = Object.keys(schemas);
 
+    //if the user has queried a 'from' then we don't need to 
+    // check all the different schemas
     if(Object.keys(queryString).includes('from')){
         const schema_name = queryString['from'];
-
+        //check the specified input model is even known/valid
         if(!Object.keys(schemas).includes(schema_name)){
             return res.status(400).json({ 
                 error: 'Not a valid schema template for "from".',
@@ -50,40 +52,54 @@ router.post('/', async (req, res) => {
                 allowed_schemas: schemas_to_check
             });
         }
+        //if it is valid, then only need to check against this one schema
         schemas_to_check = [schema_name];
     }
 
-    const body = req.body;
+    //retrieve the posted data 
+    const {extra,metadata} = req.body;
 
-    let input_validator;
+    if (typeof metadata === 'undefined') {
+        return res.status(400).json({ 
+            error: "metadata not supplied!",
+            details: 'You must post data in the form {"metadata":{}}.'
+        });
+    }
+
+    //record validation errors and if any schemas are valid
     const input_validation_errors = {};
-    let anyValid = false;
+    let input_model_name = null;
 
-
+    //loop over all schemas to check the input data against
     schemas_to_check.forEach(schema_name => {
-        input_validator =  schemas[schema_name].validator;
-        let isValid = input_validator(body.metadata);
+        //for the schema to check, retrieve the validator
+        const input_validator =  schemas[schema_name].validator;
+        //check if the metadata is valid 
+        let isValid = input_validator(metadata);
+        //if its not, record the details of why not.. 
         if (!isValid) {
             input_validation_errors[schema_name] = 
                 { 
-                    error: 'Validation failed', 
                     details: input_validator.errors 
                 }
             ;
         }
         else{
-            //could also break once found a valid schema?
-            anyValid = true;
+            input_model_name = schema_name;
+            return;
         }
     });
-    if(!anyValid){
+
+    //return errors if the metadata doesnt validate against any
+    // known metadata schemas
+    if(input_model_name == null){
         return res.status(400).json({ 
-            error: 'Validation failed', 
-            details: input_validator.errors 
+            error: 'Not valid against any known schema', 
+            schemas: input_validation_errors
         });
     }
 
-    //now check the output model requested
+    //now check the output model requested is valid...
     const output_model_name = queryString['to'];
     if(!Object.keys(schemas).includes(output_model_name)){
         return res.status(400).json({ 
@@ -91,16 +107,16 @@ router.post('/', async (req, res) => {
             allowedModels: Object.keys(schemas)
         });
     }
-
+    // load the validator for the output data
     const output_validator = schemas[output_model_name].validator;
 
+    //create an object for the template to use
     const source = {
-        input: body.metadata,
-        extra: body.extra //validate this based on the input/output (?)
+        input: metadata,
+        extra: extra //validate this based on the input/output (?)
     }
 
-
-    const template = config.getTemplates()['hdrukv211'].template;
+    const template = config.getTemplate(input_model_name);
 
     try{
         const expression = jsonata(template);
