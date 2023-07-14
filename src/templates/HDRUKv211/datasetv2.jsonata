@@ -1,0 +1,50 @@
+input ~> |$| 
+{
+    "issued": $fromMillis($toMillis(issued,'[D01]/[M01]/[Y0001]')),
+    "modified": $fromMillis($toMillis(issued,'[D01]/[M01]/[Y0001]')),
+    "summary": summary ~> |$| /*copy summary over and transform it*/
+    {
+      /*loop over all publisher fields and set blank fields to null */
+      "publisher": $each(publisher, function($v, $k) { 
+        {$k: $v="" ? null : $v}  
+      }) ~> $merge() /* each creates a [{},{}] -- merge them to get {} back*/
+      ~> |$|
+        {
+          "dataUseLimitation": $count(dataUseLimitation)=0 ? null : $join(dataUseLimitation,','),
+          "dataUseRequirements": $count(dataUseRequirements)=0 ? null : $join(dataUseRequirements,',')
+        }|,
+      "keywords": $count(keywords)=0 ? null : $join(keywords,','), /*loop for lists?*/
+      "alternateIdentifiers": $count(alternateIdentifiers)=0 ? null : $join(alternateIdentifiers,','),
+      "doiName": $length(doiName)=0 ? null : doiName
+    }|,
+    "documentation": documentation ~> |$| /*copy documentation over and transform it*/
+    {
+      "description": $length(description)=0 ? null : description,
+      "associatedMedia": $count(associatedMedia)=0 ? null : $join(associatedMedia,','), 
+      "isPartOf": $count(isPartOf)=0 ? null : $join(isPartOf,',')
+    }|,
+    "coverage": $each(coverage, function($v, $k) { 
+      {$k: $v="" or $v=[] ? null : $v}  
+    }) ~> $merge(),
+    "provenance": {
+      "origin": $each(provenance.origin, function($v, $k) { 
+        {$k: $v="" or $v=[] ? null : $v}  
+      }) ~> $merge(),
+      "temporal": $each(provenance.temporal, function($v, $k) { 
+        {$k: $v="" or $v=[] ? null : $v}  
+      }) ~> $merge()
+    },
+    "accessibility": {
+      "usage": $each(accessibility.usage, function($v, $k) { 
+        {$k: $v="" or $v=[] ? null : $v}  
+      }) ~> $merge(),
+      "access": $each(accessibility.access, function($v, $k) { 
+        {$k: $v="" or $v=[] ? null : $v}  
+      }) ~> $merge(),
+      "formatAndStandards": $each(accessibility.formatAndStandards, function($v, $k) { 
+        {$k: $v="" or $v=[] ? null : $v}  
+      }) ~> $merge()
+    }
+},
+['datasetv2.identifier','datasetv2.issued','datasetv2.modified'] 
+|

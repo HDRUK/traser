@@ -776,7 +776,10 @@
             {
               "type": "string",
               "format": "date-time"
-            }
+            },
+	      {
+		  "type":"null"
+	    }
           ]
         },
         "startDate": {
@@ -792,7 +795,10 @@
             {
               "type": "string",
               "format": "date-time"
-            }
+            },
+	      {
+		  "type":"null"
+	      }
           ]
         },
         "endDate": {
@@ -810,9 +816,10 @@
               "format": "date-time"
             },
             {
-              "type": "string",
+		"type": ["string","null"],
               "enum": [
-                "CONTINUOUS"
+                  "CONTINUOUS",
+		  null
               ]
             }
           ]
@@ -1341,9 +1348,9 @@
       "pattern": "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$"
     },
     "url": {
-      "type": "string",
+      "type": ["string","null"],
       "format": "uri"
-    },
+    }, 
     "eightyCharacters": {
       "type": "string",
       "minLength": 2,
@@ -1355,34 +1362,34 @@
       "maxLength": 255
     },
     "emailAddress": {
-      "type": "string",
+      "type": ["string","null"],
       "format": "email"
     },
     "shortDescription": {
-      "type": "string",
+      "type": ["string","null"],
       "minLength": 2,
       "maxLength": 1000
     },
     "description": {
-      "type": "string",
+      "type": ["string","null"],
       "minLength": 2,
       "maxLength": 3000
     },
     "longDescription": {
-      "type": "string",
+      "type": ["string","null"],
       "minLength": 2,
       "maxLength": 5000
     },
     "commaSeparatedValues": {
-      "type": "string",
+      "type": ["string","null"],
       "pattern": "([^,]+)"
     },
     "doi": {
-      "type": "string",
+      "type": ["string","null"],
       "pattern": "^10.\\d{4,9}/[-._;()/:a-zA-Z0-9]+$"
     },
     "ageRange": {
-      "type": "string",
+      "type": ["string","null"],
       "pattern": "(150|1[0-4][0-9]|[0-9]|[1-8][0-9]|9[0-9])-(150|1[0-4][0-9]|[0-9]|[1-8][0-9]|9[0-9])"
     },
     "format": {
@@ -1432,7 +1439,7 @@
       ]
     },
     "followup": {
-      "type": "string",
+      "type": ["string","null"],
       "enum": [
         "0 - 6 MONTHS",
         "6 - 12 MONTHS",
@@ -1440,11 +1447,12 @@
         "> 10 YEARS",
         "UNKNOWN",
         "CONTINUOUS",
-        "OTHER"
+          "OTHER",
+	  null
       ]
     },
     "periodicity": {
-      "type": "string",
+	"type": ["string","null"],
       "enum": [
         "STATIC",
         "IRREGULAR",
@@ -1459,11 +1467,12 @@
         "WEEKLY",
         "SEMIWEEKLY",
         "DAILY",
-        "OTHER"
+          "OTHER",
+	  null
       ]
     },
     "purpose": {
-      "type": "string",
+      "type": ["string","null"],
       "enum": [
         "STUDY",
         "DISEASE REGISTRY",
@@ -1473,7 +1482,8 @@
         "ADMINISTRATIVE",
         "FINANCIAL",
         "STATUTORY",
-        "OTHER"
+          "OTHER",
+	  null
       ]
     },
     "source": {
@@ -1509,7 +1519,7 @@
       ]
     },
     "timeLag": {
-      "type": "string",
+	"type": ["string","null"],
       "enum": [
         "LESS 1 WEEK",
         "1-2 WEEKS",
@@ -1520,11 +1530,12 @@
         "VARIABLE",
         "NO TIMELAG",
         "NOT APPLICABLE",
-        "OTHER"
+          "OTHER",
+	  null
       ]
     },
     "dataUseLimitation": {
-      "type": "string",
+	"type": ["string","null"],
       "enum": [
         "GENERAL RESEARCH USE",
         "COMMERCIAL RESEARCH USE",
@@ -1538,11 +1549,12 @@
         "RESEARCH SPECIFIC RESTRICTIONS",
         "USER SPECIFIC RESTRICTION",
         "RESEARCH USE ONLY",
-        "NO LINKAGE"
+          "NO LINKAGE",
+	  null
       ]
     },
     "dataUseRequirements": {
-      "type": "string",
+	"type": ["string","null"],
       "enum": [
         "COLLABORATION REQUIRED",
         "PROJECT SPECIFIC RESTRICTIONS",
@@ -1555,11 +1567,12 @@
         "TIME LIMIT ON USE",
         "DISCLOSURE CONTROL",
         "NOT FOR PROFIT USE",
-        "USER SPECIFIC RESTRICTION"
+          "USER SPECIFIC RESTRICTION",
+	  null
       ]
     },
     "deliveryLeadTime": {
-      "type": "string",
+      "type": ["string","null"],
       "enum": [
         "LESS 1 WEEK",
         "1-2 WEEKS",
@@ -1569,7 +1582,8 @@
         "MORE 6 MONTHS",
         "VARIABLE",
         "NOT APPLICABLE",
-        "OTHER"
+          "OTHER",
+	  null
       ]
     },
     "standardisedDataModels": {

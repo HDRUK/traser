@@ -35,25 +35,41 @@ router.post('/', async (req, res) => {
         });
     }
 
+    let do_input_check = true;
+    if("check_input" in queryString){
+        console.log(queryString);
+        do_input_check = queryString["check_input"] == "1";
+        console.log(do_input_check);
+    }
+
     //retrieve all allowed schemas 
     const schemas = config.getSchemas();
     // key names are the schemas we are going to check
     let schemas_to_check = Object.keys(schemas);
 
+
+    let input_model_name = null;
+
     //if the user has queried a 'from' then we don't need to 
     // check all the different schemas
     if(Object.keys(queryString).includes('from')){
         const schema_name = queryString['from'];
-        //check the specified input model is even known/valid
-        if(!Object.keys(schemas).includes(schema_name)){
-            return res.status(400).json({ 
-                error: 'Not a valid schema template for "from".',
-                schema_name: schema_name,
-                allowed_schemas: schemas_to_check
-            });
+        if (do_input_check){
+            //check the specified input model is even known/valid
+            if(!Object.keys(schemas).includes(schema_name)){
+                return res.status(400).json({ 
+                    error: 'Not a valid schema template for "from".',
+                    schema_name: schema_name,
+                    allowed_schemas: schemas_to_check
+                });
+            }
+            //if it is valid, then only need to check against this one schema
+            schemas_to_check = [schema_name];
         }
-        //if it is valid, then only need to check against this one schema
-        schemas_to_check = [schema_name];
+        else{
+            input_model_name = schema_name;
+            schemas_to_check = [];
+        }
     }
 
     //retrieve the posted data 
@@ -68,7 +84,6 @@ router.post('/', async (req, res) => {
 
     //record validation errors and if any schemas are valid
     const input_validation_errors = {};
-    let input_model_name = null;
 
     //loop over all schemas to check the input data against
     schemas_to_check.forEach(schema_name => {
@@ -92,9 +107,11 @@ router.post('/', async (req, res) => {
 
     //return errors if the metadata doesnt validate against any
     // known metadata schemas
+
+    //if the skip is checked...need to set input_model_name!
     if(input_model_name == null){
         return res.status(400).json({ 
-            error: 'Not valid against any known schema', 
+            error: 'Input not valid against any known schema', 
             schemas: input_validation_errors
         });
     }
@@ -132,7 +149,8 @@ router.post('/', async (req, res) => {
         if (!isValid) {
             return res.status(400).json({ 
                 error: 'Validation failed', 
-                details: output_validator.errors 
+                details: output_validator.errors,
+                data: result
             });
         }
         res.send(result);

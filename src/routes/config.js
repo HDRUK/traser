@@ -4,17 +4,6 @@ const path = require('path');
 
 
 const ajv = new Ajv({ strict: false });
-// Initialize AJV instance
-const schemaCache = {};
-
-// Function to load JSON schemas
-function loadSchema(filePath) {
-  const schemaPath = path.resolve(filePath);
-  if (!schemaCache[schemaPath]) {
-    schemaCache[schemaPath] = ajv.compile(require(schemaPath));
-  }
-  return schemaCache[schemaPath];
-}
 
 // Function to load template file
 function loadTemplate(filePath) {
@@ -37,6 +26,12 @@ let templates = {
             template:null
         }
     },
+    hdrukv211:{
+        datasetv2:{
+            fpath:'./src/templates/HDRUKv211/datasetv2.jsonata',
+            template:null
+        }
+    }
     /*gdmv0: {
         test:{
             fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',

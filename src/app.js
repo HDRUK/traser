@@ -6,6 +6,7 @@ const helmet = require('helmet');
 
 const indexRouter = require('./routes/index');
 const translateRouter = require('./routes/translate');
+const validateRouter = require('./routes/validate');
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -19,6 +20,8 @@ app.use(cookieParser());
 
 app.use('/', indexRouter);
 app.use('/translate', translateRouter);
+app.use('/validate', validateRouter);
+
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
