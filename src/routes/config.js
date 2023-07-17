@@ -29,6 +29,12 @@ let templates = {
     hdrukv211:{
         datasetv2:{
             fpath:'./src/templates/HDRUKv211/datasetv2.jsonata',
+            template:null 
+        }
+    },
+    schemaorg:{
+        gdmv1:{
+            fpath:'./src/templates/SchemaOrg/GDMv1.jsonata',
             template:null
         }
     }
@@ -70,6 +76,10 @@ let schemas = {
     },
     gdmv1:{
         fpath: './src/schemas/gdmv1.json',
+        validator: null
+    },
+    schemaorg:{
+        fpath: './src/schemas/schema.org/dataset.json',
         validator: null
     }
 }

@@ -37,9 +37,7 @@ router.post('/', async (req, res) => {
 
     let do_input_check = true;
     if("check_input" in queryString){
-        console.log(queryString);
         do_input_check = queryString["check_input"] == "1";
-        console.log(do_input_check);
     }
 
     //retrieve all allowed schemas 
@@ -133,6 +131,7 @@ router.post('/', async (req, res) => {
         extra: extra //validate this based on the input/output (?)
     }
 
+    //this needs to raise some errors if it cant be found
     const template = config.getTemplate(output_model_name,input_model_name);
 
     if (template == null){
