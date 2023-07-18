@@ -1,0 +1,35 @@
+{
+  "required": {
+    "gatewayId": "0x12412",
+    "gatewayPid": "0x12412",
+    "issued": input.dateCreated,
+    "modified": $now(),
+    "revisions":[]
+  },
+  "summary": {
+    "title": input.name,
+    "shortTitle": input.alternateName,
+    "description": input.description,
+    "doiName": input.citation,
+    "keywords": $split(input.keywords,',')
+  },
+  "accessibility": {
+    "usage": {
+      "resourceCreator": input.funder.legalName
+    },
+    "access": {
+      "accessRequestCost": input.isAccessibleForFree ? "Free" : "Not Free",
+      "accessService": input.distribution.name,
+      "accessRights": input.license
+    }
+  },
+  "provenance": {
+    "origin": {
+      "source": input.spacialCoverage
+    },
+    "temporal": {
+      "startDate": $split(input.temporalCoverage,'/')[0],
+      "endDate": $split(input.temporalCoverage,'/')[1] = '..' ? null : $split(input.temporalCoverage,'/')[1]
+    }
+  }
+}

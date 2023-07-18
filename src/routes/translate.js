@@ -1,12 +1,6 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const fs = require('fs');
-const path = require('path');
 const config = require('./config');
-
-const Ajv = require("ajv");
-const ajv = new Ajv({ strict: false });
-
 
 const router = express.Router();
 
@@ -38,6 +32,11 @@ router.post('/', async (req, res) => {
     let do_input_check = true;
     if("check_input" in queryString){
         do_input_check = queryString["check_input"] == "1";
+    }
+
+    let do_output_check = true;
+    if("check_output" in queryString){
+        do_output_check = queryString["check_output"] == "1";
     }
 
     //retrieve all allowed schemas 
@@ -145,7 +144,7 @@ router.post('/', async (req, res) => {
         const expression = jsonata(template);
         const result = await expression.evaluate(source);
         isValid = output_validator(result);
-        if (!isValid) {
+        if (!isValid & do_output_check) {
             return res.status(400).json({ 
                 error: 'Validation failed', 
                 details: output_validator.errors,

@@ -2,8 +2,15 @@ const Ajv = require("ajv");
 const fs = require('fs');
 const path = require('path');
 
+const ajv = new Ajv(
+    { 
+        strict: false,
+        strictSchema: false,
+        allErrors: false,
+        coerceTypes: true
+    });
 
-const ajv = new Ajv({ strict: false });
+
 
 // Function to load template file
 function loadTemplate(filePath) {
@@ -23,6 +30,10 @@ let templates = {
     gdmv1: {
         hdrukv211:{
             fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
+            template:null
+        },
+        schemaorg:{
+            fpath:'./src/templates/GDMv1/SchemaOrg.jsonata',
             template:null
         }
     },
@@ -79,7 +90,8 @@ let schemas = {
         validator: null
     },
     schemaorg:{
-        fpath: './src/schemas/schema.org/dataset.json',
+        //fpath: './src/schemas/schema.org/dataset.json',
+        fpath: './src/schemas/schema.org/supermodel.json',
         validator: null
     }
 }

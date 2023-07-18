@@ -1,0 +1,31 @@
+identifier: 
+- {{ input.identifier }}
+- {{ input.summary.doiName }}
+name: {{ input.summary.title }}
+description: {{ input.summary.abstract }}
+creator:
+  "@type": Organization
+  sameAs: null
+  name: {{ input.accessibility.usage.resourceCreator }}
+citation : {{ input.summary.doiName }}
+funder:
+  "@type": Organization
+  sameAs: null
+  name: {{ input.accessibility.usage.resourceCreator }}
+hasPart: null
+isAccessibleForFree: {{ input.accessibility.access.accessRequestCost == "Free" }}
+keywords: {{ input.summary.keywords }}
+license: {{ input.accessibility.access.accessRights }}
+measurementTechnique: null
+sameAs: null
+spatialCoverage: {{ input.coverage.spatial }}
+temporalCoverage: {{ input.provenance.temporal.startDate }}/{{ input.provenance.temporal.endDate }}    
+variableMeasured: 
+{% for obs in input.observations %}
+- "@type": Observation
+  name: {{ obs.observedNode }}
+  description: {{ obs.disambiguatingDescription }}
+  observationDate: {{ obs.observationDate }}
+{% endfor %}
+version: {{ input.version }}
+url: {{ input.identifier }}
