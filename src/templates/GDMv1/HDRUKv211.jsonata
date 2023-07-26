@@ -1,22 +1,29 @@
+(
+$keywords := $type(input.summary.keywords)='array' ? input.summary.keywords : $split(input.summary.keywords,',');
+$spatial := $type(input.coverage.spatial)='array' ? $join(input.coverage.spatial,',') : input.coverage.spatial;
+$to_str := function($x){
+  $type($x)='array' ? $join($x,',') : $x
+};
+
 {
   "required": {
     "gatewayId": extra.id,
     "gatewayPid": extra.pid,
     "issued": input.issued,
     "modified": input.modified,
-    "revisions": $map(input.revisions,function($r) {
+    "revisions": input.revisions ? $map(input.revisions,function($r) {
       {
         "version": $r.version,
         "url": $r.url
       }
-    })
+    }) : []
   },
   "summary": {
     "abstract": input.summary.abstract,
     "contactPoint": input.summary.contactPoint,
-    "keywords": input.summary.keywords,
-    "controlledKeywords": [$filter(input.summary.keywords, function($v) {
-      $v in extra.controlledKeyWords
+    "keywords": $keywords,
+    "controlledKeywords": [$filter($keywords, function($v) {
+      $v in extra.controlledKeywords
     })],
     "datasetType": extra.datasetType,
     "description": input.documentation.description,
@@ -26,48 +33,62 @@
   },
   "publisher": {
     "publisherName": input.summary.publisher.name,
-    "publisherGatewayId": "bf12345"
+    "publisherGatewayId": null
   },
   "coverage": {
-    "pathway": input.coverage.pathway,
-    "pathwayDescription": extra.pathwayDescription,
+    "pathway": input.coverage.pathway, /* null ? */
+    "pathwayDescription": extra.pathwayDescription, /* input.coverage.pathway */
     "physicalSampleAvailability": $join(input.coverage.physicalSampleAvailability,' '),
-    "spatial": input.coverage.spatial
+    "spatial": $spatial
   },
   "provenance": {
     "origin": {
-      "purpose": input.provenance.origin.purpose,
-      "source": input.provenance.origin.purpose
+      "purpose": $to_str(input.provenance.origin.purpose),
+      "source": $to_str(input.provenance.origin.source)
     },
     "temporal": {
       "endDate": input.provenance.temporal.endDate,
-      "startDate": input.provenance.temporal.endDate
+      "startDate": input.provenance.temporal.startDate,
+      "timeLag": input.provenance.temporal.timeLag,
+      "accrualPeriodicity": input.provenance.temporal.accrualPeriodicity
     }
   },
   "accessibility": {
     "access": {
-      "jurisdiction": input.accessibility.access.jurisdiction,
+      "jurisdiction": $to_str(input.accessibility.access.jurisdiction),
       "dataController": input.accessibility.access.dataController,
       "dataProcessor": input.accessibility.access.dataProcessor,
       "accessRights": $join(input.accessibility.access.accessRights, ' '),
       "accessService": input.accessibility.access.accessService,
-      "accessRequestCost": input.accessibility.access.accessRequestCost
+      "accessRequestCost": $to_str(input.accessibility.access.accessRequestCost) /* may need to be fixed */
     },
     "usage": {
-      "dataUseLimitation": input.accessibility.usage.dataUseLimitation,
-      "dataUseRequirement": input.accessibility.usage.dataUseRequirements,
-      "resourceCreator": input.accessibility.usage.resourceCreator
+      "dataUseLimitation": $to_str(input.accessibility.usage.dataUseLimitation),	
+      "dataUseRequirement": $to_str(input.accessibility.usage.dataUseRequirements),
+      "resourceCreator": $to_str(input.accessibility.usage.resourceCreator)
     },
     "formatAndStandards": {
-      "vocabularyEncodingScheme": input.accessibility.formatAndStandards.vocabularyEncodingScheme,
-      "conformsTo": input.accessibility.formatAndStandards.conformsTo,
-      "language": input.accessibility.formatAndStandards.language
+      "vocabularyEncodingScheme": $to_str(input.accessibility.formatAndStandards.vocabularyEncodingScheme),
+      "conformsTo": $to_str(input.accessibility.formatAndStandards.conformsTo),
+      "language": $to_str(input.accessibility.formatAndStandards.language)
     }
   },
   "linkage": {
-    "IsGeneratedUsing": extra.IsGeneratedUsing,
-    "associatedMedia": input.documentation.associatedMedia[0].url,
+    "IsGeneratedUsing": extra.IsGeneratedUsing, /* enrichmentAndLinkage */ 
+    "associatedMedia": $join(input.documentation.associatedMedia.url, ','),
     "dataUses": extra.dataUses,
-    "isReferenceIn": $join(input.accessibility.usage.isReferencedBy, ' ')
-  }
-}
+    "isReferenceIn": input.accessibility.usage.isReferencedBy ? $join(input.accessibility.usage.isReferencedBy, ','): null,
+    "tools": $to_str(input.enrichmentAndLinkage.tools),
+    /*qualifiedRelation*/
+    "derivations":$to_str(input.enrichmentAndLinkage.deviation)
+  },
+  "observations": input.observations ? $map(input.observations,function($r) {
+      {
+        "observedNode": $r.observedNode,
+        "measuredValue": $r.measuredValue,
+        "observationDate": $r.observationDate,
+        "measuredProperty": $r.measuredProperty
+      }
+    }) : []
+};
+)

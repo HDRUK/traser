@@ -47,6 +47,8 @@ router.post('/', async (req, res) => {
 
     let input_model_name = null;
 
+    /* bug here... checking schema when from is not set... */
+
     //if the user has queried a 'from' then we don't need to 
     // check all the different schemas
     if(Object.keys(queryString).includes('from')){
@@ -68,6 +70,7 @@ router.post('/', async (req, res) => {
             schemas_to_check = [];
         }
     }
+
 
     //retrieve the posted data 
     const {extra,metadata} = req.body;
@@ -154,7 +157,7 @@ router.post('/', async (req, res) => {
         res.send(result);
     }
     catch (err) { 
-        res.send({
+        res.status(400).json({
             details: err.message,
             error: "JSONata failure"
         })

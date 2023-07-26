@@ -361,6 +361,16 @@
                     "default": "2023-07-03",
                     "type": "string",
                     "format": "date"
+                },
+                "timeLag":{
+                    "title": "Time Lag",
+                    "default": null,
+                    "type": "string"
+                },
+                "accrualPeriodicity":{
+                    "title": "Accrual Periodicity",
+                    "default": null,
+                    "type": "string"
                 }
             }
         },
@@ -384,7 +394,9 @@
                     "title": "Temporal",
                     "default": {
                         "endDate": "2023-07-03",
-                        "startDate": "2023-07-03"
+                        "startDate": "2023-07-03",
+                        "timeLag": null,
+                        "accrualPeriodicity": null
                     },
                     "allOf": [
                         {

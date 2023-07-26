@@ -1535,22 +1535,21 @@
       ]
     },
     "dataUseLimitation": {
-	"type": ["string","null"],
-      "enum": [
-        "GENERAL RESEARCH USE",
-        "COMMERCIAL RESEARCH USE",
-        "GENETIC STUDIES ONLY",
-        "NO GENERAL METHODS RESEARCH",
-        "NO RESTRICTION",
-        "GEOGRAPHICAL RESTRICTIONS",
-        "INSTITUTION SPECIFIC RESTRICTIONS",
-        "NOT FOR PROFIT USE",
-        "PROJECT SPECIFIC RESTRICTIONS",
-        "RESEARCH SPECIFIC RESTRICTIONS",
-        "USER SPECIFIC RESTRICTION",
-        "RESEARCH USE ONLY",
-          "NO LINKAGE",
-	  null
+    "type": ["string","null"],
+        "enum": [
+          "GENERAL RESEARCH USE",
+          "COMMERCIAL RESEARCH USE",
+          "GENETIC STUDIES ONLY",
+          "NO GENERAL METHODS RESEARCH",
+          "NO RESTRICTION",
+          "GEOGRAPHICAL RESTRICTIONS",
+          "INSTITUTION SPECIFIC RESTRICTIONS",
+          "NOT FOR PROFIT USE",
+          "PROJECT SPECIFIC RESTRICTIONS",
+          "RESEARCH SPECIFIC RESTRICTIONS",
+          "USER SPECIFIC RESTRICTION",
+          "RESEARCH USE ONLY",
+          "NO LINKAGE"
       ]
     },
     "dataUseRequirements": {
