@@ -1,8 +1,11 @@
 (
-$keywords := $type(input.summary.keywords)='array' ? input.summary.keywords : $split(input.summary.keywords,',');
-$spatial := $type(input.coverage.spatial)='array' ? $join(input.coverage.spatial,',') : input.coverage.spatial;
+/*function to enforce any arrays to be strings */
 $to_str := function($x){
   $type($x)='array' ? $join($x,',') : $x
+};
+
+$extract_media := function($x){
+  $type($x)='array' ? $join($x.url, ',') : $x
 };
 
 {
@@ -11,20 +14,20 @@ $to_str := function($x){
     "gatewayPid": extra.pid,
     "issued": input.issued,
     "modified": input.modified,
-    "revisions": input.revisions ? $map(input.revisions,function($r) {
+    "revisions": input.revisions ? [$map(input.revisions,function($r) {
       {
         "version": $r.version,
         "url": $r.url
       }
-    }) : []
+    })] : []
   },
   "summary": {
     "abstract": input.summary.abstract,
     "contactPoint": input.summary.contactPoint,
-    "keywords": $keywords,
-    "controlledKeywords": [$filter($keywords, function($v) {
+    "keywords": $to_str(input.summary.keywords),
+    "controlledKeywords": $to_str([$filter( $split($to_str($keywords),','), function($v) {
       $v in extra.controlledKeywords
-    })],
+    })]),
     "datasetType": extra.datasetType,
     "description": input.documentation.description,
     "doiName": input.summary.doiName,
@@ -33,13 +36,15 @@ $to_str := function($x){
   },
   "publisher": {
     "publisherName": input.summary.publisher.name,
-    "publisherGatewayId": null
+    "publisherGatewayId": input.summary.publisher.identifier
   },
   "coverage": {
     "pathway": input.coverage.pathway, /* null ? */
     "pathwayDescription": extra.pathwayDescription, /* input.coverage.pathway */
     "physicalSampleAvailability": $join(input.coverage.physicalSampleAvailability,' '),
-    "spatial": $spatial
+    "spatial": $to_str(input.coverage.spatial),
+    "followup": input.coverage.followup,
+    "typicalAgeRange": input.coverage.typicalAgeRange /* $split('-') into mix/max */
   },
   "provenance": {
     "origin": {
@@ -55,6 +60,7 @@ $to_str := function($x){
   },
   "accessibility": {
     "access": {
+      "deliveryLeadTime": $to_str(input.accessibility.access.deliveryLeadTime), /*may need to be min/max in the future */
       "jurisdiction": $to_str(input.accessibility.access.jurisdiction),
       "dataController": input.accessibility.access.dataController,
       "dataProcessor": input.accessibility.access.dataProcessor,
@@ -68,14 +74,15 @@ $to_str := function($x){
       "resourceCreator": $to_str(input.accessibility.usage.resourceCreator)
     },
     "formatAndStandards": {
-      "vocabularyEncodingScheme": $to_str(input.accessibility.formatAndStandards.vocabularyEncodingScheme),
+      "vocabularyEncodingSchemes": $to_str(input.accessibility.formatAndStandards.vocabularyEncodingScheme),
       "conformsTo": $to_str(input.accessibility.formatAndStandards.conformsTo),
-      "language": $to_str(input.accessibility.formatAndStandards.language)
+      "languages": $to_str(input.accessibility.formatAndStandards.language),
+      "formats": $to_str(input.accessibility.formatAndStandards.format)
     }
   },
   "linkage": {
     "IsGeneratedUsing": extra.IsGeneratedUsing, /* enrichmentAndLinkage */ 
-    "associatedMedia": $join(input.documentation.associatedMedia.url, ','),
+    "associatedMedia": $extract_media(input.documentation.associatedMedia),
     "dataUses": extra.dataUses,
     "isReferenceIn": input.accessibility.usage.isReferencedBy ? $join(input.accessibility.usage.isReferencedBy, ','): null,
     "tools": $to_str(input.enrichmentAndLinkage.tools),

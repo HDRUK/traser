@@ -12,8 +12,8 @@
                 "shortTitle": null,
                 "doiName": null,
                 "abstract": null,
-                "keywords": [],
-                "controlledKeywords": [],
+                "keywords": null,
+                "controlledKeywords": null,
                 "contactPoint": null,
                 "datasetType": null,
                 "description": null,
@@ -35,14 +35,8 @@
                 "physicalSampleAvailability": [],
                 "pathway": null,
                 "pathwayDescription": null,
-                "followup": {
-                    "maxFollowup": -1,
-                    "minFollowup": -1
-                },
-                "typicalAgeRange": {
-                    "minAge": -1,
-                    "maxAge": -1
-                }
+                "followup": null,
+                "typicalAgeRange": null
             },
             "allOf": [
                 {
@@ -72,10 +66,7 @@
             "title": "Accessibility",
             "default": {
                 "access": {
-                    "deliveryLeadTime": {
-                        "minDeliveryLeadTime": -1,
-                        "maxDeliveryLeadTime": -1
-                    },
+                    "deliveryLeadTime": null, 
                     "jurisdiction": null,
                     "dataController": null,
                     "dataProcessor": null,
@@ -89,9 +80,10 @@
                     "resourceCreator": null
                 },
                 "formatAndStandards": {
-                    "vocabularyEncodingScheme": null,
+                    "vocabularyEncodingSchemes": null,
                     "conformsTo": null,
-                    "language": null
+                    "languages": null,
+                    "formats": null
                 }
             },
             "allOf": [
@@ -213,19 +205,11 @@
                 },
                 "keywords": {
                     "title": "Keywords",
-                    "default": [],
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "controlledKeywords": {
                     "title": "Controlledkeywords",
-                    "default": [],
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "contactPoint": {
                     "title": "Contactpoint",
@@ -255,35 +239,11 @@
         },
         "FollowUp": {
             "title": "FollowUp",
-            "type": "object",
-            "properties": {
-                "maxFollowup": {
-                    "title": "Maxfollowup",
-                    "default": -1,
-                    "type": "integer"
-                },
-                "minFollowup": {
-                    "title": "Minfollowup",
-                    "default": -1,
-                    "type": "integer"
-                }
-            }
+            "type": "string"
         },
         "TypicalAgeRange": {
             "title": "TypicalAgeRange",
-            "type": "object",
-            "properties": {
-                "minAge": {
-                    "title": "Minage",
-                    "default": -1,
-                    "type": "integer"
-                },
-                "maxAge": {
-                    "title": "Maxage",
-                    "default": -1,
-                    "type": "integer"
-                }
-            }
+            "type": "string"
         },
         "Coverage": {
             "title": "Coverage",
@@ -308,10 +268,7 @@
                 },
                 "followup": {
                     "title": "Followup",
-                    "default": {
-                        "maxFollowup": -1,
-                        "minFollowup": -1
-                    },
+                    "default": null,
                     "allOf": [
                         {
                             "$ref": "#/definitions/FollowUp"
@@ -320,10 +277,7 @@
                 },
                 "typicalAgeRange": {
                     "title": "Typicalagerange",
-                    "default": {
-                        "minAge": -1,
-                        "maxAge": -1
-                    },
+                    "default": null,
                     "allOf": [
                         {
                             "$ref": "#/definitions/TypicalAgeRange"
@@ -408,19 +362,7 @@
         },
         "DeliveryLeadTime": {
             "title": "DeliveryLeadTime",
-            "type": "object",
-            "properties": {
-                "minDeliveryLeadTime": {
-                    "title": "Mindeliveryleadtime",
-                    "default": -1,
-                    "type": "integer"
-                },
-                "maxDeliveryLeadTime": {
-                    "title": "Maxdeliveryleadtime",
-                    "default": -1,
-                    "type": "integer"
-                }
-            }
+            "type": "string"
         },
         "Access": {
             "title": "Access",
@@ -428,10 +370,7 @@
             "properties": {
                 "deliveryLeadTime": {
                     "title": "Deliveryleadtime",
-                    "default": {
-                        "minDeliveryLeadTime": -1,
-                        "maxDeliveryLeadTime": -1
-                    },
+                    "default": null,
                     "allOf": [
                         {
                             "$ref": "#/definitions/DeliveryLeadTime"
@@ -486,7 +425,7 @@
             "title": "FormatAndStandards",
             "type": "object",
             "properties": {
-                "vocabularyEncodingScheme": {
+                "vocabularyEncodingSchemes": {
                     "title": "Vocabularyencodingscheme",
                     "type": "string"
                 },
@@ -494,8 +433,12 @@
                     "title": "Conformsto",
                     "type": "string"
                 },
-                "language": {
-                    "title": "Language",
+                "languages": {
+                    "title": "Languages",
+                    "type": "string"
+                },
+                "formats": {
+                    "title": "Formats",
                     "type": "string"
                 }
             }
@@ -507,10 +450,7 @@
                 "access": {
                     "title": "Access",
                     "default": {
-                        "deliveryLeadTime": {
-                            "minDeliveryLeadTime": -1,
-                            "maxDeliveryLeadTime": -1
-                        },
+                        "deliveryLeadTime": null,
                         "jurisdiction": null,
                         "dataController": null,
                         "dataProcessor": null,
@@ -540,9 +480,10 @@
                 "formatAndStandards": {
                     "title": "Formatandstandards",
                     "default": {
-                        "vocabularyEncodingScheme": null,
+                        "vocabularyEncodingSchemes": null,
                         "conformsTo": null,
-                        "language": null
+                        "languages": null,
+                        "formats": null
                     },
                     "allOf": [
                         {
@@ -602,10 +543,7 @@
                 },
                 "associatedMedia": {
                     "title": "Associatedmedia",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "datasetLinkage": {
                     "title": "Datasetlinkage",

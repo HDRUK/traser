@@ -39,7 +39,7 @@ input ~> |$|
       "usage": $each(accessibility.usage, function($v, $k) { 
         {$k: $v="" or $v=[] ? null : $v}  
       }) ~> $merge(),
-      "access": $each(accessibility.access, function($v, $k) { 
+      "access": $each(accessibility.access, function($v, $k) { /*isReferencedBy should be doi */ 
         {$k: $v="" or $v=[] ? null : $v}  
       }) ~> $merge(),
       "formatAndStandards": $each(accessibility.formatAndStandards, function($v, $k) { 
