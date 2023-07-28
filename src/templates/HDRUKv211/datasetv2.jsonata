@@ -1,8 +1,23 @@
+(
+
+$nullable_values := [""," ","Not Applicable","Not Available",
+                     "Not applicable",
+                     "NOT AVAILABLE","NOT APPLICABLE"];
+
+$to_str := function($x){
+  $type($x)='array' ? $join($x,",") : $x
+};
+
+$null_string := function($x){
+  $x in $nullable_values ? null : $x
+};
+
 input ~> |$| 
 {
     "issued": $fromMillis($toMillis(issued,'[D01]/[M01]/[Y0001]')),
     "modified": $fromMillis($toMillis(modified,'[D01]/[M01]/[Y0001]')),
     "revisions": revisions,
+    "version": version ~> $null_string,
     "summary": summary ~> |$| /*copy summary over and transform it*/
     {
       /*loop over all publisher fields and set blank fields to null */
@@ -22,30 +37,31 @@ input ~> |$|
     {
       "description": $length(description)=0 ? null : description,
       "associatedMedia": $count(associatedMedia)=0 ? null : $join(associatedMedia,','), 
-      "isPartOf": $count(isPartOf)=0 ? null : $join(isPartOf,',')
+      "isPartOf": $count(isPartOf)=0 ? null : isPartOf ~> $join(',') ~> $null_string
     }|,
     "coverage": $each(coverage, function($v, $k) { 
-      {$k: $v="" or $v=[] ? null : $v}  /*something up with spacial coverage*/
+      {$k: $v  ~> $to_str ~> $null_string}  /*something up with spacial coverage*/
     }) ~> $merge(),
     "provenance": {
       "origin": $each(provenance.origin, function($v, $k) { 
-        {$k: $v="" or $v=[] ? null : $v}  
+        {$k: $v  ~> $to_str ~> $null_string}    
       }) ~> $merge(),
       "temporal": $each(provenance.temporal, function($v, $k) { 
-        {$k: $v="" or $v=[] ? null : $v}  
+        {$k: $v  ~> $to_str ~> $null_string}    
       }) ~> $merge()
     },
     "accessibility": {
       "usage": $each(accessibility.usage, function($v, $k) { 
-        {$k: $v="" or $v=[] ? null : $v}  
+        {$k: $v  ~> $to_str ~> $null_string}  
       }) ~> $merge(),
       "access": $each(accessibility.access, function($v, $k) { /*isReferencedBy should be doi */ 
-        {$k: $v="" or $v=[] ? null : $v}  
+        {$k: $v ~> $to_str ~> $null_string}  
       }) ~> $merge(),
       "formatAndStandards": $each(accessibility.formatAndStandards, function($v, $k) { 
-        {$k: $v="" or $v=[] ? null : $v}  
+        {$k: $v  ~> $to_str ~> $null_string}   
       }) ~> $merge()
     }
 },
 ['datasetv2.identifier','datasetv2.issued','datasetv2.modified'] 
 |
+)
