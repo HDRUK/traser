@@ -39,8 +39,7 @@ $extract_media := function($x){
     "publisherGatewayId": input.summary.publisher.identifier
   },
   "coverage": {
-    "pathway": input.coverage.pathway, /* null ? */
-    "pathwayDescription": extra.pathwayDescription, /* input.coverage.pathway */
+    "pathway": input.coverage.pathway, 
     "physicalSampleAvailability": $join(input.coverage.physicalSampleAvailability,' '),
     "spatial": $to_str(input.coverage.spatial),
     "followup": input.coverage.followup,
@@ -86,16 +85,19 @@ $extract_media := function($x){
     "dataUses": extra.dataUses,
     "isReferenceIn": input.accessibility.usage.isReferencedBy ? $join(input.accessibility.usage.isReferencedBy, ','): null,
     "tools": $to_str(input.enrichmentAndLinkage.tools),
-    /*qualifiedRelation*/
-    "derivations":$to_str(input.enrichmentAndLinkage.deviation)
+    "datasetLinkage":{
+      "isDerivedFrom":$to_str(input.enrichmentAndLinkage.derivation),
+      "isPartOf":$to_str(input.documentation.isPartOf),
+      "isMemberOf": extra.isMemberOf
+    }
   },
-  "observations": input.observations ? $map(input.observations,function($r) {
+  "observations": input.observations ? [$map(input.observations,function($r) {
       {
         "observedNode": $r.observedNode,
         "measuredValue": $r.measuredValue,
         "observationDate": $r.observationDate,
         "measuredProperty": $r.measuredProperty
       }
-    }) : []
+    })] : []
 };
 )

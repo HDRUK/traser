@@ -189,19 +189,26 @@
             "properties": {
                 "title": {
                     "title": "Title",
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
                 },
                 "shortTitle": {
                     "title": "Shorttitle",
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
                 },
                 "doiName": {
                     "title": "Doiname",
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^10.\\d{4,9}/[-._;()/:a-zA-Z0-9]+$"
                 },
                 "abstract": {
                     "title": "Abstract",
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 5000
                 },
                 "keywords": {
                     "title": "Keywords",
@@ -213,7 +220,8 @@
                 },
                 "contactPoint": {
                     "title": "Contactpoint",
-                    "type": "string"
+                    "type": "string",
+                    "format": "email"
                 },
                 "datasetType": {
                     "title": "Dataset type",
@@ -260,10 +268,6 @@
                 },
                 "pathway": {
                     "title": "Pathway",
-                    "type": "string"
-                },
-                "pathwayDescription": {
-                    "title": "Pathwaydescription",
                     "type": "string"
                 },
                 "followup": {
@@ -495,16 +499,24 @@
         },
         "Observations": {
             "title": "Observations",
-            "type": "object",
+            "type": "array",
             "properties": {
-                "observationsList": {
-                    "title": "Observationslist",
-                    "default": [],
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
+                "observedNode": {
+                    "title": "",
+                    "type": "string"
+                },
+                "measuredValue": {
+                    "title": "",
+                    "type": "string"
+                },
+                "observationDate": {
+                    "title": "",
+                    "type": "string"
+                },
+                "measuredProperty": {
+                    "title": "",
+                    "type": "string"
+                }              
             }
         },
         "DatasetLinkage": {

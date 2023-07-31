@@ -41,7 +41,12 @@ let templates = {
         datasetv2:{
             fpath:'./src/templates/HDRUKv211/datasetv2.jsonata',
             template:null 
+        },
+	gdmv1:{
+            fpath:'./src/templates/HDRUKv211/GDMv1.jsonata',
+            template:null 
         }
+
     },
     schemaorg:{
         gdmv1:{
