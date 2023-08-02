@@ -34,7 +34,6 @@
                 "spatial": null,
                 "physicalSampleAvailability": [],
                 "pathway": null,
-                "pathwayDescription": null,
                 "followup": null,
                 "typicalAgeRange": null
             },
@@ -103,6 +102,20 @@
                 }
             ]
         },
+        "structuralMetadata": {
+            "$id": "#/properties/structuralMetadata",
+            "title": "Structural Metadata",
+            "description": "Descriptions of all tables and data elements that can be included in the dataset",
+            "$comment": "First phase includes only column level metadata, future versions will include value level attributes",
+            "type":"array",
+            "items": {
+                "allOf": [
+                    {
+                    "$ref": "#/definitions/dataClass"
+                    }
+                ]
+            }
+        },
         "linkage": {
             "title": "Linkage",
             "default": {
@@ -126,6 +139,7 @@
     "required": [
         "required"
     ],
+    "additionalProperties": false,
     "definitions": {
         "Required": {
             "title": "Required",
@@ -571,6 +585,120 @@
                     ]
                 }
             }
+        },
+        "dataClass": {
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "name": {
+                "$id": "#/properties/dataClass/name",
+                "title": "Table Name",
+                "description": "The name of a table in a dataset.",
+                "$comment": "Should be limited to 255 Characters, abstract text requires rewrite.",
+                "type":["string","null"]
+              },
+              "description": {
+                "$id": "#/properties/dataClass/description",
+                "title": "Table Description",
+                "description": "A description of a table in a dataset.",
+                "type": ["string","null"],
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "elements": {
+                "$id": "#/properties/dataClass/elements",
+                "title": "Data Elements",
+                "description": "A list of data elements contained within a table in a dataset.",
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/dataElement"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name",
+              "elements"
+            ]
+        },
+        "dataElement": {
+            "$id": "#/definitions/dataElement",
+            "additionalProperties": false,
+            "type": "object",
+            "properties": {
+              "name": {
+                "$id": "#/properties/dataElement/name",
+                "title": "Column Name",
+                "description": "The name of a column in a table.",
+                "$comment": "255 Chars",
+                "type":["string","null"]
+              },
+              "dataType": {
+                "$id": "#/properties/dataElement/dataType",
+                "title": "Data Type",
+                "description": "The data type of values in the column",
+                "$comment": "In future we could enumerate options for this, rather than just a string. 255 Chars",
+                "type": "string"
+              },
+              "description": {
+                "$id": "#/properties/dataElement/description",
+                "title": "Column Description",
+                "description": "A description of a column in a table.",
+                "type": ["string","null"],
+                "minLength": 1,
+                "maxLength": 20000
+              },
+              "sensitive": {
+                "$id": "#/properties/dataElement/sensitive",
+                "title": "Sensitive",
+                "description": "A True or False value, indicating if the field is sensitive or not",
+                "$comment": "We could clarify a definition of what is sensitive in the future.",
+                "type": "boolean"
+              },
+              "elements": {
+                "$id": "#/properties/dataElement/elements",
+                "title": "Data Values",
+                "description": "Temporary for frequency data",
+                "type": "array",
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/dataValue"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name",
+              "dataType",
+              "sensitive"
+            ]
+        },
+        "dataValue": {
+            "$id": "#/definitions/dataValue",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$id": "#/properties/dataValue/name",
+                "title": "Value Name",
+                "description": "What is the value e.g. Male/Female",
+                "type":"string"
+              },
+              "frequency":{
+                "$id": "#/properties/dataValue/frequency",
+                "title": "Value Frequency",
+                "description": "What is the frequency of the value",
+                "type": "number"
+              }
+            },
+            "required": [
+                "name",
+                "frequency"
+            ]
         }
     }
 }

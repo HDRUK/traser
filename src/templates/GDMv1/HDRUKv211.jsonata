@@ -32,11 +32,11 @@ $extract_media := function($x){
     "description": input.documentation.description,
     "doiName": input.summary.doiName,
     "shortTitle": input.summary.title,
-    "title": input.summary.abstract
-  },
-  "publisher": {
-    "publisherName": input.summary.publisher.name,
-    "publisherGatewayId": input.summary.publisher.identifier
+    "title": input.summary.abstract,
+    "publisher": {
+      "publisherName":input.summary.publisher.name,
+      "publisherGatewayId": input.summary.publisher.identifier
+    }
   },
   "coverage": {
     "pathway": input.coverage.pathway, 
@@ -48,13 +48,15 @@ $extract_media := function($x){
   "provenance": {
     "origin": {
       "purpose": $to_str(input.provenance.origin.purpose),
-      "source": $to_str(input.provenance.origin.source)
+      "source": $to_str(input.provenance.origin.source),
+      "collectionSituation": $to_str(input.provenance.origin.collectionSituation)
     },
     "temporal": {
       "endDate": input.provenance.temporal.endDate,
       "startDate": input.provenance.temporal.startDate,
       "timeLag": input.provenance.temporal.timeLag,
-      "accrualPeriodicity": input.provenance.temporal.accrualPeriodicity
+      "accrualPeriodicity": input.provenance.temporal.accrualPeriodicity,
+      "distributionReleaseDate": input.provenance.temporal.distributionReleaseDate
     }
   },
   "accessibility": {
@@ -88,16 +90,30 @@ $extract_media := function($x){
     "datasetLinkage":{
       "isDerivedFrom":$to_str(input.enrichmentAndLinkage.derivation),
       "isPartOf":$to_str(input.documentation.isPartOf),
-      "isMemberOf": extra.isMemberOf
-    }
+      "isMemberOf": extra.isMemberOf,
+      "linkedDatasets":$to_str(input.enrichmentAndLinkage.qualifiedRelation)
+    },
+    "investigations":$to_str(input.accessibility.usage.investigations)
   },
   "observations": input.observations ? [$map(input.observations,function($r) {
       {
         "observedNode": $r.observedNode,
         "measuredValue": $r.measuredValue,
         "observationDate": $r.observationDate,
-        "measuredProperty": $r.measuredProperty
+        "measuredProperty": $r.measuredProperty,
+        "disambiguatingDescription": $r.disambiguatingDescription
       }
-    })] : []
+    })] : [],
+  "structuralMetadata": input.structuralMetadata /* ~> |$|
+      {
+        "elements": elements ~> |$|
+        {
+          "elements":[{
+            "name":"Male",
+            "frequency":50
+          }]
+        }|
+      }
+  |*/
 };
 )

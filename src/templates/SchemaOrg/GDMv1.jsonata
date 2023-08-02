@@ -6,9 +6,10 @@ $to_iso8601 := function($x){
     $replace($x, /(\.\d{6})$/, 'Z')
 };
 
+
 $to_str := function($x){
-    $type(x)='array' ? : $join($x,',') : $x
-}
+    $type($x) = 'array' ? $join($x,",") : $x
+};
 
 /* Google recommendations: */
 /* - https://developers.google.com/search/docs/appearance/structured-data/dataset#structured-data-type-definitions */
@@ -51,7 +52,7 @@ $to_str := function($x){
         "contentUrl": "https://somehwere.com"
     },
     "keywords": input.summary.keywords ~> $to_str,
-    "license": input.accessibility.access.accessRights,
+    "license": input.accessibility.access.accessRights
     /* "measuredmentTechnique":{} - google recommend */
 
 }

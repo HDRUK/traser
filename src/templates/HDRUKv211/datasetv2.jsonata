@@ -60,7 +60,21 @@ input ~> |$|
       "formatAndStandards": $each(accessibility.formatAndStandards, function($v, $k) { 
         {$k: $v  ~> $to_str ~> $null_string}   
       }) ~> $merge()
-    }
+    },
+    "structuralMetadata": [$map($$.extra.structuralMetadata, function($smd) { 
+      {
+        "name":$smd.tableName,
+        "description":$smd.tableDescription,
+        "elements":[
+          {
+            "name": $smd.columnName,
+            "description": $smd.columnDescription,
+            "dataType": $smd.dataType,
+            "sensitive": $smd.sensitive
+          }
+        ]
+      }
+    })] 
 },
 ['datasetv2.identifier','datasetv2.issued','datasetv2.modified'] 
 |

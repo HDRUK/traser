@@ -1360,7 +1360,7 @@
       "maxLength": 80
     },
     "abstractText": {
-      "type": "string",
+      "type": ["string","null"],
       "minLength": 5,
       "maxLength": 255
     },
@@ -1556,7 +1556,7 @@
       ]
     },
     "dataUseRequirements": {
-	"type": ["string","null"],
+	  "type": ["string","null"],
       "enum": [
         "COLLABORATION REQUIRED",
         "PROJECT SPECIFIC RESTRICTIONS",
@@ -1870,7 +1870,7 @@
           "$id": "#/properties/dataClass/description",
           "title": "Table Description",
           "description": "A description of a table in a dataset.",
-          "type": "string",
+          "type": ["string","null"],
           "minLength": 1,
           "maxLength": 20000
         },
@@ -1919,7 +1919,7 @@
           "$id": "#/properties/dataElement/description",
           "title": "Column Description",
           "description": "A description of a column in a table.",
-          "type": "string",
+          "type": ["string","null"],
           "minLength": 1,
           "maxLength": 20000
         },
