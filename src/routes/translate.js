@@ -25,12 +25,12 @@ const router = express.Router();
  *         name: check_input
  *         schema:
  *           type: string
- *         description: Whether to perform input validation (optional, values: "1" or "0").
+ *         description: Whether to perform input validation (optional, 1 or 0).
  *       - in: query
  *         name: check_output
  *         schema:
  *           type: string
- *         description: Whether to perform output validation (optional, values: "1" or "0").
+ *         description: Whether to perform output validation (optional, 1 or 0).
  *     requestBody:
  *       required: true
  *       content:
@@ -52,8 +52,6 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               type: object
- *               properties:
- *                 ...  # Define the properties of the response data here.
  *       400:
  *         description: Bad request or validation failure.
  *         content:
@@ -67,7 +65,6 @@ const router = express.Router();
  *                 details:
  *                   type: string
  *                   description: Additional details about the error (optional).
- *                 ...  # Define additional error response properties here.
  */
 router.post('/', async (req, res) => {
 
