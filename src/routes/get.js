@@ -1,12 +1,8 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const cache = require('../middleware/cacheFiles');
+const cacheHandler = require('../middleware/cacheHandler');
 
 const router = express.Router();
-
-// Load files using the cache module
-cache.loadData();
-
 
 router.get('/', async (req, res) => {
 
@@ -30,7 +26,7 @@ router.get('/', async (req, res) => {
     const output_model_name = queryString['to'];
     const input_model_name = queryString['from'];
 
-    const template = cache.getTemplate(output_model_name,input_model_name);
+    const template = cacheHandler.getTemplate(output_model_name,input_model_name);
     if (template == null){
         return res.status(400).json({ 
             error: 'Template file is null!', 
@@ -64,7 +60,7 @@ router.post('/validate', async (req, res) => {
     }
 
     //retrieve all allowed schemas 
-    const schemas = cache.getSchemas();
+    const schemas = cacheHandler.getSchemas();
     const schema_to_check = queryString['from'];
     //check the specified input model is even known/valid
     if(!Object.keys(schemas).includes(schema_to_check)){

@@ -17,10 +17,13 @@ const translateRouter = require('./routes/translate');
 const getRouter = require('./routes/get');
 const validateRouter = require('./routes/validate');
 //const visualiseRouter = require('./routes/visualiser');
-
 const errorHandler = require('./middleware/errorHandler');
+const cacheHandler = require('./middleware/cacheHandler');
 
 const app = express();
+
+cacheHandler.load();
+
 
 app.use(helmet()); // https://expressjs.com/en/advanced/best-practice-security.html#use-helmet
 app.use(logger('dev'));
