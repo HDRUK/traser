@@ -228,23 +228,4 @@ router.post('/validate', async (req, res) => {
 });
 
 
-
-router.get('/test', async (req, res) => {
-    const expression = jsonata(templateData['test']);
-    const source = {
-        identifier: '<id>',
-        summary: {
-            doiName: '<doi>',
-            title: '<title>',
-            abstract: '<ab>',
-        }
-    };
-    const result = await expression.evaluate(source);
-    res.send(result);
-});
-
-
-//
-
-
 module.exports = router;
