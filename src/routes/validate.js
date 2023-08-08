@@ -1,5 +1,5 @@
 const express = require('express');
-const config = require('./config');
+const cache = require('../middleware/cacheFiles');
 
 const router = express.Router();
 
@@ -10,7 +10,7 @@ router.get('/:model', async (req, res) => {
     const model = req.params.model;
   
     //retrieve all allowed schemas 
-    const schemas = config.getSchemas();
+    const schemas = cache.getSchemas();
 
     if(!Object.keys(schemas).includes(model)){
         return res.status(400).json({ 

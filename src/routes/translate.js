@@ -1,11 +1,11 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const config = require('./config');
+const cache = require('../middleware/cacheFiles');
 
 const router = express.Router();
 
-// Load files using the config module
-config.loadData();
+// Load files using the cache module
+cache.loadData();
 
 
 router.post('/', async (req, res) => {
@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
     }
 
     //retrieve all allowed schemas 
-    const schemas = config.getSchemas();
+    const schemas = cache.getSchemas();
     // key names are the schemas we are going to check
     let schemas_to_check = Object.keys(schemas);
 
@@ -134,7 +134,7 @@ router.post('/', async (req, res) => {
     }
 
     //this needs to raise some errors if it cant be found
-    const template = config.getTemplate(output_model_name,input_model_name);
+    const template = cache.getTemplate(output_model_name,input_model_name);
 
     if (template == null){
         return res.status(400).json({ 
@@ -186,7 +186,7 @@ router.post('/validate', async (req, res) => {
     }
 
     //retrieve all allowed schemas 
-    const schemas = config.getSchemas();
+    const schemas = cache.getSchemas();
     const schema_to_check = queryString['from'];
     //check the specified input model is even known/valid
     if(!Object.keys(schemas).includes(schema_to_check)){
