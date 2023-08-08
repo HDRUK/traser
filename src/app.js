@@ -1,4 +1,11 @@
 const express = require('express');
+
+const swaggerJsdoc = require("swagger-jsdoc"),
+      swaggerUi = require("swagger-ui-express");
+
+const swaggerDocument = require('../swagger.json');
+
+
 const createError = require('http-errors');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
@@ -21,6 +28,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'Express API for JSONPlaceholder',
+    version: '1.0.0',
+  },
+};
+const options = {
+    swaggerDefinition,
+    apis: ['src/routes/*.js']
+}
+const swaggerSpec = swaggerJsdoc(options);
+app.use('/docs',swaggerUi.serve,swaggerUi.setup(swaggerSpec));
+//app.use('/docs',swaggerUi.serve,swaggerUi.setup(swaggerDocument));
+
+
 app.use('/', indexRouter);
 app.use('/translate', translateRouter);
 app.use('/get', getRouter);
@@ -31,10 +54,12 @@ app.use('/files',express.static(path.join(__dirname,'public')));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-  next(createError.NotFound());
+    next(createError.NotFound());
 });
 
 // pass any unhandled errors to the error handler
 app.use(errorHandler);
+
+
 
 module.exports = app;

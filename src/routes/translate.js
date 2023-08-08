@@ -7,7 +7,13 @@ const router = express.Router();
 // Load files using the cache module
 cache.loadData();
 
-
+/**
+ * @swagger
+ * /translate:
+ *   post:
+ *     summary: Retrieve a list of JSONPlaceholder users
+ *     description: Retrieve a list of users from JSONPlaceholder. Can be used to populate a list of fake users when prototyping or testing an API.
+*/
 router.post('/', async (req, res) => {
 
     const queryString = req.query;
