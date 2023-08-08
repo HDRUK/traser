@@ -58,4 +58,40 @@ router.get(
     }
 )
 
+/**
+ * @swagger
+ * /list/schemas:
+ *   get:
+ *     summary: Retrieve available schema names
+ *     description: Retrieve available schema names from the cacheHandler.
+ *     responses:
+ *       200:
+ *         description: List of available schema names.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               description: List of available schema names.
+ *               items:
+ *                 type: string
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Description of the error.
+ */
+router.get(
+    '/schemas',
+    async (req, res) => {
+	const schemas = Object.keys(cacheHandler.getSchemas());
+	res.send(schemas);
+    }
+)
+
+
 module.exports = router;
