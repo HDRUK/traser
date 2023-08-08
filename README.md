@@ -1,15 +1,18 @@
 
+# HDR metadata TRAnslation SERvice (TRASER)
 
-# Setup
+About..
 
-## Install the package
+## Setup
+
+### Install the package
 
 ```
-git clone --recursive https://github.com/HDRUK/translation-service-poc-jsonata.git
-cd translation-service-poc-jsonata
+git clone --recursive https://github.com/HDRUK/traser.git
+cd traser
 ```
 
-## Run the API (Dev)
+### Run the API (Dev)
 
 Via docker 
 ```
@@ -24,9 +27,9 @@ npm run dev
 
 
 
-# Examples
+## Examples
 
-## Working example
+### Working example
 
 ```
 curl --location 'http://localhost:3000/translate?to=gdmv1' \
@@ -173,7 +176,7 @@ curl --location 'http://localhost:3000/translate?to=gdmv1' \
 }'
 ```
 
-## Missing field Example
+### Missing field Example
 
 ```
 {
