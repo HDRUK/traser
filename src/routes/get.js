@@ -4,6 +4,13 @@ const cacheHandler = require('../middleware/cacheHandler');
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /get:
+ *   get:
+ *     summary: Retrieve a list of JSONPlaceholder users
+ *     description: Retrieve a list of users from JSONPlaceholder. Can be used to populate a list of fake users when prototyping or testing an API.
+*/
 router.get('/', async (req, res) => {
 
     const queryString = req.query;

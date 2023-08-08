@@ -8,9 +8,67 @@ const router = express.Router();
  * @swagger
  * /translate:
  *   post:
- *     summary: Retrieve a list of JSONPlaceholder users
- *     description: Retrieve a list of users from JSONPlaceholder. Can be used to populate a list of fake users when prototyping or testing an API.
-*/
+ *     summary: Perform data validation and transformation
+ *     description: Perform data validation and transformation based on specified schemas and templates.
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *         description: The input schema name (optional).
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *         description: The output schema name.
+ *       - in: query
+ *         name: check_input
+ *         schema:
+ *           type: string
+ *         description: Whether to perform input validation (optional, values: "1" or "0").
+ *       - in: query
+ *         name: check_output
+ *         schema:
+ *           type: string
+ *         description: Whether to perform output validation (optional, values: "1" or "0").
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               extra:
+ *                 type: object
+ *                 description: Additional data (optional).
+ *               metadata:
+ *                 type: object
+ *                 description: Metadata object for validation and transformation.
+ *                 required: true
+ *     responses:
+ *       200:
+ *         description: Successful transformation and validation.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ...  # Define the properties of the response data here.
+ *       400:
+ *         description: Bad request or validation failure.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Description of the error.
+ *                 details:
+ *                   type: string
+ *                   description: Additional details about the error (optional).
+ *                 ...  # Define additional error response properties here.
+ */
 router.post('/', async (req, res) => {
 
     const queryString = req.query;
