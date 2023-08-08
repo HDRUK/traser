@@ -9,7 +9,7 @@ const indexRouter = require('./routes/index');
 const translateRouter = require('./routes/translate');
 const getRouter = require('./routes/get');
 const validateRouter = require('./routes/validate');
-const visualiseRouter = require('./routes/visualiser');
+//const visualiseRouter = require('./routes/visualiser');
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -25,7 +25,7 @@ app.use('/', indexRouter);
 app.use('/translate', translateRouter);
 app.use('/get', getRouter);
 app.use('/validate', validateRouter);
-app.use('/visualise', visualiseRouter);
+//app.use('/visualise', visualiseRouter);
 // Serve static files from the "public" folder
 app.use('/files',express.static(path.join(__dirname,'public')));
 
