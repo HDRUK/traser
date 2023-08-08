@@ -71,5 +71,83 @@ router.get('/map',
     });
 
 
+/**
+ * @swagger
+ * /schema:
+ *   get:
+ *     summary: Retrieve a schema by name
+ *     description: Retrieve a schema by its name from the cacheHandler.
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The name of the schema to retrieve.
+ *     responses:
+ *       200:
+ *         description: Schema retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   description: The name of the retrieved schema.
+ *                 schema:
+ *                   type: object
+ *                   description: The retrieved schema.
+ *       400:
+ *         description: Bad request due to invalid query parameters.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   description: Description of the error.
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/ValidationError'
+ */
+router.get(
+    '/schema',
+    [
+        query('name').notEmpty().escape()
+    ],
+    async (req, res) => {
+	
+	// possibly repeating code here..
+	const result = validationResult(req);
+	if (!result.isEmpty()) {
+	    return res.status(400).json({ 
+		message: 'Invalid query parameters.',
+		errors: result.array()
+	    });
+	}
+
+	const queryString = matchedData(req);
+	const schema_name = queryString['name'];
+
+	try {
+	    const schema = cacheHandler.getSchemas()[schema_name].schema;
+	    res.send({
+		"name":schema_name,
+		"schema":schema
+	    });
+
+	} catch (error){
+	    res.status(400).json({
+		error: `Bad Request: failed to get schema for ${schema_name}`
+	    });
+	}
+
+    }
+);
+
+
 
 module.exports = router;
