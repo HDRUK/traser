@@ -15,6 +15,7 @@ const path = require('path');
 const indexRouter = require('./routes/index');
 const translateRouter = require('./routes/translate');
 const getRouter = require('./routes/get');
+const findRouter = require('./routes/find');
 const listRouter = require('./routes/list');
 const validateRouter = require('./routes/validate');
 
@@ -65,6 +66,7 @@ app.use('/docs',swaggerUi.serve,swaggerUi.setup(swaggerSpec));
 app.use('/', indexRouter);
 app.use('/translate', translateRouter);
 app.use('/get', getRouter);
+app.use('/find', findRouter);
 app.use('/list', listRouter);
 app.use('/validate', validateRouter);
 
