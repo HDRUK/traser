@@ -27,7 +27,7 @@ const router = express.Router();
  *         name: validate_input
  *         required: false
  *         schema:
- *           type: integer
+ *           type: string
  *           enum: [0, 1]
  *         description: Whether to validate input metadata (0- no, 1- yes)
  *       - in: query
@@ -82,8 +82,9 @@ router.post(
 	    .isObject(),
 	query(['validate_input','validate_output'])
 	    .optional()
-	    .isIn(["0","1"])
+	    .isIn([0,1])
 	    .customSanitizer(value => {
+		//need to make sure/force the value to be bool
 		return value === "1"
 	    })
 	    .withMessage("Needs to be boolean (either 1 or 0)"),
@@ -160,30 +161,30 @@ router.post(
 		error: "JSONata failure"
 	    })
 	}
-	
-        expression.evaluate(source)
-	    .then(result => {
-		if(validate_output){//note: could be repeating code (?)
-		    const output_validator = schemas[output_model_name].validator;
-		    const isOutputValid = output_validator(result);
-		    if (!isOutputValid) {
-			res.status(400).json({ 
-			    error: 'Output metadata validation failed', 
-			    details: output_validator.errors,
-			    data: result
-			});
-			return;
-		    }
-		}
-		res.send(result);
-	    })
-	    .catch(error => { 
-		return res.status(400).json({
-		    details: error,
-		    error: "Translation evaluation failure"
-		})
-	    });	  
 
+	let output_metadata;
+	try{ //note: would it be better as a .then() and .catch() ?
+            output_metadata = await expression.evaluate(source);
+	}
+	catch(error){ 
+	    return res.status(400).json({
+		details: error,
+		error: "Translation evaluation failure"
+	    })
+	};	  
+    
+	if(validate_output){//note: could be repeating code (?)
+	    const output_validator = schemas[output_model_name].validator;
+	    const isOutputValid = output_validator(output_metadata);
+	    if (!isOutputValid) {
+		res.status(400).json({ 
+		    error: 'Output metadata validation failed', 
+		    details: output_validator.errors,
+		    data: output_metadata
+		});
+	    }
+	}
+	res.send(output_metadata);
 });
 
 
