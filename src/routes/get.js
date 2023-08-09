@@ -1,9 +1,6 @@
 const express = require('express');
-const jsonata = require('jsonata');
 const cacheHandler = require('../middleware/cacheHandler');
-
 const { query, validationResult, matchedData } = require('express-validator');
-
 const router = express.Router();
 
 /**

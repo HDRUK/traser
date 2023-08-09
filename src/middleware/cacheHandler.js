@@ -120,6 +120,7 @@ const loadData = async () => {
 //catch errors for if not loaded (?)
 const getTemplates = () => templates;
 const getSchemas = () => schemas;
+const getAvailableSchemas = () => Object.keys(schemas);
 
 //update soon with output 
 const getTemplate = (output,input) => templates[output][input].template;
@@ -129,4 +130,5 @@ module.exports = {
     getTemplates,
     getTemplate,
     getSchemas,
+    getAvailableSchemas,
 };
