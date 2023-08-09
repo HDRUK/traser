@@ -82,7 +82,7 @@ router.post(
 	    .isObject(),
 	query(['validate_input','validate_output'])
 	    .optional()
-	    .isIn([0,1])
+	    .isIn(["0","1"])
 	    .customSanitizer(value => {
 		return value === "1"
 	    })
