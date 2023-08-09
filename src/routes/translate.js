@@ -46,7 +46,7 @@ const router = express.Router();
  *               metadata:
  *                 type: object
  *                 required: true
- *                 description: metadata JSON passed to translation map 
+ *                 description: metadata JSON passed to translation map
  *               extra:
  *                 type: object
  *                 required: false
@@ -84,9 +84,10 @@ router.post(
 	    .isObject(),
 	query(['validate_input','validate_output'])
 	    .optional()
-	    .isIn([0,1])
+	    .isIn(["0","1"])//this seems to work for [0,1] as well
 	    .customSanitizer(value => {
-		//need to make sure/force the value to be bool
+		//needed to make sure/force the value to be bool
+		// - can be seen if you do console.log(typeof(value))
 		return value === "1"
 	    })
 	    .withMessage("Needs to be boolean (either 1 or 0)"),
@@ -96,7 +97,9 @@ router.post(
 	    .isIn(cacheHandler.getAvailableSchemas())
 	    .withMessage("Not a known schema. Options: "+cacheHandler.getAvailableSchemas())
     ],
-    async (req, res) => {	
+    async (req, res) => {
+
+	//return errors from express-validator 
 	const result = validationResult(req);
 	if (!result.isEmpty()) {
 	    return res.status(400).json({ 
@@ -106,25 +109,27 @@ router.post(
 	}
 
 	const data = matchedData(req);
-	const {metadata,extra,validate_input,validate_output} = data;
-	const input_model_name = data.from;
-	const output_model_name = data.to;
+	const {metadata,extra} = data;
+	const validateInput = data.validate_input;
+	const validateOutput = data.validate_output;
+	const inputModelName = data.from;
+	const outputModelName = data.to;
 	
 	let template;
 	try{
-	    template = cacheHandler.getTemplate(output_model_name,input_model_name);
+	    template = cacheHandler.getTemplate(outputModelName,inputModelName);
 	}
 	catch(error){
 	    return res.status(400).json({
 		error: 'Translation not found',
-		details:`Translation for ${input_model_name} to ${output_model_name} is not implemented`
+		details:`Translation for ${inputModelName} to ${outputModelName} is not implemented`
 	    });				
 	}
 	
 	if (template === null){
 	    return res.status(400).json({
 		error: 'Translation not found',
-		details:`Failed to load translation map for ${fromValue} to ${toValue}`
+		details:`Failed to load translation map for ${inputModelName} to ${outputModelName}`
 	    });
 	}
 		
@@ -132,13 +137,13 @@ router.post(
 	const schemas = cacheHandler.getSchemas();
 
 	//if asked to 
-	if(validate_input){
-            const input_validator =  schemas[input_model_name].validator;
-            const isInputValid = input_validator(metadata);
+	if(validateInput){
+            const inputValidator =  schemas[inputModelName].validator;
+            const isInputValid = inputValidator(metadata);
             if (!isInputValid) {
 		return res.status(400).json({ 
                     error: 'Input metadata validation failed', 
-                    details: input_validator.errors,
+                    details: inputValidator.errors,
                     data: result
 		});
 	    }
@@ -160,33 +165,33 @@ router.post(
 	catch(error){
 	    return res.status(400).json({
 		details: error,
-		error: "JSONata failure"
+		error: 'JSONata failure'
 	    })
 	}
 
-	let output_metadata;
+	let outputMetadata;
 	try{ //note: would it be better as a .then() and .catch() ?
-            output_metadata = await expression.evaluate(source);
+            outputMetadata = await expression.evaluate(source);
 	}
 	catch(error){ 
 	    return res.status(400).json({
 		details: error,
-		error: "Translation evaluation failure"
+		error: 'Translation evaluation failure'
 	    })
 	};	  
     
-	if(validate_output){//note: could be repeating code (?)
-	    const output_validator = schemas[output_model_name].validator;
-	    const isOutputValid = output_validator(output_metadata);
+	if(validateOutput){//note: could be repeating code (?)
+	    const outputValidator = schemas[outputModelName].validator;
+	    const isOutputValid = outputValidator(outputMetadata);
 	    if (!isOutputValid) {
 		res.status(400).json({ 
 		    error: 'Output metadata validation failed', 
-		    details: output_validator.errors,
-		    data: output_metadata
+		    details: outputValidator.errors,
+		    data: outputMetadata
 		});
 	    }
 	}
-	res.send(output_metadata);
+	res.send(outputMetadata);
 });
 
 
