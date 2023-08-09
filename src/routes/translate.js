@@ -97,7 +97,7 @@ router.post(
 	const result = validationResult(req);
 	if (!result.isEmpty()) {
 	    return res.status(400).json({ 
-		message: 'Invalid query parameters.',
+		message: 'Invalid request.',
 		errors: result.array()
 	    });
 	}
