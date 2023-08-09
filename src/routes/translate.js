@@ -31,15 +31,16 @@ const router = express.Router();
  *         schema:
  *           type: string
  *           enum: [0, 1]
- *         description: Whether to validate input metadata (0- no, 1- yes)
+ *         description: Whether to validate input metadata (optional, 0[no] or  1[yes])
  *       - in: query
  *         name: validate_output
  *         required: false
  *         schema:
  *           type: integer
  *           enum: [0, 1]
- *         description: Whether to validate output metadata (0- no, 1- yes)
+ *         description: Whether to validate output metadata (optional, 0[no] or  1[yes]) 
  *     requestBody:
+ *       required: true
  *       content:
  *         application/json:
  *           schema:
