@@ -2,6 +2,8 @@ const express = require('express');
 const jsonata = require('jsonata');
 const cacheHandler = require('../middleware/cacheHandler');
 const { body, query, validationResult, matchedData } = require('express-validator');
+
+const {validateMetadata} = require('./validate');
 const router = express.Router();
 
 /**
@@ -103,7 +105,7 @@ router.post(
 	const result = validationResult(req);
 	if (!result.isEmpty()) {
 	    return res.status(400).json({ 
-		message: 'Invalid request.',
+		message: 'Translation has failed.',
 		errors: result.array()
 	    });
 	}
@@ -133,18 +135,15 @@ router.post(
 	    });
 	}
 		
-	//retrieve all allowed schemas 
-	const schemas = cacheHandler.getSchemas();
-
-	//if asked to 
+	//if asked to validate the input, perform the validation
+	// - we have already checked if the schemas (inputModelName) as allowed/valid
 	if(validateInput){
-            const inputValidator =  schemas[inputModelName].validator;
-            const isInputValid = inputValidator(metadata);
-            if (!isInputValid) {
+	    const resultInputValidation = validateMetadata(metadata,inputModelName);
+            if (resultInputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Input metadata validation failed', 
-                    details: inputValidator.errors,
-                    data: result
+                    details: resultInputValidation,
+                    data: metadata
 		});
 	    }
         }
@@ -180,14 +179,13 @@ router.post(
 	    })
 	};	  
     
-	if(validateOutput){//note: could be repeating code (?)
-	    const outputValidator = schemas[outputModelName].validator;
-	    const isOutputValid = outputValidator(outputMetadata);
-	    if (!isOutputValid) {
-		res.status(400).json({ 
-		    error: 'Output metadata validation failed', 
-		    details: outputValidator.errors,
-		    data: outputMetadata
+	if(validateOutput){
+	    const resultOutputValidation = validateMetadata(metadata,outputModelName);
+            if (resultOutputValidation.length>0) {
+		return res.status(400).json({ 
+                    error: 'Output metadata validation failed', 
+                    details: resultOutputValidation,
+                    data: metadata
 		});
 	    }
 	}

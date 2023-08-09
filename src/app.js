@@ -17,7 +17,7 @@ const translateRouter = require('./routes/translate');
 const getRouter = require('./routes/get');
 const findRouter = require('./routes/find');
 const listRouter = require('./routes/list');
-const validateRouter = require('./routes/validate');
+const {validateRouter} = require('./routes/validate');
 
 //load middleware
 const errorHandler = require('./middleware/errorHandler');
