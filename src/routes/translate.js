@@ -29,14 +29,14 @@ const router = express.Router();
  *         schema:
  *           type: integer
  *           enum: [0, 1]
- *         description: Whether to validate input metadata (0: no, 1: yes)
+ *         description: Whether to validate input metadata (0- no, 1- yes)
  *       - in: query
  *         name: validate_output
  *         required: false
  *         schema:
  *           type: integer
  *           enum: [0, 1]
- *         description: Whether to validate output metadata (0: no, 1: yes)
+ *         description: Whether to validate output metadata (0- no, 1- yes)
  *     requestBody:
  *       content:
  *         application/json:
@@ -151,28 +151,40 @@ router.post(
 	}
 
 	//note: could move to a .then() / .catch() on the .evaluate()
-	try{ 
-            const expression = jsonata(template);
-            const result = await expression.evaluate(source);
-	    if(validate_output){//note: could be repeating code (?)
-		const output_validator = schemas[output_model_name].validator;
-		const isOutputValid = output_validator(result);
-		if (!isOutputValid) {
-		    return res.status(400).json({ 
-			error: 'Output metadata validation failed', 
-			details: output_validator.errors,
-			data: result
-		    });
-		}
-	    }
-            res.send(result);
+
+	let expression;
+	try {
+            expression = jsonata(template);
 	}
-	catch (err) { 
-            return res.status(400).json({
-		details: err.message,
+	catch(error){
+	    return res.status(400).json({
+		details: error,
 		error: "JSONata failure"
-            })
+	    })
 	}
+	
+        expression.evaluate(source)
+	    .then(result => {
+		if(validate_output){//note: could be repeating code (?)
+		    const output_validator = schemas[output_model_name].validator;
+		    const isOutputValid = output_validator(result);
+		    if (!isOutputValid) {
+			res.status(400).json({ 
+			    error: 'Output metadata validation failed', 
+			    details: output_validator.errors,
+			    data: result
+			});
+			return;
+		    }
+		}
+		res.send(result);
+	    })
+	    .catch(error => { 
+		return res.status(400).json({
+		    details: error,
+		    error: "Translation evaluation failure"
+		})
+	    });	  
 
 });
 
