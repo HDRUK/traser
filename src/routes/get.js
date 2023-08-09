@@ -70,7 +70,7 @@ router.get('/map',
 
 /**
  * @swagger
- * /schema:
+ * /get/schema:
  *   get:
  *     summary: Retrieve a schema by name
  *     description: Retrieve a schema by its name from the cacheHandler.

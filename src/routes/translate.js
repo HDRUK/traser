@@ -8,8 +8,8 @@ const router = express.Router();
  * @swagger
  * /translate:
  *   post:
- *     summary: Perform a data translation with validation
- *     description: Translate data from one schema to another with optional input and output validation.
+ *     summary: Perform a translation of metadata
+ *     description: Translates metadata known to HDRUK from one schema into another with optional input and output validation.
  *     parameters:
  *       - in: query
  *         name: to
@@ -45,17 +45,19 @@ const router = express.Router();
  *             properties:
  *               metadata:
  *                 type: object
+ *                 required: true
+ *                 description: metadata JSON passed to translation map 
  *               extra:
  *                 type: object
+ *                 required: false
+ *                 description: if additional data needs to be passed to the translation map
  *     responses:
  *       200:
- *         description: Successful translation
+ *         description: Successful translation of metadata into the requested form
  *         content:
  *           application/json:
  *             schema:
  *               type: object
- *               properties:
- *                 // Define properties of the response JSON structure
  *       400:
  *         description: Bad Request
  *         content:
@@ -68,7 +70,7 @@ const router = express.Router();
  *                 errors:
  *                   type: array
  *                   items:
- *                     // Define properties of the error object
+ *                      type: object
  */
 router.post(
     '/',
