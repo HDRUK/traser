@@ -150,8 +150,6 @@ router.post(
             extra: extra 
 	}
 
-	//note: could move to a .then() / .catch() on the .evaluate()
-
 	let expression;
 	try {
             expression = jsonata(template);
