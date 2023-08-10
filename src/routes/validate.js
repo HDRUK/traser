@@ -6,7 +6,17 @@ const router = express.Router();
 
 function validateMetadata(metadata,modelName){
     const schemas = cacheHandler.getSchemas();
-    const validator = schemas[modelName].validator;
+
+    if(!Object.keys(schemas).includes(modelName)){
+	return [{'message':`${modelName} is not a known schema to validate!`}]
+    }
+
+    const schema = schemas[modelName];
+    const validator = schema.validator;
+    if (validator == null){
+	return [{'message':`${modelName} schemas file is undefined!`}]
+    }
+    
     const isValid = validator(metadata);
     if(!isValid){
 	return validator.errors;

@@ -86,19 +86,26 @@ router.post(
 	    .optional()
 	    .isObject(),
 	query(['validate_input','validate_output'])
-	    .optional()
-	    .isIn(["0","1"])//this seems to work for [0,1] as well
+	    .default('1')
+	    .isIn(['0','1'])//this seems to work for [0,1] as well
 	    .customSanitizer(value => {
 		//needed to make sure/force the value to be bool
 		// - can be seen if you do console.log(typeof(value))
-		return value === "1"
+		return value === '1'
 	    })
-	    .withMessage("Needs to be boolean (either 1 or 0)"),
-	query(['to','from'])
+	    .withMessage('Needs to be boolean (either 1 or 0)'),
+	query('to')
 	    .exists()
 	    .bail()
+	    .if(query('validate_output').equals(true))
 	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Not a known schema. Options: "+cacheHandler.getAvailableSchemas())
+	    .withMessage("Output is not a known schema. Options: "+cacheHandler.getAvailableSchemas()),
+	query('from')
+	    .exists()
+	    .bail()
+	    .if(query('validate_input').equals(true))
+	    .isIn(cacheHandler.getAvailableSchemas())
+	    .withMessage("Input is not a known schema. Options: "+cacheHandler.getAvailableSchemas())
     ],
     async (req, res) => {
 
@@ -115,6 +122,7 @@ router.post(
 	const {metadata,extra} = data;
 	const validateInput = data.validate_input;
 	const validateOutput = data.validate_output;
+
 	const inputModelName = data.from;
 	const outputModelName = data.to;
 	
