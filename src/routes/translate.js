@@ -189,7 +189,7 @@ router.post(
 	};	  
     
 	if(validateOutput){
-	    const resultOutputValidation = validateMetadata(metadata,outputModelName);
+	    const resultOutputValidation = validateMetadata(outputMetadata,outputModelName);
             if (resultOutputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Output metadata validation failed', 

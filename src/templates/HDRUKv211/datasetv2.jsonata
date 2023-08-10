@@ -22,7 +22,7 @@ input ~> |$|
     {
       /*loop over all publisher fields and set blank fields to null */
       "publisher": $each(publisher, function($v, $k) { 
-        {$k: $v="" ? null : $v}  
+        {$k: $v ~> $null_string}  
       }) ~> $merge() /* each creates a [{},{}] -- merge them to get {} back*/
       ~> |$|
         {
