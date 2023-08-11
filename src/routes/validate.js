@@ -26,7 +26,7 @@ router.post('/', async (req, res) => {
     }
 
     //retrieve all allowed schemas 
-    const schemas = cache.getSchemas();
+    const schemas = cacheHandler.getSchemas();
     const schema_to_check = queryString['from'];
     //check the specified input model is even known/valid
     if(!Object.keys(schemas).includes(schema_to_check)){

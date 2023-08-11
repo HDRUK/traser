@@ -103,8 +103,11 @@ let schemas = {
 const loadSchemas = async () => {
     for (const [key, value] of Object.entries(schemas)) {
         const schemaPath = path.resolve(value.fpath);
-        const validator = ajv.compile(require(schemaPath));
+	const schema = require(schemaPath);
+	schemas[key].schema = schema
+        const validator = ajv.compile(schema);
         schemas[key].validator = validator;
+	
     }
 }
 
