@@ -11,7 +11,7 @@
     "shortTitle": input.alternateName,
     "description": input.description,
     "doiName": input.citation,
-    "keywords": $split(input.keywords,',')
+    "keywords": input.keywords
   },
   "accessibility": {
     "usage": {

@@ -3,7 +3,6 @@ const jsonata = require('jsonata');
 const cacheHandler = require('../middleware/cacheHandler');
 const { body, query, validationResult, matchedData } = require('express-validator');
 
-const {validateMetadata} = require('./validate');
 const router = express.Router();
 
 /**
@@ -176,7 +175,7 @@ router.post(
 	//if asked to validate the input, perform the validation
 	// - we have already checked if the schemas (inputModelName) as allowed/valid
 	if(validateInput){
-	    const resultInputValidation = validateMetadata(metadata,inputModelName);
+	    const resultInputValidation = cacheHandler.validateMetadata(metadata,inputModelName);
             if (resultInputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Input metadata validation failed', 
@@ -218,7 +217,7 @@ router.post(
 	};	  
     
 	if(validateOutput){
-	    const resultOutputValidation = validateMetadata(outputMetadata,outputModelName);
+	    const resultOutputValidation = cacheHandler.validateMetadata(outputMetadata,outputModelName);
             if (resultOutputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Output metadata validation failed', 
