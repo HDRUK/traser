@@ -125,10 +125,28 @@ const getAvailableSchemas = () => Object.keys(schemas);
 //update soon with output 
 const getTemplate = (output,input) => templates[output][input].template;
 
+
+const findMatchingSchema = (metadata) => {
+    const result = Object.keys(schemas).map(name => {
+	//for the schema to check, retrieve the validator
+	const input_validator =  schemas[name].validator;
+	//check if the metadata is valid 
+	let isValid = input_validator(metadata);
+	
+	const retval = {"name":name,"matches":isValid};
+	
+	return retval;
+    });
+    return result;
+}
+
+
+
 module.exports = {
     loadData,
     getTemplates,
     getTemplate,
     getSchemas,
     getAvailableSchemas,
+    findMatchingSchema
 };

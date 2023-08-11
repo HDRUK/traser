@@ -18,13 +18,13 @@ const router = express.Router();
  *         required: true
  *         schema:
  *           type: string
- *         description: Target schema name
+ *         description: Output metadata model name
  *       - in: query
  *         name: from
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
- *         description: Source schema name
+ *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
  *       - in: query
  *         name: validate_input
  *         required: false
@@ -101,8 +101,7 @@ router.post(
 	    .isIn(cacheHandler.getAvailableSchemas())
 	    .withMessage("Output is not a known schema. Options: "+cacheHandler.getAvailableSchemas()),
 	query('from')
-	    .exists()
-	    .bail()
+	    .optional()
 	    .if(query('validate_input').equals(true))
 	    .isIn(cacheHandler.getAvailableSchemas())
 	    .withMessage("Input is not a known schema. Options: "+cacheHandler.getAvailableSchemas())
@@ -123,7 +122,37 @@ router.post(
 	const validateInput = data.validate_input;
 	const validateOutput = data.validate_output;
 
-	const inputModelName = data.from;
+	let inputModelName = data.from;
+
+	if(inputModelName == null){
+	    const matchingSchemas = cacheHandler.findMatchingSchema(metadata);
+	    const matchingSchemasOnly = matchingSchemas
+		  .filter(item => item.matches === true)
+		  .map(item => item.name)
+	    
+	    if (matchingSchemasOnly.length < 1){
+		return res.status(400).json({
+                    message: 'Input metadata object matched no known schemas',
+		    details:{
+			'available_schemas':cacheHandler.getAvailableSchemas()
+		    }
+		});
+	    }
+	    else if(matchingSchemasOnly.length > 1){
+		//need to think about this in the future....
+		// - a schema.org could match a bioschema
+		// - similar things could happen with variations of the GWDM
+		// - may need to start requiring the name of the input model to be passed to the service
+		// - could implement an override i.e. 'pick_first_matching=1'
+		return res.status(400).json({
+                    message: 'Input metadata object matched multiple schemas! Something could be wrong..',
+		    details: matchingSchemas
+		});
+	    }
+	    inputModelName = matchingSchemasOnly[0];
+	}
+	
+	
 	const outputModelName = data.to;
 	
 	let template;
