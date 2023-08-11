@@ -1,13 +1,71 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const cache = require('../middleware/cacheFiles');
+const cacheHandler = require('../middleware/cacheHandler');
 
 const router = express.Router();
 
-// Load files using the cache module
-cache.loadData();
-
-
+/**
+ * @swagger
+ * /translate:
+ *   post:
+ *     summary: Perform data validation and transformation
+ *     description: Perform data validation and transformation based on specified schemas and templates.
+ *     parameters:
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *         description: The input schema name (optional).
+ *       - in: query
+ *         name: to
+ *         schema:
+ *           type: string
+ *         description: The output schema name.
+ *       - in: query
+ *         name: check_input
+ *         schema:
+ *           type: string
+ *         description: Whether to perform input validation (optional, 1 or 0).
+ *       - in: query
+ *         name: check_output
+ *         schema:
+ *           type: string
+ *         description: Whether to perform output validation (optional, 1 or 0).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               extra:
+ *                 type: object
+ *                 description: Additional data (optional).
+ *               metadata:
+ *                 type: object
+ *                 description: Metadata object for validation and transformation.
+ *                 required: true
+ *     responses:
+ *       200:
+ *         description: Successful transformation and validation.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *       400:
+ *         description: Bad request or validation failure.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Description of the error.
+ *                 details:
+ *                   type: string
+ *                   description: Additional details about the error (optional).
+ */
 router.post('/', async (req, res) => {
 
     const queryString = req.query;
@@ -40,7 +98,7 @@ router.post('/', async (req, res) => {
     }
 
     //retrieve all allowed schemas 
-    const schemas = cache.getSchemas();
+    const schemas = cacheHandler.getSchemas();
     // key names are the schemas we are going to check
     let schemas_to_check = Object.keys(schemas);
 
@@ -134,7 +192,7 @@ router.post('/', async (req, res) => {
     }
 
     //this needs to raise some errors if it cant be found
-    const template = cache.getTemplate(output_model_name,input_model_name);
+    const template = cacheHandler.getTemplate(output_model_name,input_model_name);
 
     if (template == null){
         return res.status(400).json({ 
@@ -164,81 +222,6 @@ router.post('/', async (req, res) => {
     }
 
 });
-
-router.post('/validate', async (req, res) => {
-    const queryString = req.query;
-    
-    // Define the required query parameters
-    const requieredQueries = ['from'];
-    // check that the queryString contains all these values
-    const containsAllValues = requieredQueries.every(
-        (v) => Object.keys(queryString).includes(v)
-    );
-    // Check if not, raise an error
-    if (!containsAllValues){ 
-        return res.status(400).json({ 
-            error: 'Invalid query parameters.',
-            required: requieredQueries,
-            missing: requieredQueries.filter(
-                (v) => !Object.keys(queryString).includes(v)
-            )
-        });
-    }
-
-    //retrieve all allowed schemas 
-    const schemas = cache.getSchemas();
-    const schema_to_check = queryString['from'];
-    //check the specified input model is even known/valid
-    if(!Object.keys(schemas).includes(schema_to_check)){
-        return res.status(400).json({ 
-            error: 'Not a valid schema template for "from".',
-            schema_name: schema_to_check,
-            allowed_schemas: Object.keys(schemas)
-        });
-    }
-    
-    //retrieve the posted data 
-    const metadata = req.body;
-    
-    if (typeof metadata === 'undefined') {
-        return res.status(400).json({ 
-            error: "metadata not supplied!",
-            details: 'You must post data in the form {"metadata":{}}.'
-        });
-    }
-
-    //for the schema to check, retrieve the validator
-    const input_validator =  schemas[schema_to_check].validator;
-    //check if the metadata is valid 
-    let isValid = input_validator(metadata);
-
-    if (!isValid) {
-        res.send({details: input_validator.errors});
-    }
-    else{
-	res.send({details:'all ok'})
-    }
-
-});
-
-
-
-router.get('/test', async (req, res) => {
-    const expression = jsonata(templateData['test']);
-    const source = {
-        identifier: '<id>',
-        summary: {
-            doiName: '<doi>',
-            title: '<title>',
-            abstract: '<ab>',
-        }
-    };
-    const result = await expression.evaluate(source);
-    res.send(result);
-});
-
-
-//
 
 
 module.exports = router;
