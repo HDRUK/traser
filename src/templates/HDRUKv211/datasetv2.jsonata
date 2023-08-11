@@ -26,18 +26,18 @@ input ~> |$|
       }) ~> $merge() /* each creates a [{},{}] -- merge them to get {} back*/
       ~> |$|
         {
-          "dataUseLimitation": $count(dataUseLimitation)=0 ? null : $join(dataUseLimitation,','),
-          "dataUseRequirements": $count(dataUseRequirements)=0 ? null : $join(dataUseRequirements,',')
+          "dataUseLimitation": dataUseLimitation ~> $to_str ~> $null_string,
+          "dataUseRequirements": dataUseRequirements ~> $to_str ~> $null_string
         }|,
-      "keywords": $count(keywords)=0 ? null : $join(keywords,','), /*loop for lists?*/
-      "alternateIdentifiers": $count(alternateIdentifiers)=0 ? null : $join(alternateIdentifiers,','),
-      "doiName": $length(doiName)=0 ? null : doiName
+      "keywords": keywords ~> $to_str ~> $null_string, 
+      "alternateIdentifiers": alternateIdentifiers ~> $to_str ~> $null_string,
+      "doiName": doiName ~> $to_str ~> $null_string
     }|,
     "documentation": documentation ~> |$| /*copy documentation over and transform it*/
     {
       "description": $length(description)=0 ? null : description,
-      "associatedMedia": $count(associatedMedia)=0 ? null : $join(associatedMedia,','), 
-      "isPartOf": $count(isPartOf)=0 ? null : isPartOf ~> $join(',') ~> $null_string
+      "associatedMedia": associatedMedia ~> $to_str ~> $null_string,
+      "isPartOf": isPartOf ~> $to_str ~> $null_string
     }|,
     "coverage": $each(coverage, function($v, $k) { 
       {$k: $v  ~> $to_str ~> $null_string}  /*something up with spacial coverage*/
@@ -61,6 +61,21 @@ input ~> |$|
         {$k: $v  ~> $to_str ~> $null_string}   
       }) ~> $merge()
     },
+    "enrichmentAndLinkage": enrichmentAndLinkage ~> |$| 
+    {
+      "qualifiedRelation": qualifiedRelation ~> $to_str ~> $null_string,
+      "derivation": derivation ~> $to_str ~> $null_string,
+      "tools": tools ~> $to_str ~> $null_string
+    }|,
+    "observations": observations ? [$map(input.observations,function($r) {
+      {
+        "observedNode": $uppercase($r.observedNode),
+        "measuredValue": $r.measuredValue,
+        "observationDate": $r.observationDate,
+        "measuredProperty": $r.measuredProperty,
+        "disambiguatingDescription": $r.disambiguatingDescription
+      }
+    })] : [],
     "structuralMetadata": [$map($$.extra.structuralMetadata, function($smd) { 
       {
         "name":$smd.tableName,
@@ -70,7 +85,7 @@ input ~> |$|
             "name": $smd.columnName,
             "description": $smd.columnDescription,
             "dataType": $smd.dataType,
-            "sensitive": $smd.sensitive
+            "sensitive": $smd.sensitive ~> $null_string = null ? false : $smd.sensitive
           }
         ]
       }
