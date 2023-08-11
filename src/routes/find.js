@@ -67,7 +67,7 @@ router.post(
 	//retrieve the posted data 
 	const metadata = req.body;
 
-	const result = cacheHandler.findMatchingSchema(result);
+	const result = cacheHandler.findMatchingSchema(metadata);
 	
 	res.send(result);
 	
