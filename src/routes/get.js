@@ -1,9 +1,6 @@
 const express = require('express');
-const jsonata = require('jsonata');
 const cacheHandler = require('../middleware/cacheHandler');
-
 const { query, validationResult, matchedData } = require('express-validator');
-
 const router = express.Router();
 
 /**
@@ -73,7 +70,7 @@ router.get('/map',
 
 /**
  * @swagger
- * /schema:
+ * /get/schema:
  *   get:
  *     summary: Retrieve a schema by name
  *     description: Retrieve a schema by its name from the cacheHandler.

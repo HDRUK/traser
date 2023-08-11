@@ -120,13 +120,56 @@ const loadData = async () => {
 //catch errors for if not loaded (?)
 const getTemplates = () => templates;
 const getSchemas = () => schemas;
+const getAvailableSchemas = () => Object.keys(schemas);
 
 //update soon with output 
 const getTemplate = (output,input) => templates[output][input].template;
+
+
+const findMatchingSchema = (metadata) => {
+    const result = Object.keys(schemas).map(name => {
+	//for the schema to check, retrieve the validator
+	const input_validator =  schemas[name].validator;
+	//check if the metadata is valid 
+	let isValid = input_validator(metadata);
+	
+	const retval = {"name":name,"matches":isValid};
+	
+	return retval;
+    });
+    return result;
+}
+
+
+function validateMetadata(metadata,modelName){
+
+    if(!Object.keys(schemas).includes(modelName)){
+	return [{'message':`${modelName} is not a known schema to validate!`}]
+    }
+
+    const schema = schemas[modelName];
+    const validator = schema.validator;
+    if (validator == null){
+	return [{'message':`${modelName} schemas file is undefined!`}]
+    }
+    
+    const isValid = validator(metadata);
+    if(!isValid){
+	return validator.errors;
+    }
+    else{
+	return [];
+    }
+}
+
+
 
 module.exports = {
     loadData,
     getTemplates,
     getTemplate,
     getSchemas,
+    getAvailableSchemas,
+    findMatchingSchema,
+    validateMetadata
 };

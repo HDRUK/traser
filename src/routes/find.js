@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
 
+
 /**
  * @swagger
  * /find:
@@ -65,23 +66,11 @@ router.post(
 
 	//retrieve the posted data 
 	const metadata = req.body;
+
+	const result = cacheHandler.findMatchingSchema(metadata);
 	
-	
-	const schemas = cacheHandler.getSchemas();
-	
-	const result = Object.keys(schemas).map(name => {
-	    
-	    //for the schema to check, retrieve the validator
-	    const input_validator =  schemas[name].validator;
-	    //check if the metadata is valid 
-	    let isValid = input_validator(metadata);
-	    
-	    const retval = {"name":name,"matches":isValid};
-	    
-	    return retval;
-	});
 	res.send(result);
 	
     });
 
-module.exports = router;
+module.exports = router
