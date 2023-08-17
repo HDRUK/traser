@@ -12,6 +12,17 @@ $null_string := function($x){
   $x in $nullable_values ? null : $x
 };
 
+
+$doi_matcher := /10.\d{4,9}[-._;()/:a-zA-Z0-9]+(?=[\s,/]|$)/i;
+
+$extract_doi := function($x){
+  $match($x,$doi_matcher) ~> 
+  $map(function($m){
+    $m.match
+  }) ~> 
+  $join(",")
+};
+
 input ~> |$| 
 {
     "issued": $fromMillis($toMillis(issued,'[D01]/[M01]/[Y0001]')),
@@ -31,7 +42,7 @@ input ~> |$|
         }|,
       "keywords": keywords ~> $to_str ~> $null_string, 
       "alternateIdentifiers": alternateIdentifiers ~> $to_str ~> $null_string,
-      "doiName": doiName ~> $to_str ~> $null_string
+      "doiName": doiName ~> $to_str ~> $extract_doi ~> $null_string
     }|,
     "documentation": documentation ~> |$| /*copy documentation over and transform it*/
     {
