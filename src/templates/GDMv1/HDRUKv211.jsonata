@@ -26,7 +26,7 @@ $extract_media := function($x){
     "contactPoint": input.summary.contactPoint,
     "keywords": $to_str(input.summary.keywords),
     "controlledKeywords": $to_str([$filter( $split($to_str($keywords),','), function($v) {
-      $v in extra.controlledKeywordsto
+      $v in extra.controlledKeywords
     })]),
     "datasetType": extra.datasetType,
     "description": input.documentation.description,
