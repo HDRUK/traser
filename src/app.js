@@ -38,8 +38,8 @@ cacheHandler.loadData();
 app.use(helmet()); // https://expressjs.com/en/advanced/best-practice-security.html#use-helmet
 app.use(logger('dev')); //may want to remove/change this for production (?)
 //setup express.js
-app.use(express.json({limit: '50mb'}));
-app.use(express.urlencoded({extended: false, limit: '50mb'}));
+app.use(express.json({limit: '512mb'}));
+app.use(express.urlencoded({extended: false, limit: '512mb'}));
 app.use(cookieParser()); //not sure if this is needed?
 
 // Temporary loading up swagger API for auto documentations
