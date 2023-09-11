@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traser
+spec:
+  selector:
+    matchLabels:
+      app: traser
+  template:
+    metadata:
+      labels:
+        app: traser
+  containers:
+    - name: traser
+      image: hdruk/traser:latest
+      ports:
+        - containerPort: 3001

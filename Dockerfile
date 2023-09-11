@@ -14,7 +14,7 @@ RUN npm install
 COPY ./src ./src
 
 # Expose the API port
-EXPOSE 3000
+EXPOSE 3001
 
 # Start the API server in dev
 CMD ["npm","run","dev"]
