@@ -1,19 +1,8 @@
 const request = require('supertest');
 const app = require('../app');
 
-const fs = require('fs');
-const path = require('path');
+const {sampleMetadata} = require('../utils/examples');
 
-const sampleMetadata = {};
-const sampleMetadataDir = path.join(__dirname, './data'); 
-
-fs.readdirSync(sampleMetadataDir).forEach((file) => {
-  if (file.endsWith('.json')) {
-    const fileName = path.parse(file).name;
-    const filePath = path.join(sampleMetadataDir, file);
-    sampleMetadata[fileName] = require(filePath);
-  }
-});
 
 
 function delay(time) {
