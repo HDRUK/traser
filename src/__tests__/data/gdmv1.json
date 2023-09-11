@@ -1,6 +1,6 @@
 {
     "required": {
-        "gatewayId": "1234",
+        "gatewayId": "https://web.www.healthdatagateway.org/dataset/a7ddefbd-31d9-4703-a738-256e4689f76a",
         "gatewayPid": "5124f2",
         "issued": "2020-08-05T14:35:59Z",
         "modified": "2021-01-28T14:15:46Z",

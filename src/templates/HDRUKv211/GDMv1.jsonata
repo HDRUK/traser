@@ -45,7 +45,7 @@
           "dataProcessor": input.accessibility.access.dataProcessor,
           "accessRights": input.accessibility.access.accessRights  ~> $split(','),
           "accessService": input.accessibility.access.accessService,
-          "accessRequestCost": input.accessibility.access.accessRequestCost  ~> $split(',')
+          "accessRequestCost": input.accessibility.access.accessRequestCost  
         }
     },
     "enrichmentAndLinkage": {
