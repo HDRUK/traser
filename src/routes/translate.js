@@ -174,7 +174,7 @@ router.post(
 		
 	//if asked to validate the input, perform the validation
 	// - we have already checked if the schemas (inputModelName) as allowed/valid
-	if(validateInput){
+	if(validateInput){	    
 	    const resultInputValidation = cacheHandler.validateMetadata(metadata,inputModelName);
             if (resultInputValidation.length>0) {
 		return res.status(400).json({ 

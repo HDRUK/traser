@@ -34,6 +34,7 @@ const app = express();
 //   (in a similar way to how it works in dev localy)
 cacheHandler.loadData();
 
+
 //additional setups
 app.use(helmet()); // https://expressjs.com/en/advanced/best-practice-security.html#use-helmet
 app.use(logger('dev')); //may want to remove/change this for production (?)
