@@ -2,20 +2,70 @@
 
 $nullable_values := [""," ","Not Applicable","Not Available",
                      "Not applicable",
-                     "NOT AVAILABLE","NOT APPLICABLE"];
+                     "NOT AVAILABLE","NOT APPLICABLE",[null]];
+
+$deliveryLeadTime_values := [
+                  "LESS 1 WEEK",
+                  "1-2 WEEKS",
+                  "2-4 WEEKS",
+                  "1-2 MONTHS",
+                  "2-6 MONTHS",
+                  "MORE 6 MONTHS",
+                  "VARIABLE",
+                  "NOT APPLICABLE",
+                  "OTHER"
+];
 
 $to_str := function($x){
-  $type($x)='array' ? $join($x,",") : $x
+  $type($x)='array' ? (
+      $map(
+          $x,
+          function($item){
+              $type($item)='array' ? $to_str($item) : $item
+          }
+      ) ~> $filter(function($x) { $x != null and $x != "" }) ~> $join(",")
+  ) : $x
 };
 
 $null_string := function($x){
-  $x in $nullable_values ? null : $x
+  ($x in $nullable_values or $type($x) != "string" or $not($exists($x)) ) ? null : $x
+};
+
+$fixAccrualPeriodicityValues := {
+  '1 Month Cycle':"MONTHLY",
+  'IN PROGRESS':"OTHER"
+};
+
+$fixAccrualPeriodicity := function($x){
+  $x in $keys($fixAccrualPeriodicityValues) ? $lookup($fixAccrualPeriodicityValues,$x): $x
+};
+
+$fixTimeLag := function($x){
+  $x = '6 MONTHS PLUS' ? "MORE 6 MONTHS" : $x
+};
+
+$fixDeliveryLeadTime := function($x){
+  $not($x in deliveryLeadTime_values) ? null : $x
+};
+
+$doi_matcher := /10.\d{4,9}[-._;()/:a-zA-Z0-9]+(?=[\s,/]|$)/i;
+
+$extract_doi := function($x){
+  $match($x,$doi_matcher) ~> 
+  $map(function($m){
+    $m.match
+  }) ~> 
+  $join(",") 
+};
+
+$get_date := function($x){
+  $type($x) = "number" ? $fromMillis($x) : $fromMillis($toMillis($x,'[D01]/[M01]/[Y0001]'))
 };
 
 input ~> |$| 
 {
-    "issued": $fromMillis($toMillis(issued,'[D01]/[M01]/[Y0001]')),
-    "modified": $fromMillis($toMillis(modified,'[D01]/[M01]/[Y0001]')),
+    "issued": $get_date(issued),
+    "modified": $get_date(modified),
     "revisions": revisions,
     "version": version ~> $null_string,
     "summary": summary ~> |$| /*copy summary over and transform it*/
@@ -26,18 +76,18 @@ input ~> |$|
       }) ~> $merge() /* each creates a [{},{}] -- merge them to get {} back*/
       ~> |$|
         {
-          "dataUseLimitation": $count(dataUseLimitation)=0 ? null : $join(dataUseLimitation,','),
-          "dataUseRequirements": $count(dataUseRequirements)=0 ? null : $join(dataUseRequirements,',')
+          "dataUseLimitation": dataUseLimitation ~> $to_str ~> $null_string,
+          "dataUseRequirements": dataUseRequirements ~> $to_str ~> $null_string
         }|,
-      "keywords": $count(keywords)=0 ? null : $join(keywords,','), /*loop for lists?*/
-      "alternateIdentifiers": $count(alternateIdentifiers)=0 ? null : $join(alternateIdentifiers,','),
-      "doiName": $length(doiName)=0 ? null : doiName
+      "keywords": keywords ~> $to_str ~> $null_string, 
+      "alternateIdentifiers": alternateIdentifiers ~> $to_str ~> $null_string,
+      "doiName": doiName ~> $to_str ~>  $extract_doi ~> $null_string 
     }|,
     "documentation": documentation ~> |$| /*copy documentation over and transform it*/
     {
       "description": $length(description)=0 ? null : description,
-      "associatedMedia": $count(associatedMedia)=0 ? null : $join(associatedMedia,','), 
-      "isPartOf": $count(isPartOf)=0 ? null : isPartOf ~> $join(',') ~> $null_string
+      "associatedMedia": associatedMedia ~> $to_str ~> $null_string,
+      "isPartOf": isPartOf ~> $to_str ~> $null_string
     }|,
     "coverage": $each(coverage, function($v, $k) { 
       {$k: $v  ~> $to_str ~> $null_string}  /*something up with spacial coverage*/
@@ -48,7 +98,11 @@ input ~> |$|
       }) ~> $merge(),
       "temporal": $each(provenance.temporal, function($v, $k) { 
         {$k: $v  ~> $to_str ~> $null_string}    
-      }) ~> $merge()
+      }) ~> $merge() ~> |$|
+         {
+          "accrualPeriodicity": accrualPeriodicity ~> $fixAccrualPeriodicity,
+          "timeLag": timeLag ~> $fixTimeLag 
+         }|
     },
     "accessibility": {
       "usage": $each(accessibility.usage, function($v, $k) { 
@@ -56,12 +110,31 @@ input ~> |$|
       }) ~> $merge(),
       "access": $each(accessibility.access, function($v, $k) { /*isReferencedBy should be doi */ 
         {$k: $v ~> $to_str ~> $null_string}  
-      }) ~> $merge(),
+        }) ~> $merge() ~> |$|
+          {
+          "deliveryLeadTime": deliveryLeadTime ~> $fixDeliveryLeadTime
+          }|,
       "formatAndStandards": $each(accessibility.formatAndStandards, function($v, $k) { 
         {$k: $v  ~> $to_str ~> $null_string}   
       }) ~> $merge()
     },
+    "enrichmentAndLinkage": enrichmentAndLinkage ~> |$| 
+    {
+      "qualifiedRelation": qualifiedRelation ~> $to_str ~> $null_string,
+      "derivation": derivation ~> $to_str ~> $null_string,
+      "tools": tools ~> $to_str ~> $null_string
+    }|,
+    "observations": observations ? [$map(input.observations,function($r) {
+      {
+        "observedNode": $uppercase($r.observedNode),
+        "measuredValue": $r.measuredValue,
+        "observationDate": $r.observationDate,
+        "measuredProperty": $r.measuredProperty,
+        "disambiguatingDescription": $r.disambiguatingDescription
+      }
+    })] : [],
     "structuralMetadata": [$map($$.extra.structuralMetadata, function($smd) { 
+      $count($keys($smd)) > 0 ? 
       {
         "name":$smd.tableName,
         "description":$smd.tableDescription,
@@ -70,11 +143,11 @@ input ~> |$|
             "name": $smd.columnName,
             "description": $smd.columnDescription,
             "dataType": $smd.dataType,
-            "sensitive": $smd.sensitive
+            "sensitive": $smd.sensitive ~> $null_string = null ? false : $smd.sensitive
           }
         ]
-      }
-    })] 
+      } : null
+    })] ~> $filter(function($x) { $x != null })
 },
 ['datasetv2.identifier','datasetv2.issued','datasetv2.modified'] 
 |

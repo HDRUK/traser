@@ -1,11 +1,11 @@
 (
 /*function to enforce any arrays to be strings */
 $to_str := function($x){
-  $type($x)='array' ? $join($x,',') : $x
+  $type($x)="array" ? $join($x,',') : $x
 };
 
 $extract_media := function($x){
-  $type($x)='array' ? $join($x.url, ',') : $x
+  $type($x)="array" ? $join($x.url, ',') : $x
 };
 
 {
@@ -40,7 +40,7 @@ $extract_media := function($x){
   },
   "coverage": {
     "pathway": input.coverage.pathway, 
-    "physicalSampleAvailability": $join(input.coverage.physicalSampleAvailability,' '),
+    "physicalSampleAvailability": input.coverage.physicalSampleAvailability ~> $to_str,
     "spatial": $to_str(input.coverage.spatial),
     "followup": input.coverage.followup,
     "typicalAgeRange": input.coverage.typicalAgeRange /* $split('-') into mix/max */
@@ -65,7 +65,7 @@ $extract_media := function($x){
       "jurisdiction": $to_str(input.accessibility.access.jurisdiction),
       "dataController": input.accessibility.access.dataController,
       "dataProcessor": input.accessibility.access.dataProcessor,
-      "accessRights": $join(input.accessibility.access.accessRights, ' '),
+      "accessRights": input.accessibility.access.accessRights ~> $to_str,
       "accessService": input.accessibility.access.accessService,
       "accessRequestCost": $to_str(input.accessibility.access.accessRequestCost) /* may need to be fixed */
     },
@@ -85,7 +85,7 @@ $extract_media := function($x){
     "IsGeneratedUsing": extra.IsGeneratedUsing, /* enrichmentAndLinkage */ 
     "associatedMedia": $extract_media(input.documentation.associatedMedia),
     "dataUses": extra.dataUses,
-    "isReferenceIn": input.accessibility.usage.isReferencedBy ? $join(input.accessibility.usage.isReferencedBy, ','): null,
+    "isReferenceIn": input.accessibility.usage.isReferencedBy ~> $to_str,
     "tools": $to_str(input.enrichmentAndLinkage.tools),
     "datasetLinkage":{
       "isDerivedFrom":$to_str(input.enrichmentAndLinkage.derivation),
