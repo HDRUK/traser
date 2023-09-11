@@ -3,7 +3,6 @@ const app = require('../app');
 
 const {sampleMetadata} = require('../utils/examples');
 
-
 const translate = async (metadata,inputModel,outputModel,validateInput='1',validateOutput='1',extra=null) => {
     const requestBody = {
 	metadata: metadata

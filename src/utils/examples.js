@@ -12,4 +12,6 @@ fs.readdirSync(sampleMetadataDir).forEach((file) => {
   }
 });
 
-module.exports = sampleMetadata
+module.exports = {
+    sampleMetadata:sampleMetadata
+}
