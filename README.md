@@ -32,7 +32,7 @@ npm run dev
 ### Working example
 
 ```
-curl --location 'http://localhost:3000/translate?to=gdmv1' \
+curl --location 'http://localhost:3001/translate?to=gdmv1' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "extra": {
