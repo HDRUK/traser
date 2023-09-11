@@ -4,28 +4,6 @@ const { body, param, query, validationResult, matchedData } = require('express-v
 const router = express.Router();
 
 
-function validateMetadata(metadata,modelName){
-    const schemas = cacheHandler.getSchemas();
-
-    if(!Object.keys(schemas).includes(modelName)){
-	return [{'message':`${modelName} is not a known schema to validate!`}]
-    }
-
-    const schema = schemas[modelName];
-    const validator = schema.validator;
-    if (validator == null){
-	return [{'message':`${modelName} schemas file is undefined!`}]
-    }
-    
-    const isValid = validator(metadata);
-    if(!isValid){
-	return validator.errors;
-    }
-    else{
-	return [];
-    }
-}
-
 router.post(
     '/',
     [
@@ -54,7 +32,7 @@ router.post(
 	const {metadata} = data;
 	const modelName =  data.model_name;
 
- 	const metadataValidationResult = validateMetadata(metadata,modelName);
+ 	const metadataValidationResult = cacheHandler.validateMetadata(metadata,modelName);
 	if (metadataValidationResult.length>0) {
 	    return res.status(400).json({ 
 		error: 'metadata validation failed', 
@@ -88,7 +66,4 @@ router.get(
     }
 );
 
-module.exports = {
-    validateRouter: router,
-    validateMetadata: validateMetadata
-}
+module.exports = router
