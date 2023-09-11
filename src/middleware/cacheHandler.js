@@ -87,16 +87,16 @@ const loadTemplates = async () => {
 
 let schemas = {
     hdrukv211:{
-        fpath: './src/schemas/hdruk_2_1_1.json',
+        fpath: './src/schemas/metadata/hdruk/2.1.1/schema.json',
         validator: null
     },
     gdmv1:{
-        fpath: './src/schemas/gdmv1.json',
+        fpath: './src/schemas/metadata/gwdm/1.0/schema.json',
         validator: null
     },
     schemaorg:{
         //fpath: './src/schemas/schema.org/dataset.json',
-        fpath: './src/schemas/schema.org/supermodel.json',
+        fpath: './src/schemas/metadata/schema.org/supermodel.json',
         validator: null
     }
 }
