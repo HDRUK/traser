@@ -1,4 +1,5 @@
-const Ajv = require("ajv");
+const Ajv = require("ajv").default;
+const addFormats = require('ajv-formats').default;
 const fs = require('fs');
 const path = require('path');
 
@@ -6,10 +7,11 @@ const ajv = new Ajv(
     { 
         strict: false,
         strictSchema: false,
+	strictTypes:false,
         allErrors: false,
         coerceTypes: true
     });
-
+addFormats(ajv);
 
 
 // Function to load template file
