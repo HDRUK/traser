@@ -36,6 +36,7 @@
         "morgan": "^1.10.0",
         "node-cache": "^5.1.2",
         "nodemon": "^2.0.22",
+        "redis": "^4.6.8",
         "supertest": "^6.3.3",
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.0"

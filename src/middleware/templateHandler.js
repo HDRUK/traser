@@ -1,0 +1,88 @@
+const NodeCache = require( "node-cache" );
+const cache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
+
+const fs = require('fs');
+const path = require('path');
+
+let templates = {
+    gdmv1: {
+        hdrukv211:{
+            fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
+            template:null
+        },
+        schemaorg:{
+            fpath:'./src/templates/GDMv1/SchemaOrg.jsonata',
+            template:null
+        }
+    },
+    hdrukv211:{
+        datasetv2:{
+            fpath:'./src/templates/HDRUKv211/datasetv2.jsonata',
+            template:null 
+        },
+	gdmv1:{
+            fpath:'./src/templates/HDRUKv211/GDMv1.jsonata',
+            template:null 
+        }
+
+    },
+    schemaorg:{
+        gdmv1:{
+            fpath:'./src/templates/SchemaOrg/GDMv1.jsonata',
+            template:null
+        }
+    }
+    /*gdmv0: {
+        test:{
+            fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
+            template:null
+        }
+    }*/
+}
+
+// Function to load template file
+function loadTemplate(filePath) {
+    const templatePath = path.resolve(filePath);
+    return new Promise((resolve, reject) => {
+        fs.readFile(templatePath, 'utf8', (err, data) => {
+        if (err) {
+            reject(err);
+        } else {
+            resolve(data);
+        }
+        });
+    });
+}
+
+
+//load templates asynchronously
+//bit messy? bit of an overkill?
+const loadTemplates = async () => {
+    const updatedTemplates = {};
+    const promises = Object.entries(templates)
+    .map(async ([oname, inputs]) => {
+        await Promise.all(
+            Object.entries(inputs).map( async ([iname,obj]) => {
+                return loadTemplate(obj.fpath)
+                .then((template) => {
+                    if(!Object.keys(updatedTemplates).includes(oname)){
+                        updatedTemplates[oname] = {}
+                    }
+                    updatedTemplates[oname][iname] = { ...obj, template };
+                });
+            })
+        );
+    });
+    await Promise.all(promises);
+    Object.assign(templates, updatedTemplates); 
+};
+
+
+const getTemplates = () => templates;
+const getTemplate = (output,input) => templates[output][input].template;
+
+
+module.exports = {
+    getTemplates,
+    getTemplate
+};

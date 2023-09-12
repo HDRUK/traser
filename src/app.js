@@ -21,18 +21,9 @@ const validateRouter = require('./routes/validate');
 
 //load middleware
 const errorHandler = require('./middleware/errorHandler');
-const cacheHandler = require('./middleware/cacheHandler');
 
 //create the app
 const app = express();
-
-//call the cacheHandler to load all files
-// - this will be revisted when we implement file caching properly
-// - i.e. if files are changed, will have to call .load() again
-// Notes:
-// - can we deploy is prod so that the app watches for file changes?
-//   (in a similar way to how it works in dev localy)
-cacheHandler.loadData();
 
 
 //additional setups

@@ -1,6 +1,7 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const cacheHandler = require('../middleware/cacheHandler');
+const {getTemplates} = require('../middleware/templateHandler');
+const {getSchemas} = require('../middleware/schemaHandler');
 
 const { query, validationResult, matchedData } = require('express-validator');
 
@@ -11,7 +12,7 @@ const router = express.Router();
  * /list/templates:
  *   get:
  *     summary: Retrieve available template mappings
- *     description: Retrieve available template mappings from the cacheHandler.
+ *     description: Retrieve available template mappings from the current cache
  *     responses:
  *       200:
  *         description: List of available template mappings.
@@ -48,7 +49,7 @@ const router = express.Router();
 router.get(
     '/templates',
     async (req, res) => {
-	const templates = cacheHandler.getTemplates();
+	const templates = getTemplates();
 	let retval = Object.keys(templates).map(k => {
 	    const o = {'to':k,'from':Object.keys(templates[k])};
 	    return o;
@@ -63,7 +64,7 @@ router.get(
  * /list/schemas:
  *   get:
  *     summary: Retrieve available schema names
- *     description: Retrieve available schema names from the cacheHandler.
+ *     description: Retrieve available schema names from the cache.
  *     responses:
  *       200:
  *         description: List of available schema names.
@@ -88,7 +89,7 @@ router.get(
 router.get(
     '/schemas',
     async (req, res) => {
-	const schemas = Object.keys(cacheHandler.getSchemas());
+	const schemas = Object.keys(getSchemas());
 	res.send(schemas);
     }
 )

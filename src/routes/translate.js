@@ -1,6 +1,7 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const cacheHandler = require('../middleware/cacheHandler');
+const {getSchema,getAvailableSchemas,findMatchingSchemas,validateMetadata} = require('../middleware/schemaHandler');
+const {getTemplate} = require('../middleware/templateHandler');
 const { body, query, validationResult, matchedData } = require('express-validator');
 
 const router = express.Router();
@@ -97,13 +98,13 @@ router.post(
 	    .exists()
 	    .bail()
 	    .if(query('validate_output').equals(true))
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Output is not a known schema. Options: "+cacheHandler.getAvailableSchemas()),
+	    .isIn(getAvailableSchemas())
+	    .withMessage("Output is not a known schema. Options: "+getAvailableSchemas()),
 	query('from')
 	    .optional()
 	    .if(query('validate_input').equals(true))
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Input is not a known schema. Options: "+cacheHandler.getAvailableSchemas())
+	    .isIn(getAvailableSchemas())
+	    .withMessage("Input is not a known schema. Options: "+getAvailableSchemas())
     ],
     async (req, res) => {
 
@@ -124,7 +125,7 @@ router.post(
 	let inputModelName = data.from;
 
 	if(inputModelName == null){
-	    const matchingSchemas = cacheHandler.findMatchingSchema(metadata);
+	    const matchingSchemas = findMatchingSchema(metadata);
 	    const matchingSchemasOnly = matchingSchemas
 		  .filter(item => item.matches === true)
 		  .map(item => item.name)
@@ -133,7 +134,7 @@ router.post(
 		return res.status(400).json({
                     message: 'Input metadata object matched no known schemas',
 		    details:{
-			'available_schemas':cacheHandler.getAvailableSchemas()
+			'available_schemas':getAvailableSchemas()
 		    }
 		});
 	    }
@@ -156,7 +157,7 @@ router.post(
 	
 	let template;
 	try{
-	    template = cacheHandler.getTemplate(outputModelName,inputModelName);
+	    template = getTemplate(outputModelName,inputModelName);
 	}
 	catch(error){
 	    return res.status(400).json({
@@ -175,7 +176,7 @@ router.post(
 	//if asked to validate the input, perform the validation
 	// - we have already checked if the schemas (inputModelName) as allowed/valid
 	if(validateInput){	    
-	    const resultInputValidation = cacheHandler.validateMetadata(metadata,inputModelName);
+	    const resultInputValidation = validateMetadata(metadata,inputModelName);
             if (resultInputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Input metadata validation failed', 
@@ -217,7 +218,7 @@ router.post(
 	};	  
     
 	if(validateOutput){
-	    const resultOutputValidation = cacheHandler.validateMetadata(outputMetadata,outputModelName);
+	    const resultOutputValidation = validateMetadata(outputMetadata,outputModelName);
             if (resultOutputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Output metadata validation failed', 

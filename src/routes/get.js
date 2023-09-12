@@ -1,5 +1,6 @@
 const express = require('express');
-const cacheHandler = require('../middleware/cacheHandler');
+const {getSchemas} = require('../middleware/schemaHandler');
+const {getTemplate} = require('../middleware/templateHandler');
 const { query, validationResult, matchedData } = require('express-validator');
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
  * /get/map:
  *   get:
  *     summary: Retrieve a template or mapping file
- *     description: Retrieve a template or mapping file from the cacheHandler.
+ *     description: Retrieve a template or mapping file from the current cache
  *     parameters:
  *       - in: query
  *         name: to
@@ -51,7 +52,7 @@ router.get('/map',
 	const output_model_name = queryString['to'];
 	const input_model_name = queryString['from'];
 	
-	const template = cacheHandler.getTemplate(output_model_name,input_model_name);
+	const template = getTemplate(output_model_name,input_model_name);
 	if (template == null){
 	    return res.status(400).json({ 
 		error: 'Template file is null!', 
@@ -73,7 +74,7 @@ router.get('/map',
  * /get/schema:
  *   get:
  *     summary: Retrieve a schema by name
- *     description: Retrieve a schema by its name from the cacheHandler.
+ *     description: Retrieve a schema by its name from the cache.
  *     parameters:
  *       - in: query
  *         name: name
@@ -130,7 +131,7 @@ router.get(
 	const schema_name = queryString['name'];
 
 	try {
-	    const schema = cacheHandler.getSchemas()[schema_name].schema;
+	    const schema = getSchemas()[schema_name].schema;
 	    res.send({
 		"name":schema_name,
 		"schema":schema
