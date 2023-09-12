@@ -11,8 +11,8 @@
         "doiName": input.summary.doiName,
         "title": input.summary.shortTitle,
         "publisher": {
-            "name": input.publisher.summary.publisherName,
-            "identifier": input.publisher.summary.publisherGatewayId,
+            "name": input.summary.publisher.publisherName,
+            "identifier": input.summary.publisher.publisherGatewayId,
             "contactPoint": extra.publisher.contactPoint
         }
     },
@@ -39,13 +39,13 @@
     },
     "accessibility": {
         "access": {
-          "deliveryLeadTime": input.accessibility.access.deliveryLeadTime  ~> $split(','),
+          "deliveryLeadTime": input.accessibility.access.deliveryLeadTime,
           "jurisdiction": input.accessibility.access.jurisdiction  ~> $split(','),
           "dataController": input.accessibility.access.dataController,
           "dataProcessor": input.accessibility.access.dataProcessor,
           "accessRights": input.accessibility.access.accessRights  ~> $split(','),
           "accessService": input.accessibility.access.accessService,
-          "accessRequestCost": input.accessibility.access.accessRequestCost  ~> $split(',')
+          "accessRequestCost": input.accessibility.access.accessRequestCost  
         }
     },
     "enrichmentAndLinkage": {
