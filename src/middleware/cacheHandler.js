@@ -3,16 +3,11 @@ const addFormats = require('ajv-formats').default;
 const fs = require('fs');
 const path = require('path');
 
-
-async function loadSchema(uri) {
-  const res = await request.json(uri)
-  if (res.statusCode >= 400) throw new Error("Loading error: " + res.statusCode)
-  return res.body
-}
+const {testLoadSchemas} = require('./schemaHandler');
+testLoadSchemas();
 
 const ajv = new Ajv(
     {
-	loadSchema: loadSchema,
         strict: false,
         strictSchema: false,
 	strictTypes:false,
@@ -23,12 +18,6 @@ const ajv = new Ajv(
 //needed to remove warnings about dates and date-times
 addFormats(ajv);
 
-ajv.compileAsync(schema).then(function (validate) {
-  const valid = validate(data)
-  // ...
-})
-
-    
 
 // Function to load template file
 function loadTemplate(filePath) {
