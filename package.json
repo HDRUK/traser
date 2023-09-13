@@ -10,7 +10,7 @@
         "build": "npm ci --only=production",
         "test": "jest",
         "test:watch": "jest --watchAll",
-	"test:gh": "jest --detectOpenHandles --forceExit",
+	"test:gh": "jest  --forceExit",
         "test:detect": "jest --detectOpenHandles ",
         "lint": "eslint .",
         "lint:fix": "eslint --fix ."
