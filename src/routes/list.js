@@ -1,6 +1,6 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const {getTemplates} = require('../middleware/templateHandler');
+const {getAvailableTemplates} = require('../middleware/templateHandler');
 const {getAvailableSchemas} = require('../middleware/schemaHandler');
 
 const { query, validationResult, matchedData } = require('express-validator');
@@ -13,28 +13,19 @@ const router = express.Router();
  *   get:
  *     summary: Retrieve available template mappings
  *     description: Retrieve available template mappings from the current cache
- *     responses:
- *       200:
- *         description: List of available template mappings.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 available:
- *                   type: array
- *                   description: List of available template mappings.
- *                   items:
- *                     type: object
- *                     properties:
- *                       to:
- *                         type: string
- *                         description: The target schema.
- *                       from:
- *                         type: array
- *                         description: List of source schemas.
- *                         items:
- *                           type: string
+ *  200:
+ *     description: Successful response with a list of templates.
+ *     content:
+ *       application/json:
+ *         example:
+ *           - output_model: HDRUK
+ *             output_version: 2.1.2
+ *             input_model: datasetv2
+ *             input_version: default
+ *           - output_model: HDRUK
+ *             output_version: 2.1.2
+ *             input_model: GWDM
+ *             input_version: 1.0
  *       500:
  *         description: Internal server error.
  *         content:
@@ -49,13 +40,8 @@ const router = express.Router();
 router.get(
     '/templates',
     async (req, res) => {
-	const templates = getTemplates();
-	let retval = Object.keys(templates).map(k => {
-	    const o = {'to':k,'from':Object.keys(templates[k])};
-	    return o;
-	});
-			       
-	res.send({'available':retval});
+	const templates = await getAvailableTemplates();
+	res.send(templates);
     }
 )
 

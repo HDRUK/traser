@@ -1,4 +1,4 @@
-const {redisClient} = require('./cacheHandler');
+const {redisClient,getFromCacheOrUri} = require('./cacheHandler');
 
 const Ajv = require("ajv").default;
 const addFormats = require('ajv-formats').default;
@@ -25,36 +25,12 @@ addFormats(ajv);
 
 const getSchema = async(schemaName,schemaVersion) => {
     const schemaUri = getSchemaUri(schemaName,schemaVersion);
-    
-    let schema = await redisClient.get(schemaUri);
-    if (schema === null) {
-	try {
-	    // Fetch schema from a remote URL (e.g., GitHub repository).
-	    console.log(`Getting ${schemaUri}`);
-	    const response = await axios.get(schemaUri);
-	    schema = response.data;
-	    await redisClient.set(schemaUri, JSON.stringify(schema));
-	}
-	catch (error) {
-	    throw (`Cannot find or retrieve a schema for ${schemaName} (version: ${schemaVersion}) `);
-	}
-    }
-    else{
-	schema = JSON.parse(schema);
-    }
+    const schema = await getFromCacheOrUri(schemaUri,schemaUri);
     return schema;
 }
 
 const getAvailableSchemas = async () => {
-    let available = await redisClient.get('schemas:available');
-    if (available === null){
-	const response = await axios.get(schemataUri+'available.json');
-	available = response.data;
-	redisClient.set('schemas:available',JSON.stringify(available));
-    }
-    else{
-	available = JSON.parse(available);
-    }
+    const available = await getFromCacheOrUri('schemas:available',schemataUri+'available.json');
     return available;
 };
 
@@ -79,12 +55,16 @@ const validateMetadata = (metadata,modelName) => {
 }
 
 
-const callGetAvailableSchemas = (value, { req }) => {
-  const availableSchemas = await getAvailableSchemas(); 
-  if (!availableSchemas.includes(value)) {
+const callGetAvailableSchemas = async (value, { req }) => {
+    const availableSchemas = await getAvailableSchemas();
+    console.log(availableSchemas);
+    console.log(value);
+    console.log(req.query);
+    /*if (!availableSchemas.includes(value)) {
       throw new Error(`${value} is not a known schema. Options: ${availableSchemas.join(', ')}`);
-  }
-    return true;
+      }*/
+    return false;
+    
 };
 
     

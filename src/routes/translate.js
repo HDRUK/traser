@@ -23,17 +23,29 @@ const router = express.Router();
  *     description: Translates metadata known to HDRUK from one schema into another with optional input and output validation.
  *     parameters:
  *       - in: query
- *         name: to
+ *         name: output_schema
  *         required: true
  *         schema:
  *           type: string
  *         description: Output metadata model name
  *       - in: query
- *         name: from
+ *         name: output_version
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Output metadata model version
+ *       - in: query
+ *         name: output_model
  *         required: false
  *         schema:
  *           type: string
  *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
+ *       - in: query
+ *         name: output_version
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Input metadata model version. If unknown, the route will attempt to determine which schema version the metadata matches and use that as the input metadata model version
  *       - in: query
  *         name: validate_input
  *         required: false
@@ -103,15 +115,19 @@ router.post(
 		return value === '1'
 	    })
 	    .withMessage('Needs to be boolean (either 1 or 0)'),
-	query('to')
+	query('output_schema')
+	    .exists()
+	    .bail(),
+	    //.if(query('validate_output').equals(true))
+	query('output_version')
 	    .exists()
 	    .bail()
-	    .if(query('validate_output').equals(true))
-	    .custom(callGetAvailableSchemas),
-	query('from')
+	    .custom((value,{req}) => callGetAvailableSchemas(value,{req})),
+	query('input_schema')
+	    .optional(),
+	query('input_version')
 	    .optional()
-	    .if(query('validate_input').equals(true))
-	    .custom(callGetAvailableSchemas)
+	    //.custom(callGetAvailableSchemas)
     ],
     async (req, res) => {
 
@@ -129,7 +145,7 @@ router.post(
 	const validateInput = data.validate_input;
 	const validateOutput = data.validate_output;
 
-	let inputModelName = data.from;
+	let inputModelName = data.input_schema;
 
 	if(inputModelName == null){
 	    const matchingSchemas = findMatchingSchema(metadata);
@@ -160,7 +176,7 @@ router.post(
 	}
 	
 	
-	const outputModelName = data.to;
+	const outputModelName = data.output_schema;
 	
 	let template;
 	try{
