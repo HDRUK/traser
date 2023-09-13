@@ -31,12 +31,6 @@ jobs:
     - name: NPM install
       run: "npm install"
 
-    - name: Start Redis server
-      run: redis-server
-
-    - name: Wait for Redis to start 
-      run: sleep 10
-      
     # - name: Run eslint
     #   run: "npm run lint"
 
