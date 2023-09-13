@@ -86,7 +86,6 @@ module.exports = {
     getSchema,
     getSchemaValidator,
     getAvailableSchemas,
-    callGetAvailableSchemas,
     validateMetadata,
     findMatchingSchemas
 };
