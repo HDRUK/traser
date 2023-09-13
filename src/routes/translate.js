@@ -117,16 +117,13 @@ router.post(
 	query('output_schema')
 	    .exists()
 	    .bail(),
-	    //.if(query('validate_output').equals(true))
 	query('output_version')
 	    .exists()
 	    .bail(),
-	    //.custom((value,{req}) => callGetAvailableSchemas(value,{req})),
 	query('input_schema')
 	    .optional(),
 	query('input_version')
 	    .optional()
-	    //.custom(callGetAvailableSchemas)
     ],
     async (req, res) => {
 
@@ -147,17 +144,19 @@ router.post(
 	let inputModelName = data.input_schema;
 	let inputModelVersion = data.input_version;
 
+	const availableSchemas = await getAvailableSchemas();
+
+	
 	if(inputModelName == null || inputModelVersion == null){
-	    const matchingSchemas = findMatchingSchema(metadata);
+	    const matchingSchemas = await findMatchingSchemas(metadata);
 	    const matchingSchemasOnly = matchingSchemas
 		  .filter(item => item.matches === true)
-		  .map(item => item.name)
 	    
 	    if (matchingSchemasOnly.length < 1){
 		return res.status(400).json({
                     message: 'Input metadata object matched no known schemas',
 		    details:{
-			'available_schemas':getAvailableSchemas()
+			'available_schemas':availableSchema
 		    }
 		});
 	    }
@@ -172,7 +171,8 @@ router.post(
 		    details: matchingSchemas
 		});
 	    }
-	    inputModelName = matchingSchemasOnly[0];
+	    inputModelName = matchingSchemasOnly[0].name;
+	    inputModelVersion = matchingSchemasOnly[0].version;
 	}
 	
 	
