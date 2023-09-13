@@ -8,7 +8,7 @@ About..
 ### Install the package
 
 ```
-git clone --recursive https://github.com/HDRUK/traser.git
+git clone https://github.com/HDRUK/traser.git
 cd traser
 ```
 
