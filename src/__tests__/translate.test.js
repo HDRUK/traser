@@ -5,7 +5,7 @@ const {sampleMetadata} = require('../utils/examples');
 
 const translate = async (metadata,
 			 inputModel,inputModelVersion,
-			 ouputModel,outputModelVersion,
+			 outputModel,outputModelVersion,
 			 validateInput='1',validateOutput='1',extra=null) => {
     const requestBody = {
 	metadata: metadata
@@ -16,8 +16,8 @@ const translate = async (metadata,
 
     const response = await request(app)
 	  .post('/translate')
-	  .query({ output: outputModel, output_version: outputModelVersion,
-		   input: inputModel, input_version: inputModelVersion
+	  .query({ output_schema: outputModel, output_version: outputModelVersion,
+		   input_schema: inputModel, input_version: inputModelVersion,
 		   validate_input: validateInput, validate_output: validateOutput})
 	  .send(requestBody);
     
@@ -42,7 +42,7 @@ beforeAll((done) => {
 describe('POST /translate', () => {
 
     
-    describe('POST /translate?output_model=SchemaOrg&input_model=GWDM&input_version=1.0', () => {
+    describe('POST /translate?output_schema=SchemaOrg&input_schema=GWDM&input_version=1.0', () => {
 	it('should return 200 if gdmv1 metadata translated to schema.org', async () => {
 	    const response = await translate(sampleMetadata.gdmv1,
 					     'GWDM',
@@ -54,7 +54,7 @@ describe('POST /translate', () => {
 	});
     });
 
-    describe('POST /translate?input_model=HDRUK&input_version=2.1.2&output_model=GWDM&output_version=1.0', () => {
+    describe('POST /translate?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=1.0', () => {
 	it('should return 200 if schema.org metadata translated to GDMV1', async () => {
 	    const response = await translate(sampleMetadata.schemaorg,
 					     'SchemaOrg',
@@ -66,13 +66,13 @@ describe('POST /translate', () => {
 	});
     });
 
-    describe('POST /translate?input_model=HDRUK&input_version=2.1.2&output_model=GWDM&output_version=1.0', () => {
+    describe('POST /translate?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=1.0', () => {
 	it('should return 200 if HDRUK 2.1.1 metadata translated to GDMV1', async () => {
 	    const response = await translate(sampleMetadata.hdrukv211,
 					     'HDRUK',
-					     '2.1.2'
+					     '2.1.2',
 					     'GWDM',
-					     '1.0'
+					     '1.0',
 					     '1',
 					     '1',
 					     sampleMetadata.extra_hdrukv211
@@ -81,7 +81,7 @@ describe('POST /translate', () => {
 	});
     });
 
-    describe('POST /translate?output_model=HDRUK&output_version=2.1.2&input_model=GWDM&input_version=1.0', () => {
+    describe('POST /translate?output_schema=HDRUK&output_version=2.1.2&input_schema=GWDM&input_version=1.0', () => {
 	it('should return 200 if  metadata GDMV1 translated to HDRUK 2.1.2', async () => {
 	    const response = await translate(sampleMetadata.gdmv1,
 					     'GWDM',
@@ -97,4 +97,8 @@ describe('POST /translate', () => {
     });
 
     
+});
+
+afterAll(async () => {
+    await app.shutdown(); // Properly close the Redis connection
 });

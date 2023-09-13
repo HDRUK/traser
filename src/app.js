@@ -30,7 +30,6 @@ const validateRouter = require('./routes/validate');
 //create the app
 const app = express();
 
-
 //additional setups
 app.use(helmet()); // https://expressjs.com/en/advanced/best-practice-security.html#use-helmet
 app.use(logger('dev')); //may want to remove/change this for production (?)
@@ -83,6 +82,13 @@ const flushCache = () => {
 
 //hard coded to flush every 30 minutes (for now)
 const cronFlushJob = nodeCron.schedule('*/30 * * * *', flushCache);
+
+app.shutdown = async () => {
+    await redisClient.quit();
+    console.log('shutdown redis');
+    cronFlushJob.stop();
+    console.log('stopped cron jobs');
+}
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
