@@ -1,5 +1,9 @@
 const express = require('express');
-const {getAvailableSchemas, getSchemas, validateMetadata} = require('../middleware/schemaHandler');
+const {
+    callGetAvailableSchemas,
+    getSchemas,
+    validateMetadata
+} = require('../middleware/schemaHandler');
 const { body, param, query, validationResult, matchedData } = require('express-validator');
 const router = express.Router();
 
@@ -14,8 +18,7 @@ router.post(
 	query(['model_name'])
 	    .exists()
 	    .bail()
-	    .isIn(getAvailableSchemas())
-	    .withMessage("Not a known schema. Options: "+getAvailableSchemas())
+	    .custom(callGetAvailableSchemas)
     ],
     async (req, res) => {
 
@@ -54,8 +57,7 @@ router.get(
 	param('model')
 	    .exists()
 	    .bail()
-	    .isIn(getAvailableSchemas())
-	    .withMessage("Not a known schema. Options: "+getAvailableSchemas())
+	    .custom(callGetAvailableSchemas)
     ],
     async (req, res) => {
 

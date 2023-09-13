@@ -1,7 +1,7 @@
 const express = require('express');
 const jsonata = require('jsonata');
 const {getTemplates} = require('../middleware/templateHandler');
-const {getSchemas} = require('../middleware/schemaHandler');
+const {getAvailableSchemas} = require('../middleware/schemaHandler');
 
 const { query, validationResult, matchedData } = require('express-validator');
 
@@ -89,7 +89,7 @@ router.get(
 router.get(
     '/schemas',
     async (req, res) => {
-	const schemas = Object.keys(getSchemas());
+	const schemas = await getAvailableSchemas();
 	res.send(schemas);
     }
 )

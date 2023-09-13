@@ -11,6 +11,12 @@ const logger = require('morgan');
 const helmet = require('helmet');
 const path = require('path');
 
+
+//load middleware
+const errorHandler = require('./middleware/errorHandler');
+const {redisClient} = require('./middleware/cacheHandler');
+redisClient.connect().then(() => console.log('reddis client connected'));
+
 //load API routes
 const indexRouter = require('./routes/index');
 const translateRouter = require('./routes/translate');
@@ -18,9 +24,6 @@ const getRouter = require('./routes/get');
 const findRouter = require('./routes/find');
 const listRouter = require('./routes/list');
 const validateRouter = require('./routes/validate');
-
-//load middleware
-const errorHandler = require('./middleware/errorHandler');
 
 //create the app
 const app = express();

@@ -1,39 +1,15 @@
-const NodeCache = require( "node-cache" );
-const schemaCache = new NodeCache({ stdTTL: 100, checkperiod: 120 });
+const {redisClient} = require('./cacheHandler');
 
 const Ajv = require("ajv").default;
 const addFormats = require('ajv-formats').default;
 
 const axios = require('axios');
 
-let schemaLocations = {
-    //hdrukv211: 'https://raw.githubusercontent.com/HDRUK/schemata-2/master/metadata/hdruk/2.1.1/schema.json',
-    hdrukv212: 'https://raw.githubusercontent.com/HDRUK/schemata-2/master/metadata/hdruk/2.1.2/schema.json',
-    gdmv1: 'https://raw.githubusercontent.com/HDRUK/schemata-2/master/metadata/gwdm/1.0/schema.json',
-    //schemaorg: 'https://raw.githubusercontent.com/HDRUK/schemata-2/master/metadata/schema.org/supermodel.json'
-}
+const schemataUri = 'https://raw.githubusercontent.com/HDRUK/schemata-2/master/'
 
-async function fetchAndCacheSchema(schemaName, schemaUrl) {
-    let schema = schemaCache.get(schemaName);
-    if (!schema) {
-	try {
-	    if (schemaUrl.startsWith('http')) {
-		// Fetch schema from a remote URL (e.g., GitHub repository).
-		const response = await axios.get(schemaUrl);
-		schema = response.data;
-	    }
-	    else {
-		console.error('something wrong... need to fetch schema from uri');
-	    }
-	    schemaCache.set(schemaName, schema);
-	}
-	catch (error) {
-	    console.error(`Error fetching or reading ${schemaName}: ${error.message}`);
-	}
-    }
-    return true;
+const getSchemaUri = (model,version) => {
+    return `{schemataUri}/${model}/${version}/schema.json`
 }
-
 
 const ajv = new Ajv(
     {
@@ -47,34 +23,39 @@ const ajv = new Ajv(
 //needed to remove warnings about dates and date-times
 addFormats(ajv);
 
-const getSchema = async(schemaName) => {
-    const schemaUri = schemaLocations[schemaName];
-    let schema = schemaCache.get(schemaName);
-    if (!schema) {
+const getSchema = async(schemaName,schemaVersion) => {
+    const schemaUri = getSchemaUri(schemaName,schemaVersion);
+    
+    let schema = await redisClient.get(schemaUri);
+    if (schema === null) {
 	try {
-	    if (schemaUri.startsWith('http')) {
-		// Fetch schema from a remote URL (e.g., GitHub repository).
-		console.log(`Getting ${schemaUri}`);
-		const response = await axios.get(schemaUri);
-		schema = response.data;
-	    }
-	    else {
-		console.error('something wrong... need to fetch schema from uri');
-	    }
-	    schemaCache.set(schemaName, schema);
+	    // Fetch schema from a remote URL (e.g., GitHub repository).
+	    console.log(`Getting ${schemaUri}`);
+	    const response = await axios.get(schemaUri);
+	    schema = response.data;
+	    await redisClient.set(schemaUri, JSON.stringify(schema));
 	}
 	catch (error) {
-	    console.error(`Error fetching or reading ${schemaName}: ${error.message}`);
+	    throw (`Cannot find or retrieve a schema for ${schemaName} (version: ${schemaVersion}) `);
 	}
     }
     else{
-	console.log(`already got ${schemaUri}`);
+	schema = JSON.parse(schema);
     }
     return schema;
 }
 
-const getAvailableSchemas = () => {
-    return schemaCache.keys();
+const getAvailableSchemas = async () => {
+    let available = await redisClient.get('schemas:available');
+    if (available === null){
+	const response = await axios.get(schemataUri+'available.json');
+	available = response.data;
+	redisClient.set('schemas:available',JSON.stringify(available));
+    }
+    else{
+	available = JSON.parse(available);
+    }
+    return available;
 };
 
 const validateMetadata = (metadata,modelName) => {
@@ -98,8 +79,17 @@ const validateMetadata = (metadata,modelName) => {
 }
 
 
+const callGetAvailableSchemas = (value, { req }) => {
+  const availableSchemas = await getAvailableSchemas(); 
+  if (!availableSchemas.includes(value)) {
+      throw new Error(`${value} is not a known schema. Options: ${availableSchemas.join(', ')}`);
+  }
+    return true;
+};
+
     
 module.exports = {
     getSchema,
-    getAvailableSchemas
+    getAvailableSchemas,
+    callGetAvailableSchemas
 };

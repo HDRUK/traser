@@ -1,10 +1,19 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const {getSchema,getAvailableSchemas,findMatchingSchemas,validateMetadata} = require('../middleware/schemaHandler');
+const {
+    getSchema,
+    callGetAvailableSchemas,
+    getAvailableSchemas,
+    findMatchingSchemas,
+    validateMetadata
+} = require('../middleware/schemaHandler');
+
 const {getTemplate} = require('../middleware/templateHandler');
 const { body, query, validationResult, matchedData } = require('express-validator');
 
 const router = express.Router();
+
+
 
 /**
  * @swagger
@@ -98,13 +107,11 @@ router.post(
 	    .exists()
 	    .bail()
 	    .if(query('validate_output').equals(true))
-	    .isIn(getAvailableSchemas())
-	    .withMessage("Output is not a known schema. Options: "+getAvailableSchemas()),
+	    .custom(callGetAvailableSchemas),
 	query('from')
 	    .optional()
 	    .if(query('validate_input').equals(true))
-	    .isIn(getAvailableSchemas())
-	    .withMessage("Input is not a known schema. Options: "+getAvailableSchemas())
+	    .custom(callGetAvailableSchemas)
     ],
     async (req, res) => {
 
