@@ -81,16 +81,6 @@ const findMatchingSchemas = async(metadata) => {
     return retval;
 }
 
-const callGetAvailableSchemas = async (value, { req }) => {
-    const availableSchemas = await getAvailableSchemas();
-    /*if (!availableSchemas.includes(value)) {
-      throw new Error(`${value} is not a known schema. Options: ${availableSchemas.join(', ')}`);
-      }*/
-    return true;
-    
-};
-
-    
 module.exports = {
     ajv,
     getSchema,

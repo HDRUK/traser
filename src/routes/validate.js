@@ -1,6 +1,5 @@
 const express = require('express');
 const {
-    callGetAvailableSchemas,
     getSchemas,
     validateMetadata
 } = require('../middleware/schemaHandler');
@@ -18,7 +17,6 @@ router.post(
 	query(['model_name'])
 	    .exists()
 	    .bail()
-	    .custom(callGetAvailableSchemas)
     ],
     async (req, res) => {
 
@@ -57,7 +55,6 @@ router.get(
 	param('model')
 	    .exists()
 	    .bail()
-	    .custom(callGetAvailableSchemas)
     ],
     async (req, res) => {
 

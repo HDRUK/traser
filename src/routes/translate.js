@@ -1,7 +1,6 @@
 const express = require('express');
 const jsonata = require('jsonata');
 const {
-    callGetAvailableSchemas,
     getAvailableSchemas,
     findMatchingSchemas,
     validateMetadata
