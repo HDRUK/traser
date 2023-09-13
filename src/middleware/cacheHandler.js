@@ -9,6 +9,7 @@ const redisClient = redis.createClient({
 const getFromCacheOrUri = async (key,uri) => {
     let data = await redisClient.get(key);
     if (data === null){
+	//need to implement catching errors...
 	const response = await axios.get(uri)
 	data = response.data;
 	redisClient.set(uri,JSON.stringify(data));

@@ -13,22 +13,23 @@ const router = express.Router();
  *   get:
  *     summary: Retrieve available template mappings
  *     description: Retrieve available template mappings from the current cache
- *  200:
- *     description: Successful response with a list of templates.
- *     content:
- *       application/json:
- *         example:
- *           - output_model: HDRUK
- *             output_version: 2.1.2
- *             input_model: datasetv2
- *             input_version: default
- *           - output_model: HDRUK
- *             output_version: 2.1.2
- *             input_model: GWDM
- *             input_version: 1.0
- *       500:
- *         description: Internal server error.
- *         content:
+ *   responses:
+ *     200:
+ *        description: Successful response with a list of templates.
+ *        content:
+ *           application/json:
+ *              example:
+ *                 - output_model: HDRUK
+ *                   output_version: 2.1.2
+ *                   input_model: datasetv2
+ *                   input_version: default
+ *                 - output_model: HDRUK
+ *                   output_version: 2.1.2
+ *                   input_model: GWDM
+ *                   input_version: 1.0
+ *     500:
+ *        description: Internal server error.
+ *        content:
  *           application/json:
  *             schema:
  *               type: object

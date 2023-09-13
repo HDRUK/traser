@@ -5,10 +5,10 @@ const addFormats = require('ajv-formats').default;
 
 const axios = require('axios');
 
-const schemataUri = 'https://raw.githubusercontent.com/HDRUK/schemata-2/master/'
+const schemataUri = 'https://raw.githubusercontent.com/HDRUK/schemata-2/master'
 
 const getSchemaUri = (model,version) => {
-    return `{schemataUri}/${model}/${version}/schema.json`
+    return `${schemataUri}/metadata/${model}/${version}/schema.json`
 }
 
 const ajv = new Ajv(
@@ -29,18 +29,24 @@ const getSchema = async(schemaName,schemaVersion) => {
     return schema;
 }
 
+const getSchemaValidator = async(schemaName,schemaVersion) => {
+    const name = `${schemaName}:${schemaVersion}`
+    let validator = ajv.getSchema(name);
+    if(validator == null){
+	const schema = await getSchema(schemaName,schemaVersion);
+	ajv.addSchema(schema, name);
+	validator = ajv.getSchema(name);
+    }
+    return validator;
+}
+
 const getAvailableSchemas = async () => {
-    const available = await getFromCacheOrUri('schemas:available',schemataUri+'available.json');
+    const available = await getFromCacheOrUri('schemas:available',schemataUri+'/available.json');
     return available;
 };
 
-const validateMetadata = (metadata,modelName) => {
-    if(!Object.keys(schemas).includes(modelName)){
-	return [{'message':`${modelName} is not a known schema to validate!`}]
-    }
-
-    const schema = schemas[modelName];
-    const validator = schema.validator;
+const validateMetadata = async (metadata,modelName,modelVersion) => {
+    const validator = await getSchemaValidator(modelName,modelVersion);
     if (validator == null){
 	return [{'message':`${modelName} schemas file is undefined!`}]
     }
@@ -57,19 +63,19 @@ const validateMetadata = (metadata,modelName) => {
 
 const callGetAvailableSchemas = async (value, { req }) => {
     const availableSchemas = await getAvailableSchemas();
-    console.log(availableSchemas);
-    console.log(value);
-    console.log(req.query);
     /*if (!availableSchemas.includes(value)) {
       throw new Error(`${value} is not a known schema. Options: ${availableSchemas.join(', ')}`);
       }*/
-    return false;
+    return true;
     
 };
 
     
 module.exports = {
+    ajv,
     getSchema,
+    getSchemaValidator,
     getAvailableSchemas,
-    callGetAvailableSchemas
+    callGetAvailableSchemas,
+    validateMetadata
 };

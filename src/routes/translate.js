@@ -1,7 +1,6 @@
 const express = require('express');
 const jsonata = require('jsonata');
 const {
-    getSchema,
     callGetAvailableSchemas,
     getAvailableSchemas,
     findMatchingSchemas,
@@ -146,8 +145,9 @@ router.post(
 	const validateOutput = data.validate_output;
 
 	let inputModelName = data.input_schema;
+	let inputModelVersion = data.input_version;
 
-	if(inputModelName == null){
+	if(inputModelName == null || inputModelVersion == null){
 	    const matchingSchemas = findMatchingSchema(metadata);
 	    const matchingSchemasOnly = matchingSchemas
 		  .filter(item => item.matches === true)
@@ -177,15 +177,15 @@ router.post(
 	
 	
 	const outputModelName = data.output_schema;
-	
+	const outputModelVersion = data.output_version;
 	let template;
 	try{
-	    template = getTemplate(outputModelName,inputModelName);
+	    template = await getTemplate(inputModelName,inputModelVersion,outputModelName,outputModelVersion);
 	}
 	catch(error){
 	    return res.status(400).json({
 		error: 'Translation not found',
-		details:`Translation for ${inputModelName} to ${outputModelName} is not implemented`
+		details:`Translation for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} is not implemented`
 	    });				
 	}
 	
@@ -195,11 +195,13 @@ router.post(
 		details:`Failed to load translation map for ${inputModelName} to ${outputModelName}`
 	    });
 	}
+
 		
 	//if asked to validate the input, perform the validation
 	// - we have already checked if the schemas (inputModelName) as allowed/valid
 	if(validateInput){	    
-	    const resultInputValidation = validateMetadata(metadata,inputModelName);
+	    const resultInputValidation = await validateMetadata(metadata,inputModelName,inputModelVersion);
+
             if (resultInputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Input metadata validation failed', 
@@ -241,7 +243,7 @@ router.post(
 	};	  
     
 	if(validateOutput){
-	    const resultOutputValidation = validateMetadata(outputMetadata,outputModelName);
+	    const resultOutputValidation = await validateMetadata(outputMetadata,outputModelName,outputModelVersion);
             if (resultOutputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Output metadata validation failed', 

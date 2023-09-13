@@ -11,10 +11,12 @@ const logger = require('morgan');
 const helmet = require('helmet');
 const path = require('path');
 
+const nodeCron = require('node-cron');
 
 //load middleware
 const errorHandler = require('./middleware/errorHandler');
 const {redisClient} = require('./middleware/cacheHandler');
+const {ajv} = require('./middleware/schemaHandler');
 redisClient.connect().then(() => console.log('reddis client connected'));
 
 //load API routes
@@ -67,6 +69,20 @@ app.use('/validate', validateRouter);
 
 // Serve static files from the "public" folder
 app.use('/files',express.static(path.join(__dirname,'public')));
+
+const flushCache = () => {
+    console.log('Flushing cache...');
+    redisClient.flushAll()
+	.then(res => console.log('Flushed Redis ==> ',res));
+    const availableSchemas = Object.keys(ajv.schemas);
+    availableSchemas.forEach((schemaKey) => {
+	redisClient.del(schemaKey);
+	console.log('Deleted ==> ',schemaKey);
+    });
+}
+
+//hard coded to flush every 30 minutes (for now)
+const cronFlushJob = nodeCron.schedule('*/30 * * * *', flushCache);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
