@@ -60,6 +60,26 @@ const validateMetadata = async (metadata,modelName,modelVersion) => {
     }
 }
 
+const findMatchingSchemas = async(metadata) => {
+    const schemas = await getAvailableSchemas();
+    let retval = [];
+    for (const [schema, versions] of Object.entries(schemas)) {
+	for( const version of versions){
+
+	    try{
+		const validator = await getSchemaValidator(schema,version);
+		const isValid = validator(metadata);
+		const outcome = {"name":schema,"version":version,"matches":isValid};
+		retval.push(outcome);
+	    }
+	    catch(error){
+		console.log(error);
+	    }
+
+	}
+    }
+    return retval;
+}
 
 const callGetAvailableSchemas = async (value, { req }) => {
     const availableSchemas = await getAvailableSchemas();
@@ -77,5 +97,6 @@ module.exports = {
     getSchemaValidator,
     getAvailableSchemas,
     callGetAvailableSchemas,
-    validateMetadata
+    validateMetadata,
+    findMatchingSchemas
 };

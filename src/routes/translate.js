@@ -120,8 +120,8 @@ router.post(
 	    //.if(query('validate_output').equals(true))
 	query('output_version')
 	    .exists()
-	    .bail()
-	    .custom((value,{req}) => callGetAvailableSchemas(value,{req})),
+	    .bail(),
+	    //.custom((value,{req}) => callGetAvailableSchemas(value,{req})),
 	query('input_schema')
 	    .optional(),
 	query('input_version')

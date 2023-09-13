@@ -67,7 +67,7 @@ router.post(
 	//retrieve the posted data 
 	const metadata = req.body;
 
-	const result = findMatchingSchema(metadata);
+	const result = await findMatchingSchemas(metadata);
 	
 	res.send(result);
 	

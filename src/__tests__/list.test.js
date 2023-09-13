@@ -18,11 +18,17 @@ describe('GET /list', () => {
 	    const response = await request(app)
 		  .get('/list/schemas');
 	    expect(response.status).toBe(200);
+
+	    const allSchemas = Object.keys(response.body);
 	    //minimal support...
-	    expect(response.body).toContain('schemaorg');
-	    expect(response.body).toContain('hdrukv211');
-	    expect(response.body).toContain('gdmv1');
+	    expect(allSchemas).toContain('SchemaOrg');
+	    expect(allSchemas).toContain('HDRUK');
+	    expect(allSchemas).toContain('GWDM');
 	});
     });
     
+});
+
+afterAll(async () => {
+    await app.shutdown(); // Properly close the Redis connection
 });
