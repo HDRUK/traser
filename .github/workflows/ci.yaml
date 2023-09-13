@@ -13,6 +13,12 @@ jobs:
   testing:
     timeout-minutes: 10
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -24,7 +30,13 @@ jobs:
       
     - name: NPM install
       run: "npm install"
-     
+
+    - name: Start Redis server
+      run: redis-server
+
+    - name: Wait for Redis to start 
+      run: sleep 10
+      
     # - name: Run eslint
     #   run: "npm run lint"
 
