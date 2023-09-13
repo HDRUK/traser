@@ -3,7 +3,10 @@ const app = require('../app');
 
 const {sampleMetadata} = require('../utils/examples');
 
-const translate = async (metadata,inputModel,outputModel,validateInput='1',validateOutput='1',extra=null) => {
+const translate = async (metadata,
+			 inputModel,inputModelVersion,
+			 ouputModel,outputModelVersion,
+			 validateInput='1',validateOutput='1',extra=null) => {
     const requestBody = {
 	metadata: metadata
     }
@@ -13,7 +16,9 @@ const translate = async (metadata,inputModel,outputModel,validateInput='1',valid
 
     const response = await request(app)
 	  .post('/translate')
-	  .query({ to: outputModel, from: inputModel, validate_input: validateInput, validate_output: validateOutput})
+	  .query({ output: outputModel, output_version: outputModelVersion,
+		   input: inputModel, input_version: inputModelVersion
+		   validate_input: validateInput, validate_output: validateOutput})
 	  .send(requestBody);
     
     return response;
@@ -37,31 +42,37 @@ beforeAll((done) => {
 describe('POST /translate', () => {
 
     
-    describe('POST /translate?to=schemaorg&from=gdmv1 ', () => {
+    describe('POST /translate?output_model=SchemaOrg&input_model=GWDM&input_version=1.0', () => {
 	it('should return 200 if gdmv1 metadata translated to schema.org', async () => {
 	    const response = await translate(sampleMetadata.gdmv1,
-					     'gdmv1',
-					     'schemaorg'
+					     'GWDM',
+					     '1.0',
+					     'SchemaOrg',
+					     'default'
 					    );
 	    expect(response.status).toBe(200);
 	});
     });
 
-    describe('POST /translate?to=gdmv1&from=schemaorg ', () => {
+    describe('POST /translate?input_model=HDRUK&input_version=2.1.2&output_model=GWDM&output_version=1.0', () => {
 	it('should return 200 if schema.org metadata translated to GDMV1', async () => {
 	    const response = await translate(sampleMetadata.schemaorg,
-					     'schemaorg',
-					     'gdmv1'
+					     'SchemaOrg',
+					     'default',
+					     'GWDM',
+					     '1.0'
 					    );
 	    expect(response.status).toBe(200);
 	});
     });
 
-    describe('POST /translate?to=gdmv1&from=hdrukv211', () => {
+    describe('POST /translate?input_model=HDRUK&input_version=2.1.2&output_model=GWDM&output_version=1.0', () => {
 	it('should return 200 if HDRUK 2.1.1 metadata translated to GDMV1', async () => {
 	    const response = await translate(sampleMetadata.hdrukv211,
-					     'hdrukv211',
-					     'gdmv1',
+					     'HDRUK',
+					     '2.1.2'
+					     'GWDM',
+					     '1.0'
 					     '1',
 					     '1',
 					     sampleMetadata.extra_hdrukv211
@@ -70,11 +81,13 @@ describe('POST /translate', () => {
 	});
     });
 
-    describe('POST /translate?to=hdrukv211&from=gdmv1', () => {
-	it('should return 200 if  metadata GDMV1 translated to HDRUK 2.1.1', async () => {
+    describe('POST /translate?output_model=HDRUK&output_version=2.1.2&input_model=GWDM&input_version=1.0', () => {
+	it('should return 200 if  metadata GDMV1 translated to HDRUK 2.1.2', async () => {
 	    const response = await translate(sampleMetadata.gdmv1,
-					     'gdmv1',
-					     'hdrukv211',
+					     'GWDM',
+					     '1.0',
+					     'HDRUK',
+					     '2.1.2',
 					     '1',
 					     '1',
 					     sampleMetadata.extra_gdmv1
