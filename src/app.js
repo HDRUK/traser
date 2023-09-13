@@ -75,7 +75,7 @@ const flushCache = () => {
 	.then(res => console.log('Flushed Redis ==> ',res));
     const availableSchemas = Object.keys(ajv.schemas);
     availableSchemas.forEach((schemaKey) => {
-	redisClient.del(schemaKey);
+	adj.removeSchema(schemaKey);
 	console.log('Deleted ==> ',schemaKey);
     });
 }
