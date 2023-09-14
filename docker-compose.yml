@@ -1,6 +1,10 @@
 version: '3'
 services:
   app:
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_REFRESH_CRONTAB="*/30 * * * *"
     build:
       context: .
       dockerfile: Dockerfile
