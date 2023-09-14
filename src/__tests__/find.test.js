@@ -21,25 +21,30 @@ beforeAll((done) => {
 
 describe('POST /find', () => {
 
-    
     describe('POST /find ', () => {
-	it('should find that the metadata is the gdmv1', async () => {
+	it('should find that the metadata is the GWDM 1.0', async () => {
 	    const response = await request(app)
 		  .post('/find')
 		  .send(sampleMetadata.gdmv1);
-	    const found = response.body.find(i => i.name === 'gdmv1').matches;
+	    const found = response.body.find(i => i.name === 'GWDM' && i.version === '1.0').matches;
 	    expect(found).toBe(true);
 	});
     });
 
     describe('POST /find ', () => {
-	it('should find that the metadata is the hdruk 2.1.1', async () => {
+	it('should find that the metadata is the HDRUK 2.1.2', async () => {
 	    const response = await request(app)
 		  .post('/find')
 		  .send(sampleMetadata.hdrukv211);
-	    const found = response.body.find(i => i.name === 'hdrukv211').matches;
+
+	    const found = response.body.find(i => i.name === 'HDRUK' && i.version === '2.1.2' ).matches;
 	    expect(found).toBe(true);
 	});
     });
     
+});
+
+
+afterAll(async () => {
+    await app.shutdown(); 
 });

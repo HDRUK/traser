@@ -1,6 +1,7 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const cacheHandler = require('../middleware/cacheHandler');
+const {getAvailableTemplates} = require('../middleware/templateHandler');
+const {getAvailableSchemas} = require('../middleware/schemaHandler');
 
 const { query, validationResult, matchedData } = require('express-validator');
 
@@ -11,32 +12,24 @@ const router = express.Router();
  * /list/templates:
  *   get:
  *     summary: Retrieve available template mappings
- *     description: Retrieve available template mappings from the cacheHandler.
- *     responses:
- *       200:
- *         description: List of available template mappings.
- *         content:
+ *     description: Retrieve available template mappings from the current cache
+ *   responses:
+ *     200:
+ *        description: Successful response with a list of templates.
+ *        content:
  *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 available:
- *                   type: array
- *                   description: List of available template mappings.
- *                   items:
- *                     type: object
- *                     properties:
- *                       to:
- *                         type: string
- *                         description: The target schema.
- *                       from:
- *                         type: array
- *                         description: List of source schemas.
- *                         items:
- *                           type: string
- *       500:
- *         description: Internal server error.
- *         content:
+ *              example:
+ *                 - output_model: HDRUK
+ *                   output_version: 2.1.2
+ *                   input_model: datasetv2
+ *                   input_version: default
+ *                 - output_model: HDRUK
+ *                   output_version: 2.1.2
+ *                   input_model: GWDM
+ *                   input_version: 1.0
+ *     500:
+ *        description: Internal server error.
+ *        content:
  *           application/json:
  *             schema:
  *               type: object
@@ -48,13 +41,8 @@ const router = express.Router();
 router.get(
     '/templates',
     async (req, res) => {
-	const templates = cacheHandler.getTemplates();
-	let retval = Object.keys(templates).map(k => {
-	    const o = {'to':k,'from':Object.keys(templates[k])};
-	    return o;
-	});
-			       
-	res.send({'available':retval});
+	const templates = await getAvailableTemplates();
+	res.send(templates);
     }
 )
 
@@ -63,7 +51,7 @@ router.get(
  * /list/schemas:
  *   get:
  *     summary: Retrieve available schema names
- *     description: Retrieve available schema names from the cacheHandler.
+ *     description: Retrieve available schema names from the cache.
  *     responses:
  *       200:
  *         description: List of available schema names.
@@ -88,7 +76,7 @@ router.get(
 router.get(
     '/schemas',
     async (req, res) => {
-	const schemas = Object.keys(cacheHandler.getSchemas());
+	const schemas = await getAvailableSchemas();
 	res.send(schemas);
     }
 )

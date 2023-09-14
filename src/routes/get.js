@@ -1,5 +1,6 @@
 const express = require('express');
-const cacheHandler = require('../middleware/cacheHandler');
+const {getSchema} = require('../middleware/schemaHandler');
+const {getTemplate} = require('../middleware/templateHandler');
 const { query, validationResult, matchedData } = require('express-validator');
 const router = express.Router();
 
@@ -8,7 +9,7 @@ const router = express.Router();
  * /get/map:
  *   get:
  *     summary: Retrieve a template or mapping file
- *     description: Retrieve a template or mapping file from the cacheHandler.
+ *     description: Retrieve a template or mapping file from the current cache
  *     parameters:
  *       - in: query
  *         name: to
@@ -51,7 +52,7 @@ router.get('/map',
 	const output_model_name = queryString['to'];
 	const input_model_name = queryString['from'];
 	
-	const template = cacheHandler.getTemplate(output_model_name,input_model_name);
+	const template = getTemplate(output_model_name,input_model_name);
 	if (template == null){
 	    return res.status(400).json({ 
 		error: 'Template file is null!', 
@@ -73,7 +74,7 @@ router.get('/map',
  * /get/schema:
  *   get:
  *     summary: Retrieve a schema by name
- *     description: Retrieve a schema by its name from the cacheHandler.
+ *     description: Retrieve a schema by its name from the cache.
  *     parameters:
  *       - in: query
  *         name: name
@@ -81,6 +82,11 @@ router.get('/map',
  *           type: string
  *         required: true
  *         description: The name of the schema to retrieve.
+ *       - in: query
+ *         name: version
+ *         schema:
+ *           type: string
+ *         description: The version of the schema to retrieve
  *     responses:
  *       200:
  *         description: Schema retrieved successfully.
@@ -113,10 +119,11 @@ router.get('/map',
 router.get(
     '/schema',
     [
-        query('name').notEmpty().escape()
+        query('name').notEmpty().escape(),
+        query('version').optional()
     ],
     async (req, res) => {
-	
+
 	// possibly repeating code here..
 	const result = validationResult(req);
 	if (!result.isEmpty()) {
@@ -127,18 +134,27 @@ router.get(
 	}
 
 	const queryString = matchedData(req);
-	const schema_name = queryString['name'];
+	const schemaModelName = queryString['name'];
+	const schemaModelVersion = queryString['version'] || "";
 
 	try {
-	    const schema = cacheHandler.getSchemas()[schema_name].schema;
-	    res.send({
-		"name":schema_name,
-		"schema":schema
-	    });
+	    const schema = getSchema(schemaModelName,schemaModelVersion)
+		  .then(schema => {
+		      res.send({
+			  "name":schemaModelName,
+			  "version":schemaModelVersion,
+			  "schema":schema
+		      });
+		  })
+		  .catch(error => {
+		      res.status(400).json({
+			  error: error
+		      });
+		  });
 
 	} catch (error){
 	    res.status(400).json({
-		error: `Bad Request: failed to get schema for ${schema_name}`
+		error: `Bad Request: failed to get schema for ${schemaModelName}`
 	    });
 	}
 

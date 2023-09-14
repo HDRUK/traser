@@ -2,24 +2,28 @@ const request = require('supertest');
 const app = require('../app');
 
 describe('GET /get/schema', () => {
-    describe('GET /get/schema?name=hdrukv211', () => {
-	it('should return 200 if hdrukv211 schema is retrieved', async () => {
+    describe('GET /get/schema?name=HDRUK', () => {
+	it('should return 200 if HDRUK 2.1.2 schema is retrieved', async () => {
 
 	    const response = await request(app)
 		  .get('/get/schema')
-		  .query({ name:'hdrukv211'});
+		  .query({ name:'HDRUK', version: '2.1.2'});
 	    expect(response.status).toBe(200);
 	});
     });
 
-    describe('GET /get/schema?name=gdmv1', () => {
-	it('should return 200 if gdmv1 schema is retrieved', async () => {
+    describe('GET /get/schema?name=GWDM', () => {
+	it('should return 200 if GWDM 1.0 schema is retrieved', async () => {
 
 	    const response = await request(app)
 		  .get('/get/schema')
-		  .query({ name:'gdmv1'});
+		  .query({ name:'GWDM', version: '1.0'});
 	    expect(response.status).toBe(200);
 	});
     });
     
+});
+
+afterAll(async () => {
+    await app.shutdown(); // Properly close the Redis connection
 });

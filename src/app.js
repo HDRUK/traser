@@ -11,6 +11,15 @@ const logger = require('morgan');
 const helmet = require('helmet');
 const path = require('path');
 
+require('dotenv').config();
+const nodeCron = require('node-cron');
+
+//load middleware
+const errorHandler = require('./middleware/errorHandler');
+const {redisClient} = require('./middleware/cacheHandler');
+const {ajv} = require('./middleware/schemaHandler');
+redisClient.connect().then(() => console.log('reddis client connected'));
+
 //load API routes
 const indexRouter = require('./routes/index');
 const translateRouter = require('./routes/translate');
@@ -19,21 +28,8 @@ const findRouter = require('./routes/find');
 const listRouter = require('./routes/list');
 const validateRouter = require('./routes/validate');
 
-//load middleware
-const errorHandler = require('./middleware/errorHandler');
-const cacheHandler = require('./middleware/cacheHandler');
-
 //create the app
 const app = express();
-
-//call the cacheHandler to load all files
-// - this will be revisted when we implement file caching properly
-// - i.e. if files are changed, will have to call .load() again
-// Notes:
-// - can we deploy is prod so that the app watches for file changes?
-//   (in a similar way to how it works in dev localy)
-cacheHandler.loadData();
-
 
 //additional setups
 app.use(helmet()); // https://expressjs.com/en/advanced/best-practice-security.html#use-helmet
@@ -73,6 +69,26 @@ app.use('/validate', validateRouter);
 
 // Serve static files from the "public" folder
 app.use('/files',express.static(path.join(__dirname,'public')));
+
+const flushCache = () => {
+    console.log('Flushing cache...');
+    redisClient.flushAll()
+	.then(res => console.log('Flushed Redis ==> ',res));
+    const availableSchemas = Object.keys(ajv.schemas);
+    availableSchemas.forEach((schemaKey) => {
+	adj.removeSchema(schemaKey);
+	console.log('Deleted ==> ',schemaKey);
+    });
+}
+
+const cronFlushJob = nodeCron.schedule(process.env.CACHE_REFRESH_CRONTAB, flushCache);
+
+app.shutdown = async () => {
+    await redisClient.quit();
+    console.log('shutdown redis');
+    cronFlushJob.stop();
+    console.log('stopped cron jobs');
+}
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

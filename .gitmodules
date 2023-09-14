@@ -1,3 +1,0 @@
-[submodule "src/schemas"]
-	path = src/schemas
-	url = https://github.com/HDRUK/schemata-2.git

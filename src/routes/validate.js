@@ -1,5 +1,8 @@
 const express = require('express');
-const cacheHandler = require('../middleware/cacheHandler');
+const {
+    getSchemas,
+    validateMetadata
+} = require('../middleware/schemaHandler');
 const { body, param, query, validationResult, matchedData } = require('express-validator');
 const router = express.Router();
 
@@ -14,8 +17,6 @@ router.post(
 	query(['model_name'])
 	    .exists()
 	    .bail()
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Not a known schema. Options: "+cacheHandler.getAvailableSchemas())
     ],
     async (req, res) => {
 
@@ -32,7 +33,7 @@ router.post(
 	const {metadata} = data;
 	const modelName =  data.model_name;
 
- 	const metadataValidationResult = cacheHandler.validateMetadata(metadata,modelName);
+ 	const metadataValidationResult = validateMetadata(metadata,modelName);
 	if (metadataValidationResult.length>0) {
 	    return res.status(400).json({ 
 		error: 'metadata validation failed', 
@@ -54,13 +55,11 @@ router.get(
 	param('model')
 	    .exists()
 	    .bail()
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Not a known schema. Options: "+cacheHandler.getAvailableSchemas())
     ],
     async (req, res) => {
 
 	const {model} = matchedData(req);	
-	const schemas = cacheHandler.getSchemas();
+	const schemas = getSchemas();
 	res.send(schemas[model]);
 
     }

@@ -57,3 +57,7 @@ describe('POST /validate', () => {
     });
     
 });
+
+afterAll(async () => {
+    await app.shutdown(); 
+});

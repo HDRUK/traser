@@ -8,7 +8,7 @@ About..
 ### Install the package
 
 ```
-git clone --recursive https://github.com/HDRUK/traser.git
+git clone https://github.com/HDRUK/traser.git
 cd traser
 ```
 
@@ -19,10 +19,16 @@ Via docker
 docker-compose up --build 
 ```
 
+
 Or just:
 ```
 npm install
 npm run dev
+```
+
+You'll also need to have some redis server running e.g.
+```
+redis-server
 ```
 
 

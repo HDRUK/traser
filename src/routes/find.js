@@ -1,5 +1,5 @@
 const express = require('express');
-const cacheHandler = require('../middleware/cacheHandler');
+const { findMatchingSchemas } = require('../middleware/schemaHandler');
 const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
@@ -10,7 +10,7 @@ const router = express.Router();
  * /find:
  *   post:
  *     summary: Validate posted metadata against available schemas
- *     description: Validate posted metadata against available schemas in the cacheHandler.
+ *     description: Validate posted metadata against available schemas in the cache.
  *     requestBody:
  *       required: true
  *       content:
@@ -67,7 +67,7 @@ router.post(
 	//retrieve the posted data 
 	const metadata = req.body;
 
-	const result = cacheHandler.findMatchingSchema(metadata);
+	const result = await findMatchingSchemas(metadata);
 	
 	res.send(result);
 	

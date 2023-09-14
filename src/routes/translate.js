@@ -1,9 +1,17 @@
 const express = require('express');
 const jsonata = require('jsonata');
-const cacheHandler = require('../middleware/cacheHandler');
+const {
+    getAvailableSchemas,
+    findMatchingSchemas,
+    validateMetadata
+} = require('../middleware/schemaHandler');
+
+const {getTemplate} = require('../middleware/templateHandler');
 const { body, query, validationResult, matchedData } = require('express-validator');
 
 const router = express.Router();
+
+
 
 /**
  * @swagger
@@ -13,17 +21,29 @@ const router = express.Router();
  *     description: Translates metadata known to HDRUK from one schema into another with optional input and output validation.
  *     parameters:
  *       - in: query
- *         name: to
+ *         name: output_schema
  *         required: true
  *         schema:
  *           type: string
  *         description: Output metadata model name
  *       - in: query
- *         name: from
+ *         name: output_version
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Output metadata model version
+ *       - in: query
+ *         name: output_model
  *         required: false
  *         schema:
  *           type: string
  *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
+ *       - in: query
+ *         name: output_version
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Input metadata model version. If unknown, the route will attempt to determine which schema version the metadata matches and use that as the input metadata model version
  *       - in: query
  *         name: validate_input
  *         required: false
@@ -93,17 +113,16 @@ router.post(
 		return value === '1'
 	    })
 	    .withMessage('Needs to be boolean (either 1 or 0)'),
-	query('to')
+	query('output_schema')
 	    .exists()
-	    .bail()
-	    .if(query('validate_output').equals(true))
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Output is not a known schema. Options: "+cacheHandler.getAvailableSchemas()),
-	query('from')
+	    .bail(),
+	query('output_version')
+	    .exists()
+	    .bail(),
+	query('input_schema')
+	    .optional(),
+	query('input_version')
 	    .optional()
-	    .if(query('validate_input').equals(true))
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Input is not a known schema. Options: "+cacheHandler.getAvailableSchemas())
     ],
     async (req, res) => {
 
@@ -121,19 +140,22 @@ router.post(
 	const validateInput = data.validate_input;
 	const validateOutput = data.validate_output;
 
-	let inputModelName = data.from;
+	let inputModelName = data.input_schema;
+	let inputModelVersion = data.input_version;
 
-	if(inputModelName == null){
-	    const matchingSchemas = cacheHandler.findMatchingSchema(metadata);
+	const availableSchemas = await getAvailableSchemas();
+
+	
+	if(inputModelName == null || inputModelVersion == null){
+	    const matchingSchemas = await findMatchingSchemas(metadata);
 	    const matchingSchemasOnly = matchingSchemas
 		  .filter(item => item.matches === true)
-		  .map(item => item.name)
 	    
 	    if (matchingSchemasOnly.length < 1){
 		return res.status(400).json({
                     message: 'Input metadata object matched no known schemas',
 		    details:{
-			'available_schemas':cacheHandler.getAvailableSchemas()
+			'available_schemas':availableSchema
 		    }
 		});
 	    }
@@ -148,20 +170,21 @@ router.post(
 		    details: matchingSchemas
 		});
 	    }
-	    inputModelName = matchingSchemasOnly[0];
+	    inputModelName = matchingSchemasOnly[0].name;
+	    inputModelVersion = matchingSchemasOnly[0].version;
 	}
 	
 	
-	const outputModelName = data.to;
-	
+	const outputModelName = data.output_schema;
+	const outputModelVersion = data.output_version;
 	let template;
 	try{
-	    template = cacheHandler.getTemplate(outputModelName,inputModelName);
+	    template = await getTemplate(inputModelName,inputModelVersion,outputModelName,outputModelVersion);
 	}
 	catch(error){
 	    return res.status(400).json({
 		error: 'Translation not found',
-		details:`Translation for ${inputModelName} to ${outputModelName} is not implemented`
+		details:`Translation for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} is not implemented`
 	    });				
 	}
 	
@@ -171,11 +194,13 @@ router.post(
 		details:`Failed to load translation map for ${inputModelName} to ${outputModelName}`
 	    });
 	}
+
 		
 	//if asked to validate the input, perform the validation
 	// - we have already checked if the schemas (inputModelName) as allowed/valid
 	if(validateInput){	    
-	    const resultInputValidation = cacheHandler.validateMetadata(metadata,inputModelName);
+	    const resultInputValidation = await validateMetadata(metadata,inputModelName,inputModelVersion);
+
             if (resultInputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Input metadata validation failed', 
@@ -217,7 +242,7 @@ router.post(
 	};	  
     
 	if(validateOutput){
-	    const resultOutputValidation = cacheHandler.validateMetadata(outputMetadata,outputModelName);
+	    const resultOutputValidation = await validateMetadata(outputMetadata,outputModelName,outputModelVersion);
             if (resultOutputValidation.length>0) {
 		return res.status(400).json({ 
                     error: 'Output metadata validation failed', 
