@@ -29,16 +29,42 @@ const getSchema = async(schemaName,schemaVersion) => {
     return schema;
 }
 
-const getSchemaValidator = async(schemaName,schemaVersion) => {
-    const name = `${schemaName}:${schemaVersion}`
-    let validator = ajv.getSchema(name);
-    if(validator == null){
-	const schema = await getSchema(schemaName,schemaVersion);
-	ajv.addSchema(schema, name);
-	validator = ajv.getSchema(name);
+const getSchemaValidator = async (schemaName, schemaVersion) => {
+    const name = `${schemaName}:${schemaVersion}`;
+
+    if (!getSchemaValidator.mutex) {
+        getSchemaValidator.mutex = Promise.resolve();
     }
+    
+    await getSchemaValidator.mutex;
+    let validator = ajv.getSchema(name);
+    if (validator == null) {
+        const schema = await getSchema(schemaName, schemaVersion);
+        await (getSchemaValidator.mutex = (async () => {
+	    try{
+		ajv.addSchema(schema, name);
+	    }
+	    catch(error){
+		if(error.message.includes('already exists')){
+		    console.log('WARNING::',error.message);
+		    validator = ajv.getSchema(name);;
+		    return validator;
+		}
+		else{
+		    console.error(error);
+		    return null;
+		}
+	    }
+	    validator =  ajv.getSchema(name);
+            return validator;
+        })());
+    }
+    
     return validator;
-}
+};
+
+
+
 
 const getAvailableSchemas = async () => {
     const available = await getFromCacheOrUri('schemas:available',schemataUri+'/available.json');

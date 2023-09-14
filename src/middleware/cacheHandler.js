@@ -2,8 +2,8 @@ const redis = require('redis');
 const axios = require('axios');
 
 const redisClient = redis.createClient({
-  host: 'localhost', // Redis server host (use the appropriate host if it's not running locally)
-  port: 6379, // Redis server port
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT
 });
 
 const getFromCacheOrUri = async (key,uri) => {

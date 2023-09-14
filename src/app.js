@@ -11,6 +11,7 @@ const logger = require('morgan');
 const helmet = require('helmet');
 const path = require('path');
 
+require('dotenv').config();
 const nodeCron = require('node-cron');
 
 //load middleware
@@ -80,8 +81,7 @@ const flushCache = () => {
     });
 }
 
-//hard coded to flush every 30 minutes (for now)
-const cronFlushJob = nodeCron.schedule('*/30 * * * *', flushCache);
+const cronFlushJob = nodeCron.schedule(process.env.CACHE_REFRESH_CRONTAB, flushCache);
 
 app.shutdown = async () => {
     await redisClient.quit();
