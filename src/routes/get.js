@@ -1,5 +1,5 @@
 const express = require('express');
-const {getSchema} = require('../middleware/schemaHandler');
+const {getSchemaValidator} = require('../middleware/schemaHandler');
 const {getTemplate} = require('../middleware/templateHandler');
 const { query, validationResult, matchedData } = require('express-validator');
 const router = express.Router();
@@ -138,23 +138,23 @@ router.get(
 	const schemaModelVersion = queryString['version'] || "";
 
 	try {
-	    const schema = getSchema(schemaModelName,schemaModelVersion)
-		  .then(schema => {
+	    const schema = getSchemaValidator(schemaModelName,schemaModelVersion)
+		  .then(validator => {
 		      res.send({
 			  "name":schemaModelName,
 			  "version":schemaModelVersion,
-			  "schema":schema
+			  "schema":validator.schema
 		      });
 		  })
 		  .catch(error => {
 		      res.status(400).json({
-			  error: error
+			  error: error.message,
 		      });
 		  });
 
 	} catch (error){
 	    res.status(400).json({
-		error: `Bad Request: failed to get schema for ${schemaModelName}`
+		error: error.message,
 	    });
 	}
 

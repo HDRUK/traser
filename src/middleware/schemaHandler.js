@@ -5,10 +5,10 @@ const addFormats = require('ajv-formats').default;
 
 const axios = require('axios');
 
-const schemataUri = 'https://raw.githubusercontent.com/HDRUK/schemata-2/master'
+const schemataUri = 'https://raw.githubusercontent.com/HDRUK/schemata-2/add-pydantic'
 
 const getSchemaUri = (model,version) => {
-    return `${schemataUri}/metadata/${model}/${version}/schema.json`
+    return `${schemataUri}/hdr_schemata/models/${model}/${version}/schema.json`
 }
 
 const ajv = new Ajv(
@@ -23,9 +23,14 @@ const ajv = new Ajv(
 //needed to remove warnings about dates and date-times
 addFormats(ajv);
 
-const getSchema = async(schemaName,schemaVersion) => {
-    const schemaUri = getSchemaUri(schemaName,schemaVersion);
-    const schema = await getFromCacheOrUri(schemaUri,schemaUri);
+const getSchemaFile = async(schemaName,schemaVersion) => {
+
+    const schema_path = `/Users/calum/Software/Gateway2.0/schemata-2/hdr_schemata/models/${schemaName}/${schemaVersion}/schema.json`;
+    const schema = require(schema_path);
+    //ajv.addSchema(schema_document, `${schemaName}:${schemaVersion}`)
+    //const schemaUri = getSchemaUri(schemaName,schemaVersion);
+    //const schema = await getFromCacheOrUri(schemaUri,schemaUri);
+    //const schema = ajv.getSchema(`${schemaName}:${schemaVersion}`);
     return schema;
 }
 
@@ -37,9 +42,14 @@ const getSchemaValidator = async (schemaName, schemaVersion) => {
     }
     
     await getSchemaValidator.mutex;
+
     let validator = ajv.getSchema(name);
+
+    console.log(name);
+    console.log(validator);
+    
     if (validator == null) {
-        const schema = await getSchema(schemaName, schemaVersion);
+        const schema = await getSchemaFile(schemaName, schemaVersion);
         await (getSchemaValidator.mutex = (async () => {
 	    try{
 		ajv.addSchema(schema, name);
@@ -109,7 +119,6 @@ const findMatchingSchemas = async(metadata) => {
 
 module.exports = {
     ajv,
-    getSchema,
     getSchemaValidator,
     getAvailableSchemas,
     validateMetadata,
