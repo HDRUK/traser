@@ -184,6 +184,7 @@ router.post(
 	catch(error){
 	    return res.status(400).json({
 		error: 'Translation not found',
+		message: error.message,
 		details:`Translation for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} is not implemented`
 	    });				
 	}

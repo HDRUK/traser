@@ -16,9 +16,9 @@ const nodeCron = require('node-cron');
 
 //load middleware
 const errorHandler = require('./middleware/errorHandler');
-const {redisClient} = require('./middleware/cacheHandler');
+//const {redisClient} = require('./middleware/cacheHandler');
 const {ajv} = require('./middleware/schemaHandler');
-redisClient.connect().then(() => console.log('reddis client connected'));
+//redisClient.connect().then(() => console.log('reddis client connected'));
 
 //load API routes
 const indexRouter = require('./routes/index');
@@ -70,7 +70,28 @@ app.use('/validate', validateRouter);
 // Serve static files from the "public" folder
 app.use('/files',express.static(path.join(__dirname,'public')));
 
-const flushCache = () => {
+
+const EventSource = require('eventsource');
+const { Webhooks, createNodeMiddleware } = require("@octokit/webhooks");
+const webhooks = new Webhooks({
+  secret: process.env.WEBHOOK_SECRET,
+});
+
+const webhookProxyUrl = process.env.WEBHOOK_PROXY_URL;
+const source = new EventSource(webhookProxyUrl);
+source.onmessage = (event) => {
+  const webhookEvent = JSON.parse(event.data);
+  webhooks
+    .verifyAndReceive({
+      id: webhookEvent["x-request-id"],
+      name: webhookEvent["x-github-event"],
+      signature: webhookEvent["x-hub-signature"],
+      payload: JSON.stringify(webhookEvent.body),
+    })
+    .catch(console.error);
+};
+
+/*const flushCache = () => {
     console.log('Flushing cache...');
     redisClient.flushAll()
 	.then(res => console.log('Flushed Redis ==> ',res));
@@ -88,7 +109,8 @@ app.shutdown = async () => {
     console.log('shutdown redis');
     cronFlushJob.stop();
     console.log('stopped cron jobs');
-}
+    }
+    */
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {

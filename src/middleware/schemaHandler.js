@@ -1,4 +1,4 @@
-const {redisClient,getFromCacheOrUri} = require('./cacheHandler');
+const {getFromCacheOrUri} = require('./cacheHandler');
 
 const Ajv = require("ajv").default;
 const addFormats = require('ajv-formats').default;
@@ -45,8 +45,6 @@ const getSchemaValidator = async (schemaName, schemaVersion) => {
 
     let validator = ajv.getSchema(name);
 
-    console.log(name);
-    console.log(validator);
     
     if (validator == null) {
         const schema = await getSchemaFile(schemaName, schemaVersion);
@@ -83,6 +81,7 @@ const getAvailableSchemas = async () => {
 
 const validateMetadata = async (metadata,modelName,modelVersion) => {
     const validator = await getSchemaValidator(modelName,modelVersion);
+
     if (validator == null){
 	return [{'message':`${modelName} schemas file is undefined!`}]
     }
