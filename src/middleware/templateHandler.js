@@ -1,13 +1,10 @@
-const {redisClient,getFromCacheOrUri} = require('./cacheHandler');
+const {getFromCacheOrUri,getFromUri,saveToCache} = require('./cacheHandler');
 
-const fs = require('fs');
-const axios = require('axios');
-const templatesUri = 'https://raw.githubusercontent.com/HDRUK/traser-mapping-files/master';
-const localCopy = '/Users/calum/Software/Gateway2.0/traser-mapping-files';
+//const templatesUri = 'https://raw.githubusercontent.com/HDRUK/traser-mapping-files/master';
+const templatesUri = 'https://raw.githubusercontent.com/HDRUK/traser-mapping-files/fix-structural-metadata';
 
 const getTemplateUri = (inputModel,inputVersion,outputModel,outputVersion) => {
-    return `${localCopy}/maps/${outputModel}/${outputVersion}/${inputModel}/${inputVersion}/translation.jsonata`
-    //return `${templatesUri}/maps/${outputModel}/${outputVersion}/${inputModel}/${inputVersion}/translation.jsonata`
+    return `${templatesUri}/maps/${outputModel}/${outputVersion}/${inputModel}/${inputVersion}/translation.jsonata`
 }
 
 const getAvailableTemplates = async () => {
@@ -16,30 +13,32 @@ const getAvailableTemplates = async () => {
     return available;
 };
 
+
 const getTemplate = async(inputModelName,inputModelVersion,outputModelName,outputModelVersion) => {
     const templateUri = getTemplateUri(inputModelName,inputModelVersion,outputModelName,outputModelVersion);
-    console.log('here');
-    return new Promise((resolve, reject) => {
-        fs.readFile(templateUri, 'utf8', (err, data) => {
-            if (err) {
-		console.log('here');
-		reject(err);
-            } else {
-		console.log('ok');
-		resolve(data);
-            }
-        });
-    });
-    
-    const template = require(templateUri);
-    console.log('not here');
-    //const template = await getFromCacheOrUri(templateUri,templateUri);
+    const template = await getFromCacheOrUri(templateUri,templateUri);
     return template;
 }
 
+const retrieveTemplate = async(inputModelName,inputModelVersion,outputModelName,outputModelVersion) => {
+    const templateUri = getTemplateUri(inputModelName,inputModelVersion,outputModelName,outputModelVersion);
+    const template = await getFromUri(templateUri,templateUri);
+    saveToCache(templateUri,template);
+}
+
+const loadTemplates = async () => {
+    const templates = await getAvailableTemplates();
+    templates.map(t => {
+        retrieveTemplate(t.input_model,t.input_version,t.output_model,t.output_version)
+        .catch(error => {
+            console.error(error);
+        });
+    })
+}
 
 
 module.exports = {
     getAvailableTemplates,
-    getTemplate
+    getTemplate,
+    loadTemplates,
 };

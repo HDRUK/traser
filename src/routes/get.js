@@ -1,5 +1,5 @@
 const express = require('express');
-const {getSchemaValidator} = require('../middleware/schemaHandler');
+const {getSchema} = require('../middleware/schemaHandler');
 const {getTemplate} = require('../middleware/templateHandler');
 const { query, validationResult, matchedData } = require('express-validator');
 const router = express.Router();
@@ -138,7 +138,7 @@ router.get(
 	const schemaModelVersion = queryString['version'] || "";
 
 	try {
-	    const schema = getSchemaValidator(schemaModelName,schemaModelVersion)
+	    getSchema(schemaModelName,schemaModelVersion)
 		  .then(validator => {
 		      res.send({
 			  "name":schemaModelName,

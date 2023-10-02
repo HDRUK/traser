@@ -17,8 +17,8 @@ const nodeCron = require('node-cron');
 //load middleware
 const errorHandler = require('./middleware/errorHandler');
 //const {redisClient} = require('./middleware/cacheHandler');
-const {ajv} = require('./middleware/schemaHandler');
-//redisClient.connect().then(() => console.log('reddis client connected'));
+const {ajv,loadSchemas} = require('./middleware/schemaHandler');
+const {loadTemplates} = require('./middleware/templateHandler');
 
 //load API routes
 const indexRouter = require('./routes/index');
@@ -38,6 +38,7 @@ app.use(logger('dev')); //may want to remove/change this for production (?)
 app.use(express.json({limit: '512mb'}));
 app.use(express.urlencoded({extended: false, limit: '512mb'}));
 app.use(cookieParser()); //not sure if this is needed?
+
 
 // Temporary loading up swagger API for auto documentations
 // Notes:
@@ -70,47 +71,22 @@ app.use('/validate', validateRouter);
 // Serve static files from the "public" folder
 app.use('/files',express.static(path.join(__dirname,'public')));
 
-
-const EventSource = require('eventsource');
-const { Webhooks, createNodeMiddleware } = require("@octokit/webhooks");
-const webhooks = new Webhooks({
-  secret: process.env.WEBHOOK_SECRET,
-});
-
-const webhookProxyUrl = process.env.WEBHOOK_PROXY_URL;
-const source = new EventSource(webhookProxyUrl);
-source.onmessage = (event) => {
-  const webhookEvent = JSON.parse(event.data);
-  webhooks
-    .verifyAndReceive({
-      id: webhookEvent["x-request-id"],
-      name: webhookEvent["x-github-event"],
-      signature: webhookEvent["x-hub-signature"],
-      payload: JSON.stringify(webhookEvent.body),
-    })
-    .catch(console.error);
-};
-
-/*const flushCache = () => {
-    console.log('Flushing cache...');
-    redisClient.flushAll()
-	.then(res => console.log('Flushed Redis ==> ',res));
-    const availableSchemas = Object.keys(ajv.schemas);
-    availableSchemas.forEach((schemaKey) => {
-	adj.removeSchema(schemaKey);
-	console.log('Deleted ==> ',schemaKey);
-    });
+const loadData = () => {
+    loadSchemas();
+    loadTemplates();
+    console.log('Retrieving and loading data ...'); 
 }
 
-const cronFlushJob = nodeCron.schedule(process.env.CACHE_REFRESH_CRONTAB, flushCache);
+loadData();
+const cronFlushJob = nodeCron.schedule(process.env.CACHE_REFRESH_CRONTAB, 
+    loadData
+);
 
 app.shutdown = async () => {
-    await redisClient.quit();
-    console.log('shutdown redis');
     cronFlushJob.stop();
     console.log('stopped cron jobs');
-    }
-    */
+};
+
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
