@@ -39,6 +39,10 @@ app.use(express.urlencoded({extended: false, limit: '512mb'}));
 app.use(cookieParser()); //not sure if this is needed?
 
 
+/*setup middleware to loadData before any route is used
+   - if the dataIsLoaded is false then load all the data required..
+   - dataIsLoaded will expire based on {stdTTL:process.env.CACHE_REFRESH_STDTLL}
+*/
 const loadData = async (req, res, next) => {
     const isLoaded = await getFromCache('dataIsLoaded');
     if(isLoaded){
@@ -58,10 +62,6 @@ const loadData = async (req, res, next) => {
     }
 }
 app.use(loadData);
-
-//const cronFlushJob = nodeCron.schedule(process.env.CACHE_REFRESH_CRONTAB, 
-//    loadData
-//);
 
 // Temporary loading up swagger API for auto documentations
 // Notes:
