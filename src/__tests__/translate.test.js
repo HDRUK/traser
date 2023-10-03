@@ -40,6 +40,18 @@ describe('POST /translate', () => {
 	});
     });
 
+    describe('POST /translate?output_schema=SchemaOrg&output_version=BioSchema&input_schema=GWDM&input_version=1.0', () => {
+	it('should return 200 if gdmv1 metadata translated to schema.org', async () => {
+	    const response = await translate(sampleMetadata.gdmv1,
+					     'GWDM',
+					     '1.0',
+					     'SchemaOrg',
+					     'BioSchema'
+					    );
+	    expect(response.status).toBe(200);
+	});
+    });
+
     describe('POST /translate?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=1.0', () => {
 	it('should return 200 if schema.org metadata translated to GDMV1', async () => {
 	    const response = await translate(sampleMetadata.schemaorg,

@@ -1,0 +1,61 @@
+{
+    "@context": "https://schema.org/",
+    "@id": "https://hdruk.ac.uk",
+    "@type": "Dataset",
+    "identifier": "10.1093/ije/dyx196",
+    "version": "GDMv1",
+    "url": "https://hdruk.ac.uk/1234",
+    "name": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
+    "alternateName": "HDR UK Papers & Prepgrints",
+    "description": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations\n\nThis will include:\n- Papers\n- COVID-19 Papers\n- COVID-19 Preprint",
+    "citation": "10.1093/ije/dyx196",
+    "creator": {
+        "@type": "Organization",
+        "legalName": "HDR UK Science Team",
+        "name": "HDR UK Science Team",
+        "email": "susheel.varma@hdruk.ac.uk",
+        "identifier": "",
+        "sameAs": null
+    },
+    "maintainer": {
+        "@type": "Organization",
+        "legalName": "HDR UK",
+        "name": "HDR UK",
+        "email": "susheel.varma@hdruk.ac.uk",
+        "identifier": "",
+        "sameAs": null
+    },
+    "publisher": {
+        "@type": "Organization",
+        "legalName": "HEALTH DATA RESEARCH UK",
+        "name": "HEALTH DATA RESEARCH UK",
+        "identifier": "",
+        "sameAs": null,
+        "email": null
+    },
+    "isAccessibleForFree": true,
+    "dateCreated": "2020-08-05T14:35:59Z",
+    "distribution": {
+        "@type": "DataDownload",
+        "name": "https://github.com/HDRUK/papers",
+        "contentUrl": "https://somehwere.com",
+        "encodingFormat": "Unknown"
+    },
+    "keywords": "Preprints,Papers,HDR UK",
+    "license": "https://raw.githubusercontent.com/HDRUK/papers/master/LICENSE",
+    "includedInDataCatalog": null,
+    "isBasedOn": null,
+    "isPartOf": null,
+    "hasPart": null,
+    "measurementTechnique": "",
+    "sameAs": null,
+    "variableMeasured": "",
+    "dateModified": null,
+    "datePublished": null,
+    "dct:conformsTo": {
+        "http://purl.org/dc/terms/conformsTo": {
+            "@id": "https://bioschemas.org/profiles/Dataset/1.1-DRAFT",
+            "@type": "CreativeWork"
+        }
+    }
+}
