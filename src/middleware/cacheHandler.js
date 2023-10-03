@@ -23,13 +23,18 @@ const getFromUri = async(uri) => {
     return data;
 }
 
-const saveToCache = (key,data) => {
+const saveToCache = async (key,data) => {
     cacheStore.set(key,data);
+}
+
+const getFromCache = async (key) => {
+    const data = await cacheStore.get(key);
+    return data;
 }
 
 
 const getFromCacheOrUri = async (key,uri) => {
-    let data = await cacheStore.get(key);
+    let data = await getFromCache(key);
     if (data === undefined){
         data = await getFromUri(uri);
         saveToCache(key,data);
@@ -38,7 +43,7 @@ const getFromCacheOrUri = async (key,uri) => {
 }
 
 const getFromCacheOrLocal = async (key,uri) => {
-    let data = await cacheStore.get(key);
+    let data = await getFromCache(key);
     if (data === undefined){
         data = await getFromLocal(uri);
         saveToCache(key,data);
@@ -50,6 +55,7 @@ const getFromCacheOrLocal = async (key,uri) => {
 module.exports = {
     cacheStore,
     saveToCache,
+    getFromCache,
     getFromUri,
     getFromLocal,
     getFromCacheOrUri,

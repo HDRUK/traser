@@ -14,10 +14,10 @@ describe('GET /get/schema', () => {
 
     describe('GET /get/schema?name=GWDM', () => {
 	it('should return 200 if GWDM 1.0 schema is retrieved', async () => {
-
 	    const response = await request(app)
 		  .get('/get/schema')
 		  .query({ name:'GWDM', version: '1.0'});
+        console.log(JSON.stringify(response.body,null,6));
 	    expect(response.status).toBe(200);
 	});
     });

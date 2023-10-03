@@ -7,6 +7,8 @@ const {
 } = require('./cacheHandler');
 
 
+let isLoaded = false;
+
 const templatesPath = process.env.TEMPLATES_LOCATION;
 const loadFromLocalFile = !templatesPath.startsWith("http");
 
@@ -41,12 +43,12 @@ const retrieveTemplate = async(inputModelName,inputModelVersion,outputModelName,
 
 const loadTemplates = async () => {
     const templates = await getAvailableTemplates();
-    templates.map(t => {
+    await Promise.all(templates.map(t => {
         retrieveTemplate(t.input_model,t.input_version,t.output_model,t.output_version)
         .catch(error => {
             console.error(error);
         });
-    })
+    }));
 }
 
 
