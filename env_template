@@ -1,4 +1,4 @@
-APP_SECRET=
+APP_SECRET=1234abcd
 CACHE_REFRESH_STDTLL=1860
 TEMPLATES_LOCATION=https://raw.githubusercontent.com/HDRUK/traser-mapping-files/master
 SCHEMA_LOCATION=https://raw.githubusercontent.com/HDRUK/schemata-2/master

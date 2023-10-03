@@ -20,6 +20,9 @@ jobs:
     - name: NPM install
       run: "npm install"
 
+    - name: Setup env
+      run: "cp env_template .env"
+
     # - name: Run eslint
     #   run: "npm run lint"
 
