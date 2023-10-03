@@ -17,8 +17,7 @@ describe('GET /get/schema', () => {
 	    const response = await request(app)
 		  .get('/get/schema')
 		  .query({ name:'GWDM', version: '1.0'});
-        console.log(JSON.stringify(response.body,null,6));
-	    expect(response.status).toBe(200);
+   	    expect(response.status).toBe(200);
 	});
     });
     
