@@ -42,7 +42,7 @@ beforeAll((done) => {
 describe('POST /translate', () => {
 
     
-    describe('POST /translate?output_schema=SchemaOrg&input_schema=GWDM&input_version=1.0', () => {
+    describe('POST /translate?output_schema=SchemaOrg&output_version=default&input_schema=GWDM&input_version=1.0', () => {
 	it('should return 200 if gdmv1 metadata translated to schema.org', async () => {
 	    const response = await translate(sampleMetadata.gdmv1,
 					     'GWDM',

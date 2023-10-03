@@ -81,7 +81,7 @@
         }
     },
     "linkage": {
-        "IsGeneratedUsing": "something",
+        "isGeneratedUsing": "something",
         "dataUses": "dunno",
         "isReferenceIn": "10.5281/zenodo.326615",
         "tools": "https://github.com/HDRUK/papers",
@@ -106,7 +106,7 @@
         {
             "name": "table1",
             "description": "this is table 1",
-            "elements": [
+            "columns": [
                 {
                     "name": "column1",
                     "description": "this is column1",

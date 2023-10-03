@@ -65,7 +65,7 @@ const findMatchingSchemas = async (metadata) => {
     for (const [schema, versions] of Object.entries(schemas)) {
         for (const version of versions) {
             try {
-                const validator = await getSchemaValidator(schema, version);
+                const validator = await getSchema(schema, version);
                 const isValid = validator(metadata);
                 const outcome = {
                     name: schema,
