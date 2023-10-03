@@ -8,26 +8,71 @@
     "name": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
     "alternateName": "HDR UK Papers & Preprints",
     "description": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations\n\nThis will include:\n- Papers\n- COVID-19 Papers\n- COVID-19 Preprint",
+    "abstract": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
     "citation": "10.1093/ije/dyx196",
     "funder": {
         "@type": "Organization",
         "legalName": "HDR UK Science Team",
-        "name": "HDR UK Science Team"
+        "name": "HDR UK Science Team",
+        "identifier": "",
+        "sameAs": null,
+        "email": null
+    },
+    "usageInfo": {
+        "@type": "CreativeWork",
+        "name": "usage",
+        "accessibilitySummary": "GENERAL RESEARCH USE",
+        "abstract": "",
+        "accessMode": "",
+        "identifier": "",
+        "creator": null,
+        "publisher": null
     },
     "creator": {
         "@type": "Organization",
         "legalName": "HDR UK Science Team",
-        "name": "HDR UK Science Team"
+        "name": "HDR UK Science Team",
+        "email": "susheel.varma@hdruk.ac.uk",
+        "identifier": "",
+        "sameAs": null
     },
-    "spacialCoverage": "MACHINE GENERATED",
+    "maintainer": {
+        "@type": "Organization",
+        "legalName": "HDR UK",
+        "name": "HDR UK",
+        "email": "susheel.varma@hdruk.ac.uk",
+        "identifier": "",
+        "sameAs": null
+    },
+    "publisher": {
+        "@type": "Organization",
+        "legalName": "HEALTH DATA RESEARCH UK",
+        "name": "HEALTH DATA RESEARCH UK",
+        "identifier": "",
+        "sameAs": null,
+        "email": null
+    },
+    "spatialCoverage": "MACHINE GENERATED",
     "temporalCoverage": "2020-03-31/2022-04-30",
     "isAccessibleForFree": true,
     "dateCreated": "2020-08-05T14:35:59Z",
     "distribution": {
         "@type": "DataDownload",
         "name": "https://github.com/HDRUK/papers",
-        "contentUrl": "https://somehwere.com"
+        "contentUrl": "https://somehwere.com",
+        "encodingFormat": "Unknown"
     },
     "keywords": "Preprints,Papers,HDR UK",
-    "license": "https://raw.githubusercontent.com/HDRUK/papers/master/LICENSE"
+    "license": "https://raw.githubusercontent.com/HDRUK/papers/master/LICENSE",
+    "accessMode": "",
+    "accessibilitySummary": "",
+    "includedInDataCatalog": null,
+    "isBasedOn": null,
+    "isPartOf": null,
+    "hasPart": null,
+    "measurementTechnique": "",
+    "sameAs": null,
+    "variableMeasured": "",
+    "dateModified": null,
+    "datePublished": null
 }

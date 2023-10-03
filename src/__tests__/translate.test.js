@@ -25,20 +25,6 @@ const translate = async (metadata,
 };
 
 
-function delay(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-}
-
-beforeAll((done) => {
-    // need a better way of doing this...
-    // waiting for the app to load templates before trying to run tests 
-    // app.emit() ?
-    delay(1000).then(() => {
-	console.log('ran after 1 second1 passed');
-	done();
-    });
- });
-
 describe('POST /translate', () => {
 
     
@@ -97,8 +83,4 @@ describe('POST /translate', () => {
     });
 
     
-});
-
-afterAll(async () => {
-    await app.shutdown(); // Properly close the Redis connection
 });

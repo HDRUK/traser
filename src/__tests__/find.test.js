@@ -3,22 +3,6 @@ const app = require('../app');
 
 const {sampleMetadata} = require('../utils/examples');
 
-
-
-function delay(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-}
-
-beforeAll((done) => {
-    // need a better way of doing this...
-    // waiting for the app to load templates before trying to run tests 
-    // app.emit() ?
-    delay(1000).then(() => {
-	done();
-    });
- });
-
-
 describe('POST /find', () => {
 
     describe('POST /find ', () => {
@@ -42,9 +26,4 @@ describe('POST /find', () => {
 	});
     });
     
-});
-
-
-afterAll(async () => {
-    await app.shutdown(); 
 });

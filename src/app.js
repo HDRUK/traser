@@ -12,7 +12,6 @@ const helmet = require('helmet');
 const path = require('path');
 
 require('dotenv').config();
-const nodeCron = require('node-cron');
 
 //load middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -94,12 +93,6 @@ app.use('/validate', validateRouter);
 
 // Serve static files from the "public" folder
 app.use('/files',express.static(path.join(__dirname,'public')));
-
-
-app.shutdown = async () => {
-    cronFlushJob.stop();
-    console.log('stopped cron jobs');
-};
 
 
 // catch 404 and forward to error handler
