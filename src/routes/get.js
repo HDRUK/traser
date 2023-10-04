@@ -1,7 +1,7 @@
-const express = require('express');
-const {getSchema} = require('../middleware/schemaHandler');
-const {getTemplate} = require('../middleware/templateHandler');
-const { query, validationResult, matchedData } = require('express-validator');
+const express = require("express");
+const { getSchema } = require("../middleware/schemaHandler");
+const { getTemplate } = require("../middleware/templateHandler");
+const { query, validationResult, matchedData } = require("express-validator");
 const router = express.Router();
 
 /**
@@ -33,41 +33,37 @@ const router = express.Router();
  *                   type: object
  *                   description: The retrieved template or mapping.
  */
-router.get('/map',
-    [
-        query('to').notEmpty().escape(),
-        query('from').notEmpty().escape(),
-    ],
+router.get(
+    "/map",
+    [query("to").notEmpty().escape(), query("from").notEmpty().escape()],
     async (req, res) => {
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            return res.status(400).json({
+                message: "Invalid query parameters.",
+                errors: result.array(),
+            });
+        }
 
-	const result = validationResult(req);
-	if (!result.isEmpty()) {
-	    return res.status(400).json({ 
-		message: 'Invalid query parameters.',
-		errors: result.array()
-	    });
-	}
+        const queryString = matchedData(req);
+        const output_model_name = queryString["to"];
+        const input_model_name = queryString["from"];
 
-	const queryString = matchedData(req);
-	const output_model_name = queryString['to'];
-	const input_model_name = queryString['from'];
-	
-	const template = getTemplate(output_model_name,input_model_name);
-	if (template == null){
-	    return res.status(400).json({ 
-		error: 'Template file is null!', 
-		details: `Could not retrieve the template for output:${output_model_name} input:${input_model_name}`
-	    });
-	}
-	
-	res.send({
-	    "from":input_model_name,
-	    "to":output_model_name,
-	    "translation_map":template
-	});
+        const template = getTemplate(output_model_name, input_model_name);
+        if (template == null) {
+            return res.status(400).json({
+                error: "Template file is null!",
+                details: `Could not retrieve the template for output:${output_model_name} input:${input_model_name}`,
+            });
+        }
 
-    });
-
+        res.send({
+            from: input_model_name,
+            to: output_model_name,
+            translation_map: template,
+        });
+    }
+);
 
 /**
  * @swagger
@@ -117,47 +113,41 @@ router.get('/map',
  *                     $ref: '#/components/schemas/ValidationError'
  */
 router.get(
-    '/schema',
-    [
-        query('name').notEmpty().escape(),
-        query('version').optional()
-    ],
+    "/schema",
+    [query("name").notEmpty().escape(), query("version").optional()],
     async (req, res) => {
+        // possibly repeating code here..
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            return res.status(400).json({
+                message: "Invalid query parameters.",
+                errors: result.array(),
+            });
+        }
 
-	// possibly repeating code here..
-	const result = validationResult(req);
-	if (!result.isEmpty()) {
-	    return res.status(400).json({ 
-		message: 'Invalid query parameters.',
-		errors: result.array()
-	    });
-	}
+        const queryString = matchedData(req);
+        const schemaModelName = queryString["name"];
+        const schemaModelVersion = queryString["version"] || "";
 
-	const queryString = matchedData(req);
-	const schemaModelName = queryString['name'];
-	const schemaModelVersion = queryString['version'] || "";
-
-	try {
-	    const schema = getSchema(schemaModelName,schemaModelVersion)
-		  .then(schema => {
-		      res.send({
-			  "name":schemaModelName,
-			  "version":schemaModelVersion,
-			  "schema":schema
-		      });
-		  })
-		  .catch(error => {
-		      res.status(400).json({
-			  error: error
-		      });
-		  });
-
-	} catch (error){
-	    res.status(400).json({
-		error: `Bad Request: failed to get schema for ${schemaModelName}`
-	    });
-	}
-
+        try {
+            getSchema(schemaModelName, schemaModelVersion)
+                .then((validator) => {
+                    res.send({
+                        name: schemaModelName,
+                        version: schemaModelVersion,
+                        schema: validator.schema,
+                    });
+                })
+                .catch((error) => {
+                    res.status(400).json({
+                        error: error.message,
+                    });
+                });
+        } catch (error) {
+            res.status(400).json({
+                error: error.message,
+            });
+        }
     }
 );
 

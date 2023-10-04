@@ -1,6 +1,6 @@
 {
     "required": {
-        "gatewayId": "https://web.www.healthdatagateway.org/dataset/a7ddefbd-31d9-4703-a738-256e4689f76a",
+        "gatewayId": "a7ddefbd-31d9-4703-a738-256e4689f76a",
         "gatewayPid": "5124f2",
         "issued": "2020-08-05T14:35:59Z",
         "modified": "2021-01-28T14:15:46Z",
@@ -81,7 +81,7 @@
         }
     },
     "linkage": {
-        "IsGeneratedUsing": "something",
+        "isGeneratedUsing": "something",
         "dataUses": "dunno",
         "isReferenceIn": "10.5281/zenodo.326615",
         "tools": "https://github.com/HDRUK/papers",
@@ -106,7 +106,7 @@
         {
             "name": "table1",
             "description": "this is table 1",
-            "elements": [
+            "columns": [
                 {
                     "name": "column1",
                     "description": "this is column1",

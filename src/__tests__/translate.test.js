@@ -25,30 +25,28 @@ const translate = async (metadata,
 };
 
 
-function delay(time) {
-  return new Promise(resolve => setTimeout(resolve, time));
-}
-
-beforeAll((done) => {
-    // need a better way of doing this...
-    // waiting for the app to load templates before trying to run tests 
-    // app.emit() ?
-    delay(1000).then(() => {
-	console.log('ran after 1 second1 passed');
-	done();
-    });
- });
-
 describe('POST /translate', () => {
 
     
-    describe('POST /translate?output_schema=SchemaOrg&input_schema=GWDM&input_version=1.0', () => {
+    describe('POST /translate?output_schema=SchemaOrg&output_version=default&input_schema=GWDM&input_version=1.0', () => {
 	it('should return 200 if gdmv1 metadata translated to schema.org', async () => {
 	    const response = await translate(sampleMetadata.gdmv1,
 					     'GWDM',
 					     '1.0',
 					     'SchemaOrg',
 					     'default'
+					    );
+	    expect(response.status).toBe(200);
+	});
+    });
+
+    describe('POST /translate?output_schema=SchemaOrg&output_version=BioSchema&input_schema=GWDM&input_version=1.0', () => {
+	it('should return 200 if gdmv1 metadata translated to schema.org', async () => {
+	    const response = await translate(sampleMetadata.gdmv1,
+					     'GWDM',
+					     '1.0',
+					     'SchemaOrg',
+					     'BioSchema'
 					    );
 	    expect(response.status).toBe(200);
 	});
@@ -97,8 +95,4 @@ describe('POST /translate', () => {
     });
 
     
-});
-
-afterAll(async () => {
-    await app.shutdown(); // Properly close the Redis connection
 });

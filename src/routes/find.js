@@ -1,9 +1,8 @@
-const express = require('express');
-const { findMatchingSchemas } = require('../middleware/schemaHandler');
-const { body, validationResult } = require('express-validator');
+const express = require("express");
+const { findMatchingSchemas } = require("../middleware/schemaHandler");
+const { body, query, matchedData, validationResult } = require("express-validator");
 
 const router = express.Router();
-
 
 /**
  * @swagger
@@ -21,6 +20,14 @@ const router = express.Router();
  *               metadata:
  *                 type: object
  *                 description: The metadata object to validate.
+ *     parameters:
+ *       - in: query
+ *         name: with_errors
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [0, 1]
+ *         description: Whether to return the validation errors or not
  *     responses:
  *       200:
  *         description: Schema validation results.
@@ -50,27 +57,30 @@ const router = express.Router();
  *                   description: Array of validation errors.
  */
 router.post(
-    '/',
-    body().custom((value, { req }) => {
-        if (!req.is('application/json')) {
-            throw new Error('Invalid content type. Expected JSON.');
-        }
-        return true;
-    }),
+    "/",
+    [
+        body().custom((value, { req }) => {
+            if (!req.is("application/json")) {
+                throw new Error("Invalid content type. Expected JSON.");
+            }
+            return true;
+        }),
+        query("with_errors").default(0).optional().isInt({min:0,max:1}),
+    ],
     async (req, res) => {
-	
-	const errors = validationResult(req);
-	if (!errors.isEmpty()) {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
-	}
+        }
 
-	//retrieve the posted data 
-	const metadata = req.body;
+        const data = matchedData(req);
+        const metadata = req.body;
+        const {with_errors} = data;
 
-	const result = await findMatchingSchemas(metadata);
-	
-	res.send(result);
-	
-    });
+               const result = await findMatchingSchemas(metadata,with_errors==1);
 
-module.exports = router
+        res.send(result);
+    }
+);
+
+module.exports = router;

@@ -1,4 +1,4 @@
-APP_SECRET=e91039b2db869a1acfec91f8ca6c17e0
-REDIS_HOST=localhost
-REDIS_PORT=6379
-CACHE_REFRESH_CRONTAB="*/30 * * * *"
+APP_SECRET=1234abcd
+CACHE_REFRESH_STDTLL=1860
+TEMPLATES_LOCATION=https://raw.githubusercontent.com/HDRUK/traser-mapping-files/master
+SCHEMA_LOCATION=https://raw.githubusercontent.com/HDRUK/schemata-2/master

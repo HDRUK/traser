@@ -28,7 +28,3 @@ describe('GET /list', () => {
     });
     
 });
-
-afterAll(async () => {
-    await app.shutdown(); // Properly close the Redis connection
-});

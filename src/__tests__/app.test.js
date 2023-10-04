@@ -32,8 +32,3 @@ describe('app', () => {
     });
   });
 });
-
-
-afterAll(async () => {
-    await app.shutdown(); 
-});
