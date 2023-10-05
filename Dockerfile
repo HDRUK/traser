@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm install
 
 # Copy source files
-COPY ./src ./src
+COPY . .
 
 # Expose the API port
 EXPOSE 3001

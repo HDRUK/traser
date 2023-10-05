@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traser
+spec:
+  selector:
+    matchLabels:
+      app: traser
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: traser
+    spec:
+      containers:
+        - name: traser
+          image: hdruk/traser:latest
+          ports:
+            - containerPort: 3001
+              name: traser
+      dnsPolicy: ClusterFirst
