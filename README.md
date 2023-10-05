@@ -19,26 +19,21 @@ Via docker
 docker-compose up --build 
 ```
 
-
 Or just:
 ```
 npm install
 npm run dev
 ```
 
-You'll also need to have some redis server running e.g.
-```
-redis-server
-```
-
-
 
 ## Examples
 
-### Working example
+### Translate
+
+#### HDRUK 2.1.2 to GWDM 1.0
 
 ```
-curl --location 'http://localhost:3001/translate?to=gdmv1' \
+curl --location 'http://localhost:3001/translate?output_schema=GWDM&output_version=1.0&input_schema=HDRUK&input_version=2.1.2' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "extra": {
@@ -51,8 +46,9 @@ curl --location 'http://localhost:3001/translate?to=gdmv1' \
         ],
         "pathwayDescription": "Not APPLICABLE for blah reason",
         "datasetType": "list of papers",
-        "IsGeneratedUsing": "something",
-        "dataUses": "dunno"
+        "isGeneratedUsing": "something",
+        "dataUses": "dunno",
+        "isMemberOf": "blah"
     },
     "metadata": {
         "identifier": "https://web.www.healthdatagateway.org/dataset/a7ddefbd-31d9-4703-a738-256e4689f76a",
@@ -177,43 +173,21 @@ curl --location 'http://localhost:3001/translate?to=gdmv1' \
             "derivation": [
                 "https://web.www.healthdatagateway.org/dataset/fd8d0743-344a-4758-bb97-f8ad84a37357"
             ]
-        }
+        },
+        "structuralMetadata": [
+            {
+                "name": "table1",
+                "description": "this is table 1",
+                "elements": [
+                    {
+                        "name": "column1",
+                        "description": "this is column1",
+                        "dataType": "String",
+                        "sensitive": false
+                    }
+                ]
+            }
+        ]
     }
 }'
-```
-
-### Missing field Example
-
-```
-{
-    "error": "Not valid against any known schema",
-    "schemas": {
-        "hdrukv211": {
-            "details": [
-                {
-                    "instancePath": "",
-                    "schemaPath": "#/required",
-                    "keyword": "required",
-                    "params": {
-                        "missingProperty": "version"
-                    },
-                    "message": "must have required property 'version'"
-                }
-            ]
-        },
-        "gdmv1": {
-            "details": [
-                {
-                    "instancePath": "",
-                    "schemaPath": "#/required",
-                    "keyword": "required",
-                    "params": {
-                        "missingProperty": "required"
-                    },
-                    "message": "must have required property 'required'"
-                }
-            ]
-        }
-    }
-}
 ```
