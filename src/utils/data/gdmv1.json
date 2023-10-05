@@ -27,7 +27,7 @@
         "abstract": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
         "contactPoint": "susheel.varma@hdruk.ac.uk",
         "keywords": "Preprints,Papers,HDR UK",
-        "controlledKeywords": "",
+        "controlledKeywords": "Papers",
         "datasetType": "list of papers",
         "description": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations\n\nThis will include:\n- Papers\n- COVID-19 Papers\n- COVID-19 Preprint",
         "doiName": "10.1093/ije/dyx196",
