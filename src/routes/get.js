@@ -87,7 +87,6 @@ router.get(
             });
         }
 
-
         res.send({
             input_schema: inputModelName,
             input_version: inputModelVersion,
