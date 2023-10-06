@@ -12,6 +12,11 @@ git clone https://github.com/HDRUK/traser.git
 cd traser
 ```
 
+### Setup env varialbes
+```
+cp env_template .env
+```
+
 ### Run the API (Dev)
 
 Via docker 
