@@ -12,15 +12,29 @@ const router = express.Router();
  *     description: Retrieve a template or mapping file from the current cache
  *     parameters:
  *       - in: query
- *         name: to
+ *         name: output_schema
+ *         required: true
  *         schema:
  *           type: string
- *         description: The output schema name.
+ *         description: Output metadata model name
  *       - in: query
- *         name: from
+ *         name: output_version
+ *         required: true
  *         schema:
  *           type: string
- *         description: The input schema name.
+ *         description: Output metadata model version
+ *       - in: query
+ *         name: output_model
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
+ *       - in: query
+ *         name: output_version
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Input metadata model version. If unknown, the route will attempt to determine which schema version the metadata matches and use that as the input metadata model version
  *     responses:
  *       200:
  *         description: Template or mapping retrieved successfully.
@@ -35,7 +49,12 @@ const router = express.Router();
  */
 router.get(
     "/map",
-    [query("to").notEmpty().escape(), query("from").notEmpty().escape()],
+    [
+        query("output_schema").notEmpty().bail(),
+        query("output_version").notEmpty().bail(),
+        query("input_schema").notEmpty().bail(),
+        query("input_version").notEmpty().bail(),
+    ],
     async (req, res) => {
         const result = validationResult(req);
         if (!result.isEmpty()) {
@@ -46,20 +65,33 @@ router.get(
         }
 
         const queryString = matchedData(req);
-        const output_model_name = queryString["to"];
-        const input_model_name = queryString["from"];
+        const inputModelName = queryString["input_schema"];
+        const inputModelVersion = queryString["input_version"];
+        const outputModelName = queryString["output_schema"];
+        const outputModelVersion = queryString["output_version"];
 
-        const template = getTemplate(output_model_name, input_model_name);
-        if (template == null) {
+
+        let template;
+        try {
+            template = await getTemplate(
+                inputModelName,
+                inputModelVersion,
+                outputModelName,
+                outputModelVersion
+            );
+        } catch (error) {
             return res.status(400).json({
-                error: "Template file is null!",
-                details: `Could not retrieve the template for output:${output_model_name} input:${input_model_name}`,
+                error: "Translation not found",
+                message: error.message,
+                details: `Translation for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} is not implemented`,
             });
         }
 
         res.send({
-            from: input_model_name,
-            to: output_model_name,
+            input_schema: inputModelName,
+            input_version: inputModelVersion,
+            output_schema: outputModelName,
+            output_version: outputModelVersion,
             translation_map: template,
         });
     }

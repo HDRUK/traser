@@ -25,13 +25,13 @@ const router = express.Router();
  *     parameters:
  *       - in: query
  *         name: output_schema
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *         description: Output metadata model name
  *       - in: query
  *         name: output_version
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *         description: Output metadata model version
@@ -111,8 +111,8 @@ router.post(
                 return value === "1";
             })
             .withMessage("Needs to be boolean (either 1 or 0)"),
-        query("output_schema").exists().bail(),
-        query("output_version").exists().bail(),
+        query("output_schema").optional(),
+        query("output_version").optional(),
         query("input_schema").optional(),
         query("input_version").optional(),
     ],
@@ -165,8 +165,45 @@ router.post(
             inputModelVersion = matchingSchemasOnly[0].version;
         }
 
-        const outputModelName = data.output_schema;
-        const outputModelVersion = data.output_version;
+        let outputModelName = data.output_schema;
+        let outputModelVersion = data.output_version;
+
+        if (outputModelName == undefined || outputModelVersion == undefined) {
+            if (
+                outputModelName == undefined &&
+                outputModelVersion == undefined
+            ) {
+                const gwdmVersions = availableSchemas.GWDM;
+                if (gwdmVersions) {
+                    outputModelVersion = gwdmVersions[0];
+                    outputModelName = "GWDM";
+                } else {
+                    //really shouldnt be getting here... should always have the GWDM loaded...
+                    return res.status(400).json({
+                        error: "Translation not possible",
+                        details: `Unknown model and version to translate to, use ?output_model=<model>&?output_version=<version>`,
+                    });
+                }
+            } else if (outputModelVersion == undefined) {
+                return res.status(400).json({
+                    error: "Translation not possible",
+                    details: `Attempting to translate to ${outputModelName} but no version provided, use ?output_version=<version>`,
+                });
+            } else {
+                return res.status(400).json({
+                    error: "Translation not possible",
+                    details: `Unknown model version ${outputModelVersion} to translate to, use ?output_model=<model>`,
+                });
+            }
+        }
+
+        if (
+            inputModelName == outputModelName &&
+            inputModelVersion == outputModelVersion
+        ) {
+            //dont translate if there is no translation to be done, rather than failing
+            return res.send(metadata);
+        }
 
         let template;
         try {
