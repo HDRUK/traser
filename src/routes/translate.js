@@ -25,13 +25,13 @@ const router = express.Router();
  *     parameters:
  *       - in: query
  *         name: output_schema
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *         description: Output metadata model name
  *       - in: query
  *         name: output_version
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *         description: Output metadata model version

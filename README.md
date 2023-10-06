@@ -25,6 +25,45 @@ npm install
 npm run dev
 ```
 
+## Swagger Documentation
+
+[http://localhost:3001/docs/](http://localhost:3001/docs/)
+
+## Endpoints Overview
+
+### Translate (POST)
+
+
+Posting `{'metadata':<hdruk 2.1.2 metadata>}`
+Full:
+```
+/translate?output_schema=GWDM&output_version=1.0&input_schema=HDRUK&input_version=2.1.2
+```
+Will return 200 and `{<GWDM 1.0 metadata>}` if successfull.
+
+
+No input specified:
+```
+/translate?output_schema=GWDM&output_version=1.0
+```
+The service will attempt to detect the input metadata schema and version and find a translation map based on this
+
+No queries specified:
+```
+/translate
+```
+The service will assume the output is the latest version of the GWDM (1.0), attempt to detect the input metadata schema and version and find a translation map based on this. 
+
+
+Posting `{'metadata':<GWDM 1.0 metadata>}` 
+```
+/translate
+```
+The service will assume the output is the latest version of the GWDM (1.0), the service will detect that the input is already the GWDM, the service will not try any translation and will return a 200 with the original metadata in the returned payload.
+
+
+
+
 
 ## Examples
 
