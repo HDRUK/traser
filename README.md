@@ -1,14 +1,14 @@
 
 # HDR metadata TRAnslation SERvice (TRASER)
 
-About..
+A microservice for converting between different schemas of metadata.
 
 ## Setup
 
 ### Install the package
 
 ```
-git clone https://github.com/HDRUK/traser.git
+git clone -b dev https://github.com/HDRUK/traser.git
 cd traser
 ```
 
@@ -29,6 +29,24 @@ Or just:
 npm install
 npm run dev
 ```
+
+### Run via tilt 
+
+In the gateway-api main `tiltconf.json` you need to make sure that TRASER is enabled:
+```
+{
+    ...
+    "traserServiceRoot": "<path to source code>",
+    "traserEnabled": true,
+    ...
+}
+```
+When `tilt up` is run, TRASER will be running on port `8002`, otherwise you can port-forward by getting the service pod name via `kubectl get pods` and running:
+```
+kubectl port-forward <traser pod name>  <port to forward to>:3001
+```
+
+
 
 ## Swagger Documentation
 
