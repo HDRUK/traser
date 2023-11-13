@@ -36,15 +36,16 @@ const translate = async (
 };
 
 describe("POST /translate", () => {
-    describe("POST /translate?output_schema=SchemaOrg&output_version=default&input_schema=GWDM&input_version=1.0", () => {
+    describe("POST /translate?output_schema=SchemaOrg&output_version=GoogleRecommended&input_schema=GWDM&input_version=1.0", () => {
         it("should return 200 if gdmv1 metadata translated to schema.org", async () => {
             const response = await translate(
                 sampleMetadata.gdmv1,
                 "GWDM",
                 "1.0",
                 "SchemaOrg",
-                "default"
+                "GoogleRecommended"
             );
+	    console.log(response);
             expect(response.status).toBe(200);
         });
     });
