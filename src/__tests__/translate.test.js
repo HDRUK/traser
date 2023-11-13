@@ -45,7 +45,6 @@ describe("POST /translate", () => {
                 "SchemaOrg",
                 "GoogleRecommended"
             );
-	    console.log(response);
             expect(response.status).toBe(200);
         });
     });
