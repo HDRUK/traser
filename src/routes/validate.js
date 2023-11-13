@@ -11,29 +11,25 @@ const router = express.Router();
 
 /**
  * @swagger
- * /translate:
+ * /validate:
  *   post:
- *     summary: Perform a translation of metadata
- *     description: Translates metadata known to HDRUK from one schema into another with optional input and output validation.
+ *     summary: Perform a validation of metadata
+ *     description: Validates metadata known to TRASER.
  *     parameters:
  *       - in: query
- *         name: output_schema
+ *         name: input_schema
  *         required: true
  *         schema:
  *           type: string
- *         description: Output metadata model name
+ *         description: Schema model name
+ *         example: GWDM
  *       - in: query
- *         name: output_version
+ *         name: input_version
  *         required: true
  *         schema:
  *           type: string
- *         description: Output metadata model version
- *       - in: query
- *         name: output_model
- *         required: true
- *         schema:
- *           type: string
- *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
+ *         description: Model version to be validated against
+ *         example: 1.0 
  *     requestBody:
  *       required: true
  *       content:
@@ -44,16 +40,21 @@ const router = express.Router();
  *               metadata:
  *                 type: object
  *                 required: true
- *                 description: metadata JSON passed to translation map
+ *                 description: metadata JSON object that is to be validated  
  *     responses:
  *       200:
- *         description: Successful validation of metadata into the requested form
+ *         description: Successful validation of metadata with the requested schema name and version
  *         content:
  *           application/json:
- *             schema:
+ *            schema:
  *               type: object
+ *               properties:
+ *                 details:
+ *                   type: string
+ *               example:
+ &                 details: "all ok"
  *       400:
- *         description: Bad Request
+ *         description: Metadata cannot be validated
  *         content:
  *           application/json:
  *             schema:
