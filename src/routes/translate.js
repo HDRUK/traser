@@ -115,6 +115,7 @@ router.post(
         query("output_version").optional(),
         query("input_schema").optional(),
         query("input_version").optional(),
+	query("select_first_matching").default(true),
     ],
     async (req, res) => {
         //return errors from express-validator
@@ -130,6 +131,7 @@ router.post(
         const { metadata, extra } = data;
         const validateInput = data.validate_input;
         const validateOutput = data.validate_output;
+	const selectFirstMatching = data.select_first_matching;
 
         let inputModelName = data.input_schema;
         let inputModelVersion = data.input_version;
@@ -149,7 +151,7 @@ router.post(
                         available_schemas: availableSchemas,
                     },
                 });
-            } else if (matchingSchemasOnly.length > 1) {
+            } else if (matchingSchemasOnly.length > 1 && !selectFirstMatching) {
                 //need to think about this in the future....
                 // - a schema.org could match a bioschema
                 // - similar things could happen with variations of the GWDM
