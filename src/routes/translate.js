@@ -36,13 +36,13 @@ const router = express.Router();
  *           type: string
  *         description: Output metadata model version
  *       - in: query
- *         name: output_model
+ *         name: input_schema
  *         required: false
  *         schema:
  *           type: string
  *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
  *       - in: query
- *         name: output_version
+ *         name: input_version
  *         required: false
  *         schema:
  *           type: string
@@ -181,7 +181,7 @@ router.post(
                     //really shouldnt be getting here... should always have the GWDM loaded...
                     return res.status(400).json({
                         error: "Translation not possible",
-                        details: `Unknown model and version to translate to, use ?output_model=<model>&?output_version=<version>`,
+                        details: `Unknown model and version to translate to, use ?output_schema=<model>&?output_version=<version>`,
                     });
                 }
             } else if (outputModelVersion == undefined) {
@@ -192,7 +192,7 @@ router.post(
             } else {
                 return res.status(400).json({
                     error: "Translation not possible",
-                    details: `Unknown model version ${outputModelVersion} to translate to, use ?output_model=<model>`,
+                    details: `Unknown model version ${outputModelVersion} to translate to, use ?output_schema=<model>`,
                 });
             }
         }
