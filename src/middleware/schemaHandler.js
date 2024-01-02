@@ -2,8 +2,8 @@ const {
     getFromUri,
     getFromCacheOrUri,
     getFromLocal,
-    getFromCacheOrLocal
-} = require('./cacheHandler');
+    getFromCacheOrLocal,
+} = require("./cacheHandler");
 
 const Ajv = require("ajv").default;
 const addFormats = require("ajv-formats").default;
@@ -23,11 +23,10 @@ addFormats(ajv);
 const schemataPath = process.env.SCHEMA_LOCATION;
 const loadFromLocalFile = !schemataPath.startsWith("http");
 
-console.log(schemataPath)
-
-const getFromCacheOrOther = loadFromLocalFile ? getFromCacheOrLocal : getFromCacheOrUri;
+const getFromCacheOrOther = loadFromLocalFile
+    ? getFromCacheOrLocal
+    : getFromCacheOrUri;
 const getFromOther = loadFromLocalFile ? getFromLocal : getFromUri;
-
 
 const getSchemaPath = (model, version) => {
     return `${schemataPath}/hdr_schemata/models/${model}/${version}/schema.json`;
@@ -36,7 +35,7 @@ const getSchemaPath = (model, version) => {
 const retrieveSchema = async (schemaName, schemaVersion) => {
     const schemaPath = getSchemaPath(schemaName, schemaVersion);
     let schema = await getFromOther(schemaPath, schemaPath);
-    if (typeof schema === 'string'){
+    if (typeof schema === "string") {
         schema = JSON.parse(schema);
     }
     return schema;
@@ -47,7 +46,7 @@ const getAvailableSchemas = async () => {
         "schemas:available",
         schemataPath + "/available.json"
     );
-    if (typeof available === 'string'){
+    if (typeof available === "string") {
         available = JSON.parse(available);
     }
     return available;
@@ -76,7 +75,7 @@ const validateMetadata = async (metadata, modelName, modelVersion) => {
     }
 };
 
-const findMatchingSchemas = async (metadata,with_errors=false) => {
+const findMatchingSchemas = async (metadata, with_errors = false) => {
     const schemas = await getAvailableSchemas();
     let retval = [];
     for (const [schema, versions] of Object.entries(schemas)) {
@@ -85,13 +84,13 @@ const findMatchingSchemas = async (metadata,with_errors=false) => {
                 const validator = await getSchema(schema, version);
                 //need to do a shallowcopy of the metadata as ajv is configured
                 // to fill missing data
-                const isValid = validator({...metadata});
+                const isValid = validator({ ...metadata });
                 const outcome = {
                     name: schema,
                     version: version,
-                    matches: isValid
+                    matches: isValid,
                 };
-                if(with_errors){
+                if (with_errors) {
                     outcome.errors = validator.errors;
                 }
                 retval.push(outcome);
@@ -123,5 +122,4 @@ module.exports = {
     getAvailableSchemas,
     validateMetadata,
     findMatchingSchemas,
-
 };
