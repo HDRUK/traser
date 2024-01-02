@@ -36,13 +36,13 @@ const router = express.Router();
  *           type: string
  *         description: Output metadata model version
  *       - in: query
- *         name: output_model
+ *         name: input_schema
  *         required: false
  *         schema:
  *           type: string
  *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
  *       - in: query
- *         name: output_version
+ *         name: input_version
  *         required: false
  *         schema:
  *           type: string
@@ -115,6 +115,7 @@ router.post(
         query("output_version").optional(),
         query("input_schema").optional(),
         query("input_version").optional(),
+	query("select_first_matching").default(true),
     ],
     async (req, res) => {
         //return errors from express-validator
@@ -130,6 +131,7 @@ router.post(
         const { metadata, extra } = data;
         const validateInput = data.validate_input;
         const validateOutput = data.validate_output;
+	const selectFirstMatching = data.select_first_matching;
 
         let inputModelName = data.input_schema;
         let inputModelVersion = data.input_version;
@@ -149,7 +151,7 @@ router.post(
                         available_schemas: availableSchemas,
                     },
                 });
-            } else if (matchingSchemasOnly.length > 1) {
+            } else if (matchingSchemasOnly.length > 1 && !selectFirstMatching) {
                 //need to think about this in the future....
                 // - a schema.org could match a bioschema
                 // - similar things could happen with variations of the GWDM
@@ -181,7 +183,7 @@ router.post(
                     //really shouldnt be getting here... should always have the GWDM loaded...
                     return res.status(400).json({
                         error: "Translation not possible",
-                        details: `Unknown model and version to translate to, use ?output_model=<model>&?output_version=<version>`,
+                        details: `Unknown model and version to translate to, use ?output_schema=<model>&?output_version=<version>`,
                     });
                 }
             } else if (outputModelVersion == undefined) {
@@ -192,7 +194,7 @@ router.post(
             } else {
                 return res.status(400).json({
                     error: "Translation not possible",
-                    details: `Unknown model version ${outputModelVersion} to translate to, use ?output_model=<model>`,
+                    details: `Unknown model version ${outputModelVersion} to translate to, use ?output_schema=<model>`,
                 });
             }
         }

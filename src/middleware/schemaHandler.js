@@ -23,6 +23,8 @@ addFormats(ajv);
 const schemataPath = process.env.SCHEMA_LOCATION;
 const loadFromLocalFile = !schemataPath.startsWith("http");
 
+console.log(schemataPath)
+
 const getFromCacheOrOther = loadFromLocalFile ? getFromCacheOrLocal : getFromCacheOrUri;
 const getFromOther = loadFromLocalFile ? getFromLocal : getFromUri;
 

@@ -6,7 +6,7 @@
         "start": "NODE_ENV=production node ./src/bin/www",
         "start:prof": "NODE_ENV=production node --prof ./src/bin/www",
         "start:inspect": "NODE_ENV=production node --inspect ./src/bin/www",
-        "dev": "NODE_ENV=development nodemon --watch ./src --ext js,json,jsonata,html  ./src/bin/www ",
+        "dev": "NODE_ENV=development nodemon --watch ./src --ext js,json,jsonata,html,.env  ./src/bin/www ",
         "build": "npm ci --only=production",
         "test": "jest",
         "test:watch": "jest --watchAll",
