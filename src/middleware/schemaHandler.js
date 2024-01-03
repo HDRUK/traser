@@ -5,28 +5,36 @@ const {
     getFromCacheOrLocal,
 } = require("./cacheHandler");
 
+const schemataPath = process.env.SCHEMA_LOCATION;
+
 const Ajv = require("ajv").default;
 const addFormats = require("ajv-formats").default;
 
-const ajv = new Ajv({
-    strict: false,
-    strictSchema: false,
-    strictTypes: false,
-    allErrors: false,
-    coerceTypes: true,
-    useDefaults: true,
-});
+let ajv;
+let getFromCacheOrOther;
+let getFromOther;
 
-//needed to remove warnings about dates and date-times
-addFormats(ajv);
+const init = async () => {
+    ajv = new Ajv({
+        strict: false,
+        strictSchema: false,
+        strictTypes: false,
+        allErrors: false,
+        coerceTypes: true,
+        useDefaults: true,
+    });
 
-const schemataPath = process.env.SCHEMA_LOCATION;
-const loadFromLocalFile = !schemataPath.startsWith("http");
+    //needed to remove warnings about dates and date-times
+    addFormats(ajv);
 
-const getFromCacheOrOther = loadFromLocalFile
-    ? getFromCacheOrLocal
-    : getFromCacheOrUri;
-const getFromOther = loadFromLocalFile ? getFromLocal : getFromUri;
+    const loadFromLocalFile = !schemataPath.startsWith("http");
+
+    getFromCacheOrOther = loadFromLocalFile
+        ? getFromCacheOrLocal
+        : getFromCacheOrUri;
+
+    getFromOther = loadFromLocalFile ? getFromLocal : getFromUri;
+};
 
 const getSchemaPath = (model, version) => {
     return `${schemataPath}/hdr_schemata/models/${model}/${version}/schema.json`;
@@ -103,6 +111,7 @@ const findMatchingSchemas = async (metadata, with_errors = false) => {
 };
 
 const loadSchemas = async () => {
+    await init();
     const schemas = await getAvailableSchemas();
     for (const [schemaName, schemaVersions] of Object.entries(schemas)) {
         for (const schemaVersion of schemaVersions) {
