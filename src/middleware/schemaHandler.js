@@ -5,8 +5,6 @@ const {
     getFromCacheOrLocal,
 } = require("./cacheHandler");
 
-const schemataPath = process.env.SCHEMA_LOCATION;
-
 const Ajv = require("ajv").default;
 const addFormats = require("ajv-formats").default;
 
@@ -22,12 +20,12 @@ const ajv = new Ajv({
 //needed to remove warnings about dates and date-times
 addFormats(ajv);
 
+const schemataPath = process.env.SCHEMA_LOCATION;
 const loadFromLocalFile = !schemataPath.startsWith("http");
 
 const getFromCacheOrOther = loadFromLocalFile
     ? getFromCacheOrLocal
     : getFromCacheOrUri;
-
 const getFromOther = loadFromLocalFile ? getFromLocal : getFromUri;
 
 const getSchemaPath = (model, version) => {
