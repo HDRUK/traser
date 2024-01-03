@@ -1,5 +1,5 @@
 const express = require("express");
-const {validateMetadata } = require("../middleware/schemaHandler");
+const { validateMetadata } = require("../middleware/schemaHandler");
 const {
     body,
     query,
@@ -7,7 +7,6 @@ const {
     matchedData,
 } = require("express-validator");
 const router = express.Router();
-
 
 /**
  * @swagger
@@ -88,7 +87,11 @@ router.post(
         const modelName = data.input_schema;
         const modelVersion = data.input_version;
 
-        const metadataValidationResult = await validateMetadata(metadata, modelName, modelVersion);
+        const metadataValidationResult = await validateMetadata(
+            metadata,
+            modelName,
+            modelVersion
+        );
         if (metadataValidationResult.length > 0) {
             return res.status(400).json({
                 error: "metadata validation failed",

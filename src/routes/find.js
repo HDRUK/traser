@@ -1,6 +1,11 @@
 const express = require("express");
 const { findMatchingSchemas } = require("../middleware/schemaHandler");
-const { body, query, matchedData, validationResult } = require("express-validator");
+const {
+    body,
+    query,
+    matchedData,
+    validationResult,
+} = require("express-validator");
 
 const router = express.Router();
 
@@ -65,7 +70,7 @@ router.post(
             }
             return true;
         }),
-        query("with_errors").default(0).optional().isInt({min:0,max:1}),
+        query("with_errors").default(0).optional().isInt({ min: 0, max: 1 }),
     ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -75,9 +80,9 @@ router.post(
 
         const data = matchedData(req);
         const metadata = req.body;
-        const {with_errors} = data;
+        const { with_errors } = data;
 
-               const result = await findMatchingSchemas(metadata,with_errors==1);
+        const result = await findMatchingSchemas(metadata, with_errors == 1);
 
         res.send(result);
     }
