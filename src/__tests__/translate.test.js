@@ -23,13 +23,13 @@ const translate = async (
     const response = await request(app)
         .post("/translate")
         .query({
-	    output_schema: outputModel,
+            output_schema: outputModel,
             output_version: outputModelVersion,
             input_schema: inputModel,
             input_version: inputModelVersion,
             validate_input: validateInput,
             validate_output: validateOutput,
-	})
+        })
         .send(requestBody);
 
     return response;
@@ -145,7 +145,7 @@ describe("POST /translate", () => {
                 sampleMetadata.hdrukv211,
                 undefined,
                 undefined,
-                'GWDM',
+                "GWDM",
                 undefined,
                 "1",
                 "1",
@@ -161,12 +161,11 @@ describe("POST /translate", () => {
                 sampleMetadata.gdmv1,
                 undefined,
                 undefined,
-		undefined,
                 undefined,
+                undefined
             );
             expect(response.status).toBe(200);
-	    expect(response.body).toMatchObject(sampleMetadata.gdmv1);
+            expect(response.body).toMatchObject(sampleMetadata.gdmv1);
         });
     });
-
 });

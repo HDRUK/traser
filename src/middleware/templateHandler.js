@@ -67,7 +67,6 @@ const retrieveTemplate = async (
 };
 
 const loadTemplates = async () => {
-    await init();
     const templates = await getAvailableTemplates();
     await Promise.all(
         templates.map((t) => {
