@@ -70,7 +70,6 @@ router.get(
         const outputModelName = queryString["output_schema"];
         const outputModelVersion = queryString["output_version"];
 
-
         let template;
         try {
             template = await getTemplate(

@@ -1,9 +1,9 @@
-const express = require('express');
-const jsonata = require('jsonata');
-const {getAvailableTemplates} = require('../middleware/templateHandler');
-const {getAvailableSchemas} = require('../middleware/schemaHandler');
+const express = require("express");
+const jsonata = require("jsonata");
+const { getAvailableTemplates } = require("../middleware/templateHandler");
+const { getAvailableSchemas } = require("../middleware/schemaHandler");
 
-const { query, validationResult, matchedData } = require('express-validator');
+const { query, validationResult, matchedData } = require("express-validator");
 
 const router = express.Router();
 
@@ -38,13 +38,10 @@ const router = express.Router();
  *                   type: string
  *                   description: Description of the error.
  */
-router.get(
-    '/templates',
-    async (req, res) => {
-	const templates = await getAvailableTemplates();
-	res.send(templates);
-    }
-)
+router.get("/templates", async (req, res) => {
+    const templates = await getAvailableTemplates();
+    res.send(templates);
+});
 
 /**
  * @swagger
@@ -73,13 +70,9 @@ router.get(
  *                   type: string
  *                   description: Description of the error.
  */
-router.get(
-    '/schemas',
-    async (req, res) => {
-	const schemas = await getAvailableSchemas();
-	res.send(schemas);
-    }
-)
-
+router.get("/schemas", async (req, res) => {
+    const schemas = await getAvailableSchemas();
+    res.send(schemas);
+});
 
 module.exports = router;
