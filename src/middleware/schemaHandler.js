@@ -109,7 +109,7 @@ const loadSchemas = async () => {
             const schema = await retrieveSchema(schemaName, schemaVersion);
             const key = `${schemaName}:${schemaVersion}`;
             //use ajv as the cache for the schema
-            ajv.removeSchema(key);
+            await ajv.removeSchema(key);
             ajv.addSchema(schema, key);
         }
     }

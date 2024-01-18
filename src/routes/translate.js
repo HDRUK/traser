@@ -139,7 +139,7 @@ router.post(
         const availableSchemas = await getAvailableSchemas();
 
         if (inputModelName == null || inputModelVersion == null) {
-            const matchingSchemas = await findMatchingSchemas(metadata);
+            const matchingSchemas = await findMatchingSchemas(metadata, true);
             const matchingSchemasOnly = matchingSchemas.filter(
                 (item) => item.matches === true
             );
@@ -149,6 +149,8 @@ router.post(
                     message: "Input metadata object matched no known schemas",
                     details: {
                         available_schemas: availableSchemas,
+                        reasons: matchingSchemas,
+                        failed_data: metadata,
                     },
                 });
             } else if (matchingSchemasOnly.length > 1 && !selectFirstMatching) {
