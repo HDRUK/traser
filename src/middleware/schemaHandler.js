@@ -104,7 +104,6 @@ const findMatchingSchemas = async (metadata, with_errors = false) => {
 
 const loadSchemas = async () => {
     const schemas = await getAvailableSchemas();
-
     for (const [schemaName, schemaVersions] of Object.entries(schemas)) {
         for (const schemaVersion of schemaVersions) {
             const schema = await retrieveSchema(schemaName, schemaVersion);
