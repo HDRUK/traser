@@ -198,4 +198,33 @@ describe("POST /translate", () => {
             expect(responseReverse.status).toBe(200);
         });
     });
+
+    describe("POST /translate?input_schema=GWDM&input_version=1.1&output_schema=GWDM&output_version=1.1", () => {
+        it("should return 200 if can translated  GWDM 1.0 <--> GWDM 1.1", async () => {
+            const response = await translate(
+                sampleMetadata.gdmv1,
+                "GWDM",
+                "1.0",
+                "GWDM",
+                "1.1",
+                "1",
+                "1"
+            );
+
+            expect(response.status).toBe(200);
+            const outputMetadata = response.body;
+
+            const responseReverse = await translate(
+                outputMetadata,
+                "GWDM",
+                "1.1",
+                "GWDM",
+                "1.0",
+                "1",
+                "1"
+            );
+
+            expect(responseReverse.status).toBe(200);
+        });
+    });
 });
