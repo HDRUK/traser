@@ -226,4 +226,35 @@ describe("POST /translate", () => {
             expect(responseReverse.status).toBe(200);
         });
     });
+
+    describe("Perform a multi-step translations", () => {
+        it("should return 200 can translate from 2.1.2 to 1.1", async () => {
+            const response = await translate(
+                sampleMetadata.hdrukv211,
+                "HDRUK",
+                "2.1.2",
+                "GWDM",
+                "1.1",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            expect(response.status).toBe(200);
+        });
+
+        it("should return 200 can translate from 2.1.2 to 1.2", async () => {
+            const response = await translate(
+                sampleMetadata.hdrukv211,
+                "HDRUK",
+                "2.1.2",
+                "GWDM",
+                "1.2",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            console.log(JSON.stringify(response.body, null, 2));
+            expect(response.status).toBe(200);
+        });
+    });
 });
