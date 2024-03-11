@@ -176,6 +176,28 @@ router.post(
             outputModelVersion = version;
         }
 
+        const templatesGraph = await new TranslationGraph();
+
+        const inputSupported = Object.keys(templatesGraph.nodes).includes(
+            `${inputModelName}:${inputModelVersion}`
+        );
+
+        const outputSupported = Object.keys(templatesGraph.nodes).includes(
+            `${outputModelName}:${outputModelVersion}`
+        );
+
+        if (!inputSupported) {
+            return res.status(400).json({
+                message: `Cannot support the input model (${inputModelName}:${inputModelVersion})`,
+            });
+        }
+
+        if (!outputSupported) {
+            return res.status(400).json({
+                message: `Cannot support the output model (${outputModelName}:${outputModelVersion})`,
+            });
+        }
+
         //if asked to validate the input, perform the validation
         // - we have already checked if the schemas (inputModelName) as allowed/valid
         if (validateInput) {
@@ -186,30 +208,33 @@ router.post(
             );
 
             if (resultInputValidation.length > 0) {
-                return {
-                    error: {
-                        status: 400,
-                        message: "Input metadata validation failed",
-                        details: {
-                            validationErrors: resultInputValidation,
-                            data: metadata,
-                        },
+                return res.status(400).json({
+                    message: "Input metadata validation failed",
+                    details: {
+                        validationErrors: resultInputValidation,
+                        data: metadata,
                     },
-                };
+                });
             }
         }
 
-        // Create a graph and populate it with your data
-        const templatesGraph = await new TranslationGraph();
+        // build a graph of all the available translations
+
         let startNode = `${inputModelName}:${inputModelVersion}`;
         let endNode = `${outputModelName}:${outputModelVersion}`;
 
+        //find the best route between the translations
         let predecessors = templatesGraph.dijkstra(startNode);
-        const translationsToApply = templatesGraph.getPath(
+        const { translationsToApply, error } = templatesGraph.getPath(
             startNode,
             endNode,
             predecessors
         );
+        if (error) {
+            return res.status(error.status).json({
+                message: error.message,
+            });
+        }
 
         let initialMetadata = metadata;
 

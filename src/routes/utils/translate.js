@@ -4,7 +4,10 @@ const {
     findMatchingSchemas,
 } = require("../../middleware/schemaHandler");
 
-const { getTemplate } = require("../../middleware/templateHandler");
+const {
+    getTemplate,
+    getAvailableTemplates,
+} = require("../../middleware/templateHandler");
 
 const findModelAndVersion = async (metadata, selectFirstMatching) => {
     const availableSchemas = await getAvailableSchemas();
@@ -154,4 +157,8 @@ const translate = async (
     return { translatedMetadata: translatedMetadata };
 };
 
-module.exports = { translate, findModelAndVersion, getDefaultModelAndVersion };
+module.exports = {
+    translate,
+    findModelAndVersion,
+    getDefaultModelAndVersion,
+};

@@ -32,20 +32,34 @@ class TranslationGraph {
         this.nodes[source].push({ target, weight });
     }
 
-    getPath(start, end, predecessors) {
+    getPath(start, end, predecessors, maxIterations = 100) {
         const path = [];
         let current = end;
+        let iterations = 0;
 
-        while (current !== start) {
+        while (current !== start && iterations < maxIterations) {
             path.unshift(current);
             current = predecessors[current];
+            iterations++;
         }
+
+        if (current !== start) {
+            return {
+                error: {
+                    status: 400,
+                    message: `unable to find a translation between ${start} and ${end}`,
+                },
+            };
+        }
+
         path.unshift(start);
 
-        return path.map((node) => {
-            const [name, version] = node.split(":");
-            return { name, version };
-        });
+        return {
+            translationsToApply: path.map((node) => {
+                const [name, version] = node.split(":");
+                return { name, version };
+            }),
+        };
     }
 
     dijkstra(start) {
