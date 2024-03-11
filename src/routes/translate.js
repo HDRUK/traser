@@ -1,19 +1,20 @@
 const express = require("express");
-const jsonata = require("jsonata");
 const {
-    getAvailableSchemas,
-    findMatchingSchemas,
-    validateMetadata,
-} = require("../middleware/schemaHandler");
+    translate,
+    findModelAndVersion,
+    getDefaultModelAndVersion,
+} = require("./utils/translate");
 
-const { getTemplate } = require("../middleware/templateHandler");
+const { TranslationGraph } = require("./utils/graphHelpers");
+
+const { validateMetadata } = require("../middleware/schemaHandler");
+
 const {
     body,
     query,
     validationResult,
     matchedData,
 } = require("express-validator");
-
 const router = express.Router();
 
 /**
@@ -118,7 +119,6 @@ router.post(
         query("select_first_matching").default(true),
     ],
     async (req, res) => {
-        //return errors from express-validator
         const result = validationResult(req);
         if (!result.isEmpty()) {
             return res.status(400).json({
@@ -127,104 +127,53 @@ router.post(
             });
         }
 
-        const data = matchedData(req);
-        const { metadata, extra } = data;
-        const validateInput = data.validate_input;
-        const validateOutput = data.validate_output;
-        const selectFirstMatching = data.select_first_matching;
+        let {
+            metadata,
+            extra,
+            validate_input: validateInput,
+            validate_output: validateOutput,
+            select_first_matching: selectFirstMatching,
+            input_schema: inputModelName,
+            input_version: inputModelVersion,
+            output_schema: outputModelName,
+            output_version: outputModelVersion,
+        } = matchedData(req);
 
-        let inputModelName = data.input_schema;
-        let inputModelVersion = data.input_version;
-
-        const availableSchemas = await getAvailableSchemas();
-
-        if (inputModelName == null || inputModelVersion == null) {
-            const matchingSchemas = await findMatchingSchemas(metadata);
-            const matchingSchemasOnly = matchingSchemas.filter(
-                (item) => item.matches === true
+        if (inputModelName == undefined || inputModelVersion == undefined) {
+            const { name, version, error } = await findModelAndVersion(
+                metadata,
+                selectFirstMatching
             );
-
-            if (matchingSchemasOnly.length < 1) {
-                return res.status(400).json({
-                    message: "Input metadata object matched no known schemas",
-                    details: {
-                        available_schemas: availableSchemas,
-                    },
-                });
-            } else if (matchingSchemasOnly.length > 1 && !selectFirstMatching) {
-                //raise an error if multiple schemas are matching and the default to select
-                // the first matching schemas is not true
-                return res.status(400).json({
-                    message:
-                        "Input metadata object matched multiple schemas! Something could be wrong..",
-                    details: matchingSchemas,
+            if (error) {
+                return res.status(error.status).json({
+                    message: error.message,
+                    details: error.details,
                 });
             }
-            inputModelName = matchingSchemasOnly[0].name;
-            inputModelVersion = matchingSchemasOnly[0].version;
+            inputModelName = name;
+            inputModelVersion = version;
         }
-
-        let outputModelName = data.output_schema;
-        let outputModelVersion = data.output_version;
 
         if (outputModelName == undefined || outputModelVersion == undefined) {
-            if (
-                outputModelName == undefined &&
-                outputModelVersion == undefined
-            ) {
-                const gwdmVersions = availableSchemas.GWDM;
-                if (gwdmVersions) {
-                    outputModelVersion = gwdmVersions[0];
-                    outputModelName = "GWDM";
-                } else {
-                    //really shouldnt be getting here... should always have the GWDM loaded...
-                    return res.status(400).json({
-                        error: "Translation not possible",
-                        details: `Unknown model and version to translate to, use ?output_schema=<model>&?output_version=<version>`,
-                    });
-                }
-            } else if (outputModelVersion == undefined) {
-                return res.status(400).json({
-                    error: "Translation not possible",
-                    details: `Attempting to translate to ${outputModelName} but no version provided, use ?output_version=<version>`,
-                });
-            } else {
-                return res.status(400).json({
-                    error: "Translation not possible",
-                    details: `Unknown model version ${outputModelVersion} to translate to, use ?output_schema=<model>`,
-                });
-            }
-        }
-
-        if (
-            inputModelName == outputModelName &&
-            inputModelVersion == outputModelVersion
-        ) {
-            //dont translate if there is no translation to be done, rather than failing
-            return res.send(metadata);
-        }
-
-        let template;
-        try {
-            template = await getTemplate(
-                inputModelName,
-                inputModelVersion,
+            const { name, version, error } = await getDefaultModelAndVersion(
                 outputModelName,
                 outputModelVersion
             );
-        } catch (error) {
-            return res.status(400).json({
-                error: "Translation not found",
-                message: error.message,
-                details: `Translation for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} is not implemented`,
-            });
-        }
 
-        if (template === null) {
-            return res.status(400).json({
-                error: "Translation not found",
-                details: `Failed to load translation map for ${inputModelName} to ${outputModelName}`,
-            });
+            if (!error && (version == undefined || name == undefined)) {
+                return res.status(500).json({
+                    message: "undefined outputModel!",
+                });
+            }
+
+            if (error) {
+                return res.status(error.status).json({
+                    message: error.message,
+                    details: error.details,
+                });
+            }
+            outputModelName = name;
+            outputModelVersion = version;
         }
 
         //if asked to validate the input, perform the validation
@@ -237,43 +186,58 @@ router.post(
             );
 
             if (resultInputValidation.length > 0) {
-                return res.status(400).json({
-                    error: "Input metadata validation failed",
-                    details: resultInputValidation,
-                    data: metadata,
-                });
+                return {
+                    error: {
+                        status: 400,
+                        message: "Input metadata validation failed",
+                        details: {
+                            validationErrors: resultInputValidation,
+                            data: metadata,
+                        },
+                    },
+                };
             }
         }
 
-        //create an object to be used within JSONata
-        //note:
-        // - might want to revisit calling this 'input'?
-        // - using 'input' as this is used in the templates
-        const source = {
-            input: metadata,
-            extra: extra,
-        };
+        // Create a graph and populate it with your data
+        const templatesGraph = await new TranslationGraph();
+        let startNode = `${inputModelName}:${inputModelVersion}`;
+        let endNode = `${outputModelName}:${outputModelVersion}`;
 
-        let expression;
-        try {
-            expression = jsonata(template);
-        } catch (error) {
-            return res.status(400).json({
-                details: error,
-                error: "JSONata failure",
-            });
-        }
+        let predecessors = templatesGraph.dijkstra(startNode);
+        const translationsToApply = templatesGraph.getPath(
+            startNode,
+            endNode,
+            predecessors
+        );
 
-        let outputMetadata;
-        try {
-            //note: would it be better as a .then() and .catch() ?
-            outputMetadata = await expression.evaluate(source);
-        } catch (error) {
-            return res.status(400).json({
-                details: error,
-                error: "Translation evaluation failure",
-            });
+        let initialMetadata = metadata;
+
+        for (let i = 1; i < translationsToApply.length; i++) {
+            const { name: outputModelName, version: outputModelVersion } =
+                translationsToApply[i];
+
+            const { name: inputModelName, version: inputModelVersion } =
+                translationsToApply[i - 1];
+
+            const { translatedMetadata, error } = await translate(
+                initialMetadata,
+                extra,
+                inputModelName,
+                inputModelVersion,
+                outputModelName,
+                outputModelVersion
+            );
+
+            if (error) {
+                return res.status(error.status).json({
+                    message: error.message,
+                    details: error.details,
+                });
+            }
+            initialMetadata = translatedMetadata;
         }
+        let outputMetadata = initialMetadata;
 
         if (validateOutput) {
             const resultOutputValidation = await validateMetadata(
@@ -289,7 +253,8 @@ router.post(
                 });
             }
         }
-        res.send(outputMetadata);
+
+        return res.send(outputMetadata);
     }
 );
 

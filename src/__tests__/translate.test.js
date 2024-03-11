@@ -129,12 +129,13 @@ describe("POST /translate", () => {
                 sampleMetadata.hdrukv211,
                 undefined,
                 undefined,
-                undefined,
-                undefined,
+                "GWDM",
+                "1.0",
                 "1",
                 "1",
                 sampleMetadata.extra_hdrukv211
             );
+            console.log(response.body);
             expect(response.status).toBe(200);
         });
     });
@@ -161,8 +162,8 @@ describe("POST /translate", () => {
                 sampleMetadata.gdmv1,
                 undefined,
                 undefined,
-                undefined,
-                undefined
+                "GWDM",
+                "1.0"
             );
             expect(response.status).toBe(200);
             expect(response.body).toMatchObject(sampleMetadata.gdmv1);
@@ -181,7 +182,6 @@ describe("POST /translate", () => {
                 "1",
                 sampleMetadata.extra_hdrukv211
             );
-
             expect(response.status).toBe(200);
             const outputMetadata = response.body;
 
@@ -210,7 +210,6 @@ describe("POST /translate", () => {
                 "1",
                 "1"
             );
-
             expect(response.status).toBe(200);
             const outputMetadata = response.body;
 
