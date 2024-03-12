@@ -1,5 +1,6 @@
 name: Run tests
 run-name: ${{ github.actor }} triggered quality check pipeline
+on: [push]
 jobs:
     testing:
         timeout-minutes: 10
@@ -18,9 +19,6 @@ jobs:
 
             - name: Setup env
               run: "cp env_template .env"
-
-            # - name: Run eslint
-            #   run: "npm run lint"
 
             - name: Run testing
               run: "npm run test:gh"
