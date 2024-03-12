@@ -129,8 +129,8 @@ describe("POST /translate", () => {
                 sampleMetadata.hdrukv211,
                 undefined,
                 undefined,
-                undefined,
-                undefined,
+                "GWDM",
+                "1.0",
                 "1",
                 "1",
                 sampleMetadata.extra_hdrukv211
@@ -161,11 +161,124 @@ describe("POST /translate", () => {
                 sampleMetadata.gdmv1,
                 undefined,
                 undefined,
-                undefined,
-                undefined
+                "GWDM",
+                "1.0"
             );
             expect(response.status).toBe(200);
             expect(response.body).toMatchObject(sampleMetadata.gdmv1);
+        });
+    });
+
+    describe("POST /translate?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=1.1", () => {
+        it("should return 200 if can translated HDRUK 2.1.2 <--> GWDM 1.1", async () => {
+            const response = await translate(
+                sampleMetadata.hdrukv211,
+                "HDRUK",
+                "2.1.2",
+                "GWDM",
+                "1.1",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            expect(response.status).toBe(200);
+            const outputMetadata = response.body;
+
+            const responseReverse = await translate(
+                outputMetadata,
+                "GWDM",
+                "1.1",
+                "HDRUK",
+                "2.1.2",
+                "1",
+                "1"
+            );
+
+            expect(responseReverse.status).toBe(200);
+        });
+    });
+
+    describe("POST /translate?input_schema=GWDM&input_version=1.1&output_schema=GWDM&output_version=1.1", () => {
+        it("should return 200 if can translated  GWDM 1.0 <--> GWDM 1.1", async () => {
+            const response = await translate(
+                sampleMetadata.gdmv1,
+                "GWDM",
+                "1.0",
+                "GWDM",
+                "1.1",
+                "1",
+                "1"
+            );
+            expect(response.status).toBe(200);
+            const outputMetadata = response.body;
+
+            const responseReverse = await translate(
+                outputMetadata,
+                "GWDM",
+                "1.1",
+                "GWDM",
+                "1.0",
+                "1",
+                "1"
+            );
+
+            expect(responseReverse.status).toBe(200);
+        });
+    });
+
+    describe("Perform a multi-step translations", () => {
+        it("should return 200 can translate from 2.1.2 to 1.1", async () => {
+            const response = await translate(
+                sampleMetadata.hdrukv211,
+                "HDRUK",
+                "2.1.2",
+                "GWDM",
+                "1.1",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            expect(response.status).toBe(200);
+        });
+
+        it("should return 200 can translate from 2.1.2 to 1.2", async () => {
+            const response = await translate(
+                sampleMetadata.hdrukv211,
+                "HDRUK",
+                "2.1.2",
+                "GWDM",
+                "1.2",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            expect(response.status).toBe(200);
+        });
+
+        it("should return 200 can translate from 2.1.2 to 1.2 and back again to 2.2.1", async () => {
+            let response = await translate(
+                sampleMetadata.hdrukv211,
+                "HDRUK",
+                "2.1.2",
+                "GWDM",
+                "1.2",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            const gwdm = response.body;
+            expect(response.status).toBe(200);
+
+            response = await translate(
+                gwdm,
+                "GWDM",
+                "1.2",
+                "HDRUK",
+                "2.2.1",
+                "1",
+                "1"
+            );
+            expect(response.status).toBe(200);
         });
     });
 });
