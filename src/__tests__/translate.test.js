@@ -135,7 +135,6 @@ describe("POST /translate", () => {
                 "1",
                 sampleMetadata.extra_hdrukv211
             );
-            console.log(response.body);
             expect(response.status).toBe(200);
         });
     });
@@ -253,7 +252,6 @@ describe("POST /translate", () => {
                 "1",
                 sampleMetadata.extra_hdrukv211
             );
-            console.log(JSON.stringify(response.body, null, 2));
             expect(response.status).toBe(200);
         });
     });
