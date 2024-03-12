@@ -272,7 +272,7 @@ router.post(
             );
             if (resultOutputValidation.length > 0) {
                 return res.status(400).json({
-                    error: "Output metadata validation failed",
+                    message: "Output metadata validation failed",
                     details: resultOutputValidation,
                     data: outputMetadata,
                 });

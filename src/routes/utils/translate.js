@@ -135,7 +135,7 @@ const translate = async (
             error: {
                 status: 400,
                 details: error,
-                message: "JSONata failure",
+                message: `JSONata failure for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion}`,
             },
         };
     }
@@ -149,7 +149,7 @@ const translate = async (
             error: {
                 status: 400,
                 details: error,
-                message: "Translation evaluation failure",
+                message: `Translation evaluation failure for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} `,
             },
         };
     }
