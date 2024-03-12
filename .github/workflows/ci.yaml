@@ -2,23 +2,23 @@ name: Run tests
 run-name: ${{ github.actor }} triggered quality check pipeline
 on: [push]
 jobs:
-    testing:
-        timeout-minutes: 10
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
+  testing:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            - name: Set up Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "20"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-            - name: NPM install
-              run: "npm install"
+      - name: NPM install
+        run: "npm install"
 
-            - name: Setup env
-              run: "cp env_template .env"
+      - name: Setup env
+        run: "cp env_template .env"
 
-            - name: Run testing
-              run: "npm run test:gh"
+      - name: Run testing
+        run: "npm run test:gh"
