@@ -1,38 +1,26 @@
 name: Run tests
 run-name: ${{ github.actor }} triggered quality check pipeline
-on:
-  push:
-    branches:
-      - dev
-      - main
-  pull_request:
-    branches:
-      - main
-      - dev
 jobs:
-  testing:
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    testing:
+        timeout-minutes: 10
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
 
-    - name: Redis Server
-      uses: supercharge/redis-github-action@1.7.0
-            
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '16' 
-      
-    - name: NPM install
-      run: "npm install"
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
 
-    - name: Setup env
-      run: "cp env_template .env"
+            - name: NPM install
+              run: "npm install"
 
-    # - name: Run eslint
-    #   run: "npm run lint"
+            - name: Setup env
+              run: "cp env_template .env"
 
-    - name: Run testing
-      run: "npm run test:gh"
+            # - name: Run eslint
+            #   run: "npm run lint"
+
+            - name: Run testing
+              run: "npm run test:gh"

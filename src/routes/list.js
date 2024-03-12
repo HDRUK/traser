@@ -3,6 +3,8 @@ const jsonata = require("jsonata");
 const { getAvailableTemplates } = require("../middleware/templateHandler");
 const { getAvailableSchemas } = require("../middleware/schemaHandler");
 
+const { TranslationGraph } = require("./utils/graphHelpers");
+
 const { query, validationResult, matchedData } = require("express-validator");
 
 const router = express.Router();
@@ -73,6 +75,46 @@ router.get("/templates", async (req, res) => {
 router.get("/schemas", async (req, res) => {
     const schemas = await getAvailableSchemas();
     res.send(schemas);
+});
+
+/**
+ * @swagger
+ * /list/schemas:
+ *   get:
+ *     summary: Retrieve available schema names
+ *     description: Retrieve available schema names from the cache.
+ *     responses:
+ *       200:
+ *         description: List of available schema names.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               description: List of available schema names.
+ *               items:
+ *                 type: string
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   description: Description of the error.
+ */
+router.get("/translations", async (req, res) => {
+    const startNode = "GWDM:1.0";
+    const endNode = "GWDM:1.2";
+    const templatesGraph = await new TranslationGraph();
+    let predecessors = templatesGraph.dijkstra(startNode);
+    const { translationsToApply, error } = templatesGraph.getPath(
+        startNode,
+        endNode,
+        predecessors
+    );
+    return res.send(predecessors);
 });
 
 module.exports = router;
