@@ -254,5 +254,31 @@ describe("POST /translate", () => {
             );
             expect(response.status).toBe(200);
         });
+
+        it("should return 200 can translate from 2.1.2 to 1.2 and back again to 2.2.1", async () => {
+            let response = await translate(
+                sampleMetadata.hdrukv211,
+                "HDRUK",
+                "2.1.2",
+                "GWDM",
+                "1.2",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            const gwdm = response.body;
+            expect(response.status).toBe(200);
+
+            response = await translate(
+                gwdm,
+                "GWDM",
+                "1.2",
+                "HDRUK",
+                "2.2.1",
+                "1",
+                "1"
+            );
+            expect(response.status).toBe(200);
+        });
     });
 });
