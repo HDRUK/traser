@@ -1,4 +1,5 @@
 const express = require("express");
+const publishMessage = require("../middleware/auditHandler");
 const { findMatchingSchemas } = require("../middleware/schemaHandler");
 const {
     body,
@@ -75,6 +76,11 @@ router.post(
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            publishMessage(
+                "POST",
+                "find",
+                `Failed to validate posted metadata against available schemas`
+            );
             return res.status(400).json({ errors: errors.array() });
         }
 
@@ -84,6 +90,11 @@ router.post(
 
         const result = await findMatchingSchemas(metadata, with_errors == 1);
 
+        publishMessage(
+            "POST",
+            "find",
+            `Validated posted metadata against available schemas`
+        );
         res.send(result);
     }
 );

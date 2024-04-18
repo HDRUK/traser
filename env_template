@@ -2,3 +2,8 @@ APP_SECRET=1234abcd
 CACHE_REFRESH_STDTLL=1860
 TEMPLATES_LOCATION=https://raw.githubusercontent.com/HDRUK/traser-mapping-files/master
 SCHEMA_LOCATION=https://raw.githubusercontent.com/HDRUK/schemata-2/master
+
+AUDIT_LOG_ENABLED=0
+PUBSUB_PROJECT_ID=hdrinnovationgatewaydev
+PUBSUB_TOPIC_NAME=projects/hdrinnovationgatewaydev/topics/gateway-audit-logs-topic
+GOOGLE_APPLICATION_CREDENTIALS=/app/application_default_credentials.json

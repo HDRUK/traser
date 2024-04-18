@@ -7,6 +7,7 @@ const {
 
 const { TranslationGraph } = require("./utils/graphHelpers");
 
+const publishMessage = require("../middleware/auditHandler");
 const { validateMetadata } = require("../middleware/schemaHandler");
 
 const {
@@ -121,6 +122,11 @@ router.post(
     async (req, res) => {
         const result = validationResult(req);
         if (!result.isEmpty()) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to translate metadata`
+            );
             return res.status(400).json({
                 message: "Translation has failed.",
                 errors: result.array(),
@@ -145,6 +151,11 @@ router.post(
                 selectFirstMatching
             );
             if (error) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to translate metadata`
+                );
                 return res.status(error.status).json({
                     message: error.message,
                     details: error.details,
@@ -161,12 +172,22 @@ router.post(
             );
 
             if (!error && (version == undefined || name == undefined)) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - output model undefined`
+                );
                 return res.status(500).json({
                     message: "undefined outputModel!",
                 });
             }
 
             if (error) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to translate metadata from ${inputModelName}:${inputModelVersion}`
+                );
                 return res.status(error.status).json({
                     message: error.message,
                     details: error.details,
@@ -187,12 +208,22 @@ router.post(
         );
 
         if (!inputSupported) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - input model unsupported`
+            );
             return res.status(400).json({
                 message: `Cannot support the input model (${inputModelName}:${inputModelVersion})`,
             });
         }
 
         if (!outputSupported) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - output model unsupported`
+            );
             return res.status(400).json({
                 message: `Cannot support the output model (${outputModelName}:${outputModelVersion})`,
             });
@@ -208,6 +239,11 @@ router.post(
             );
 
             if (resultInputValidation.length > 0) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to validate input metadata as ${inputModelName}:${inputModelVersion}`
+                );
                 return res.status(400).json({
                     message: "Input metadata validation failed",
                     details: {
@@ -231,6 +267,11 @@ router.post(
             predecessors
         );
         if (error) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to find translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
+            );
             return res.status(error.status).json({
                 message: error.message,
             });
@@ -255,6 +296,11 @@ router.post(
             );
 
             if (error) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to execute translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
+                );
                 return res.status(error.status).json({
                     message: error.message,
                     details: error.details,
@@ -271,6 +317,11 @@ router.post(
                 outputModelVersion
             );
             if (resultOutputValidation.length > 0) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to validate translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
+                );
                 return res.status(400).json({
                     message: "Output metadata validation failed",
                     details: resultOutputValidation,
@@ -279,6 +330,11 @@ router.post(
             }
         }
 
+        publishMessage(
+            "POST",
+            "translate",
+            `Translated metadata from ${inputModelName}:${inputModelVersion} to ${outputModelName}:${outputModelVersion}`
+        );
         return res.send(outputMetadata);
     }
 );
