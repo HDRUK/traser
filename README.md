@@ -69,7 +69,7 @@ No input specified:
 ```
 /translate?output_schema=GWDM&output_version=1.0
 ```
-The service will attempt to detect the input metadata schema and version and find a translation map based on this
+The service will attempt to detect the input metadata schema and version and find a translation map based on this.
 
 No queries specified:
 ```
