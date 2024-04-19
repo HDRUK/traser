@@ -8,8 +8,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install \
-    && npm install @google-cloud/pubsub
+RUN npm install
 
 # Copy source files
 COPY . .

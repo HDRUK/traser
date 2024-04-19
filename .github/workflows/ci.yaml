@@ -23,7 +23,7 @@ jobs:
           node-version: "20"
 
       - name: NPM install
-        run: "npm install && npm install @google-cloud/pubsub"
+        run: "npm install"
 
       - name: Setup env
         run: "cp env_template .env"
