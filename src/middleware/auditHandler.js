@@ -1,12 +1,11 @@
 const {PubSub} = require('@google-cloud/pubsub');
-const keyFilename = process.env.GOOGLE_APPLICATION_CREDENTIALS || "";
 const projectId = process.env.PUBSUB_PROJECT_ID || "";
 const topicName = process.env.PUBSUB_TOPIC_NAME || "";
 const auditEnabled = process.env.AUDIT_LOG_ENABLED || 0;
 
 const publishMessage = async (actionType, actionName, description = "") => {
     if (auditEnabled == true) {
-        const pubSubClient = new PubSub({projectId, keyFilename});
+        const pubSubClient = new PubSub({projectId});
         const messageJson = {
             "action_type": actionType,
             "action_name": actionName,
