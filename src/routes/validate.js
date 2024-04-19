@@ -1,4 +1,5 @@
 const express = require("express");
+const publishMessage = require("../middleware/auditHandler");
 const { validateMetadata } = require("../middleware/schemaHandler");
 const {
     body,
@@ -76,6 +77,11 @@ router.post(
     async (req, res) => {
         const result = validationResult(req);
         if (!result.isEmpty()) {
+            publishMessage(
+                "POST",
+                "validate",
+                `Failed to validate metadata`
+            );
             return res.status(400).json({
                 message: "Validation has failed",
                 errors: result.array(),
@@ -93,12 +99,22 @@ router.post(
             modelVersion
         );
         if (metadataValidationResult.length > 0) {
+            publishMessage(
+                "POST",
+                "validate",
+                `Failed to validate metadata as ${modelName}:${modelVersion}`
+            );
             return res.status(400).json({
                 error: "metadata validation failed",
                 details: metadataValidationResult,
                 data: metadata,
             });
         } else {
+            publishMessage(
+                "POST",
+                "validate",
+                `Validated metadata as ${modelName}:${modelVersion}`
+            );
             return res.send({ details: "all ok" });
         }
     }

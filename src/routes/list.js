@@ -1,5 +1,6 @@
 const express = require("express");
 const jsonata = require("jsonata");
+const publishMessage = require("../middleware/auditHandler");
 const { getAvailableTemplates } = require("../middleware/templateHandler");
 const { getAvailableSchemas } = require("../middleware/schemaHandler");
 
@@ -42,6 +43,11 @@ const router = express.Router();
  */
 router.get("/templates", async (req, res) => {
     const templates = await getAvailableTemplates();
+    publishMessage(
+        "GET",
+        "list/templates",
+        `Retrieved available template mappings`
+    );
     res.send(templates);
 });
 
@@ -74,6 +80,11 @@ router.get("/templates", async (req, res) => {
  */
 router.get("/schemas", async (req, res) => {
     const schemas = await getAvailableSchemas();
+    publishMessage(
+        "GET",
+        "list/schemas",
+        `Retrieved available schemas`
+    );
     res.send(schemas);
 });
 
@@ -131,6 +142,11 @@ router.get(
     async (req, res) => {
         const result = validationResult(req);
         if (!result.isEmpty()) {
+            publishMessage(
+                "GET",
+                "translations",
+                `Failed to retrieve available translations`
+            );
             return res.status(400).json({
                 message: "Translation has failed.",
                 errors: result.array(),
@@ -163,6 +179,12 @@ router.get(
                     .join(" -> ");
             })
             .filter((e) => e != null);
+
+        publishMessage(
+            "GET",
+            "translations",
+            `Retrieved available translations for ${schema}:${version}`
+        );
         return res.send(routes);
     }
 );

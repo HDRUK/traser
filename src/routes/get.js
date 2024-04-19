@@ -1,4 +1,5 @@
 const express = require("express");
+const publishMessage = require("../middleware/auditHandler");
 const { getSchema } = require("../middleware/schemaHandler");
 const { getTemplate } = require("../middleware/templateHandler");
 const { query, validationResult, matchedData } = require("express-validator");
@@ -58,6 +59,11 @@ router.get(
     async (req, res) => {
         const result = validationResult(req);
         if (!result.isEmpty()) {
+            publishMessage(
+                "GET", 
+                "map", 
+                `Failed to retrieve mapping due to invalid inputs`
+            );
             return res.status(400).json({
                 message: "Invalid query parameters.",
                 errors: result.array(),
@@ -79,12 +85,23 @@ router.get(
                 outputModelVersion
             );
         } catch (error) {
+            publishMessage(
+                "GET", 
+                "map", 
+                `Failed to retrieve mapping for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion}`
+            );
             return res.status(400).json({
                 error: "Translation not found",
                 message: error.message,
                 details: `Translation for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} is not implemented`,
             });
         }
+
+        publishMessage(
+            "GET", 
+            "map", 
+            `Mapping for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} retrieved`
+        );
 
         res.send({
             input_schema: inputModelName,
@@ -163,18 +180,35 @@ router.get(
         try {
             getSchema(schemaModelName, schemaModelVersion)
                 .then((validator) => {
-                    res.send({
-                        name: schemaModelName,
-                        version: schemaModelVersion,
-                        schema: validator.schema,
-                    });
+                    if (validator.schema) {
+                        publishMessage(
+                            "GET",
+                            "schema",
+                            `${schemaModelName}-${schemaModelVersion} retrieved`
+                        );
+                        res.send({
+                            name: schemaModelName,
+                            version: schemaModelVersion,
+                            schema: validator.schema,
+                        });
+                    }
                 })
                 .catch((error) => {
+                    publishMessage(
+                        "GET",
+                        "schema",
+                        `Failed to retrieve ${schemaModelName}-${schemaModelVersion}`
+                    );
                     res.status(400).json({
                         error: error.message,
                     });
                 });
         } catch (error) {
+            publishMessage(
+                "GET",
+                "schema",
+                `Failed to retrieve ${schemaModelName}-${schemaModelVersion}`
+            );
             res.status(400).json({
                 error: error.message,
             });
