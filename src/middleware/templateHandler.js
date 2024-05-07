@@ -8,6 +8,7 @@ const {
 
 const templatesPath = process.env.TEMPLATES_LOCATION;
 const loadFromLocalFile = !templatesPath.startsWith("http");
+const templatesFilename = "translation.jsonata";
 
 const getFromCacheOrOther = loadFromLocalFile
     ? getFromCacheOrLocal
@@ -20,7 +21,14 @@ const getTemplatePath = (
     outputModel,
     outputVersion
 ) => {
-    return `${templatesPath}/maps/${outputModel}/${outputVersion}/${inputModel}/${inputVersion}/translation.jsonata`;
+    return `${templatesPath}/maps/${outputModel}/${outputVersion}/${inputModel}/${inputVersion}/${templatesFilename}`;
+};
+
+const getFormHydrationTemplatePath = (
+    outputModel,
+    outputVersion
+) => {
+    return `${templatesPath}/maps/Hydration/${outputModel}/${outputVersion}/${templatesFilename}`;
 };
 
 const getAvailableTemplates = async () => {
@@ -82,8 +90,21 @@ const loadTemplates = async () => {
     );
 };
 
+const getFormHydrationTemplate = async (
+    outputModel,
+    outputModelVersion
+) => {
+    const hydrationTemplatePath = getFormHydrationTemplatePath(
+        outputModel,
+        outputModelVersion
+    );
+    const template = await getFromCacheOrOther(hydrationTemplatePath, hydrationTemplatePath);
+    return template;
+}
+
 module.exports = {
     getAvailableTemplates,
     getTemplate,
     loadTemplates,
+    getFormHydrationTemplate,
 };

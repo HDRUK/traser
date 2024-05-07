@@ -32,6 +32,19 @@ const getSchemaPath = (model, version) => {
     return `${schemataPath}/hdr_schemata/models/${model}/${version}/schema.json`;
 };
 
+const getHydrationSchemaPath = (model, version) => {
+    return `${schemataPath}/docs/${model}/${version}.form.json`;
+};
+
+const retrieveHydrationSchema = async (model, version) => {
+    const schemaPath = getHydrationSchemaPath(model, version);
+    let schema = await getFromOther(schemaPath, schemaPath);
+    if (typeof schema === "string") {
+        schema = JSON.parse(schema);
+    }
+    return schema;
+};
+
 const retrieveSchema = async (schemaName, schemaVersion) => {
     const schemaPath = getSchemaPath(schemaName, schemaVersion);
     let schema = await getFromOther(schemaPath, schemaPath);
@@ -122,4 +135,5 @@ module.exports = {
     getAvailableSchemas,
     validateMetadata,
     findMatchingSchemas,
+    retrieveHydrationSchema,
 };
