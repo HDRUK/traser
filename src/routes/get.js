@@ -1,8 +1,9 @@
 const express = require("express");
 const publishMessage = require("../middleware/auditHandler");
-const { getSchema } = require("../middleware/schemaHandler");
-const { getTemplate } = require("../middleware/templateHandler");
+const { getSchema, retrieveHydrationSchema } = require("../middleware/schemaHandler");
+const { getTemplate, getFormHydrationTemplate } = require("../middleware/templateHandler");
 const { query, validationResult, matchedData } = require("express-validator");
+const { hydrate } = require("./utils/hydrate");
 const router = express.Router();
 
 /**
@@ -208,6 +209,86 @@ router.get(
                 "GET",
                 "schema",
                 `Failed to retrieve ${schemaModelName}-${schemaModelVersion}`
+            );
+            res.status(400).json({
+                error: error.message,
+            });
+        }
+    }
+);
+
+/**
+ * @swagger
+ * /get/form_hydration:
+ *   get:
+ *     summary: Retrieve a hydrated form template
+ *     description: Retrieve a hydrated form template for Gateway usage
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Model name
+ *       - in: query
+ *         name: version
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Model version
+ *     responses:
+ *       200:
+ *         description: Hydrated template retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 metadata:
+ *                   type: object
+ *                   description: The retrieved hydrated template.
+ */
+router.get(
+    "/form_hydration",
+    [query("name").notEmpty().escape(), query("version").optional()],
+    async (req, res) => {
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            return res.status(400).json({
+                message: "Invalid query parameters.",
+                errors: result.array(),
+            });
+        }
+
+        const queryString = matchedData(req);
+        const hydrationModelName = queryString["name"];
+        const hydrationModelVersion = queryString["version"] || process.env.HYDRATION_MAP_VERSION; // Default to the only one we have
+
+        try {
+            const metadata = await hydrate(hydrationModelName, hydrationModelVersion);
+
+            if (metadata.translatedMetadata) {
+                publishMessage(
+                    "GET",
+                    "hydration",
+                    `${hydrationModelName}-${hydrationModelVersion} retrieved`
+                );
+                return res.status(200).json(metadata.translatedMetadata);
+            }
+
+            publishMessage(
+                "GET",
+                "hydration",
+                `${hydrationModelName}-${hydrationModelVersion} failed to hydrate`
+            );
+            return res.status(400).json({
+                message: "Hydration failed.",
+            });
+        } catch (error) {
+            publishMessage(
+                "GET",
+                "hydration",
+                `Failed to retrieve ${hydrationModelName}-${hydrationModelVersion}`
             );
             res.status(400).json({
                 error: error.message,
