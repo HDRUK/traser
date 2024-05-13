@@ -236,6 +236,11 @@ router.get(
  *         schema:
  *           type: string
  *         description: Model version
+ *       - in: query
+ *         name: dataTypes
+ *         schema:
+ *           type: string
+ *         description: The optional data types to retrieve schema sections for
  *     responses:
  *       200:
  *         description: Hydrated template retrieved successfully.
@@ -250,7 +255,7 @@ router.get(
  */
 router.get(
     "/form_hydration",
-    [query("name").notEmpty().escape(), query("version").optional()],
+    [query("name").notEmpty().escape(), query("version").optional(), query("dataTypes").optional()],
     async (req, res) => {
         const result = validationResult(req);
         if (!result.isEmpty()) {
@@ -263,9 +268,10 @@ router.get(
         const queryString = matchedData(req);
         const hydrationModelName = queryString["name"];
         const hydrationModelVersion = queryString["version"] || process.env.HYDRATION_MAP_VERSION; // Default to the only one we have
+        const dataTypes = queryString["dataTypes"] || "";
 
         try {
-            const metadata = await hydrate(hydrationModelName, hydrationModelVersion);
+            const metadata = await hydrate(hydrationModelName, hydrationModelVersion, dataTypes);
 
             if (metadata.translatedMetadata) {
                 publishMessage(

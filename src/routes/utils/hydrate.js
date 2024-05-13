@@ -4,10 +4,13 @@ const { retrieveHydrationSchema } = require("../../middleware/schemaHandler");
 
 const hydrate = async (
     modelName,
-    modelVersion
+    modelVersion,
+    dataTypes
 ) => {
     let template = await getFormHydrationTemplate(modelName, modelVersion);
     let source = await retrieveHydrationSchema(modelName, modelVersion);
+
+    source.dataTypes = dataTypes.split(',');
 
     try {
         if (template != null && source != null) {
