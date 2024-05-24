@@ -17,12 +17,12 @@ jobs:
       id-token: write
 
     runs-on: ubuntu-latest
-    environment: dev
+    environment: release
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: dev
+          ref: release
 
       - name: Read VERSION file
         id: getversion
