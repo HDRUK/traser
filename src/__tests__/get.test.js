@@ -43,6 +43,7 @@ describe("GET /get/form_hydration?", () => {
         });
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty("schema_fields");
+        expect(response.body).toHaveProperty("validation");
     });
 
     it("should return 200 if form hydration can be retrieved with no/default version", async () => {
@@ -51,5 +52,17 @@ describe("GET /get/form_hydration?", () => {
         });
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty("schema_fields");
+        expect(response.body).toHaveProperty("validation");
+    });
+
+    it("should return 200 if form hydration can be retrieved with dataTypes provided", async () => {
+        const response = await request(app).get("/get/form_hydration").query({
+            name: "HDRUK",
+            version: "2.2.1",
+            dataTypes: "Imaging types, Lifestyle"
+        });
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty("schema_fields");
+        expect(response.body).toHaveProperty("validation");
     });
 });
