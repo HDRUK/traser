@@ -1,16 +1,21 @@
-const express = require('express');
-const cacheHandler = require('../middleware/cacheHandler');
-const { body, validationResult } = require('express-validator');
+const express = require("express");
+const publishMessage = require("../middleware/auditHandler");
+const { findMatchingSchemas } = require("../middleware/schemaHandler");
+const {
+    body,
+    query,
+    matchedData,
+    validationResult,
+} = require("express-validator");
 
 const router = express.Router();
-
 
 /**
  * @swagger
  * /find:
  *   post:
  *     summary: Validate posted metadata against available schemas
- *     description: Validate posted metadata against available schemas in the cacheHandler.
+ *     description: Validate posted metadata against available schemas in the cache.
  *     requestBody:
  *       required: true
  *       content:
@@ -21,6 +26,14 @@ const router = express.Router();
  *               metadata:
  *                 type: object
  *                 description: The metadata object to validate.
+ *     parameters:
+ *       - in: query
+ *         name: with_errors
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [0, 1]
+ *         description: Whether to return the validation errors or not
  *     responses:
  *       200:
  *         description: Schema validation results.
@@ -50,27 +63,40 @@ const router = express.Router();
  *                   description: Array of validation errors.
  */
 router.post(
-    '/',
-    body().custom((value, { req }) => {
-        if (!req.is('application/json')) {
-            throw new Error('Invalid content type. Expected JSON.');
-        }
-        return true;
-    }),
+    "/",
+    [
+        body().custom((value, { req }) => {
+            if (!req.is("application/json")) {
+                throw new Error("Invalid content type. Expected JSON.");
+            }
+            return true;
+        }),
+        query("with_errors").default(0).optional().isInt({ min: 0, max: 1 }),
+    ],
     async (req, res) => {
-	
-	const errors = validationResult(req);
-	if (!errors.isEmpty()) {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            publishMessage(
+                "POST",
+                "find",
+                `Failed to validate posted metadata against available schemas`
+            );
             return res.status(400).json({ errors: errors.array() });
-	}
+        }
 
-	//retrieve the posted data 
-	const metadata = req.body;
+        const data = matchedData(req);
+        const metadata = req.body;
+        const { with_errors } = data;
 
-	const result = cacheHandler.findMatchingSchema(metadata);
-	
-	res.send(result);
-	
-    });
+        const result = await findMatchingSchemas(metadata, with_errors == 1);
 
-module.exports = router
+        publishMessage(
+            "POST",
+            "find",
+            `Validated posted metadata against available schemas`
+        );
+        res.send(result);
+    }
+);
+
+module.exports = router;

@@ -1,10 +1,15 @@
 version: '3'
 services:
   app:
+    environment:
+      - APP_SECRET: 1234abcd
+      - CACHE_REFRESH_STDTLL: 1860
+      - TEMPLATES_LOCATION: https://raw.githubusercontent.com/HDRUK/traser-mapping-files/master
+      - SCHEMA_LOCATION: https://raw.githubusercontent.com/HDRUK/schemata-2/master
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 3000:3000
+      - 3001:3001
     volumes:
       - ./src:/app/src

@@ -1,6 +1,9 @@
-const express = require('express');
-const cacheHandler = require('../middleware/cacheHandler');
-const { query, validationResult, matchedData } = require('express-validator');
+const express = require("express");
+const publishMessage = require("../middleware/auditHandler");
+const { getSchema, retrieveHydrationSchema } = require("../middleware/schemaHandler");
+const { getTemplate, getFormHydrationTemplate } = require("../middleware/templateHandler");
+const { query, validationResult, matchedData } = require("express-validator");
+const { hydrate } = require("./utils/hydrate");
 const router = express.Router();
 
 /**
@@ -8,18 +11,32 @@ const router = express.Router();
  * /get/map:
  *   get:
  *     summary: Retrieve a template or mapping file
- *     description: Retrieve a template or mapping file from the cacheHandler.
+ *     description: Retrieve a template or mapping file from the current cache
  *     parameters:
  *       - in: query
- *         name: to
+ *         name: output_schema
+ *         required: true
  *         schema:
  *           type: string
- *         description: The output schema name.
+ *         description: Output metadata model name
  *       - in: query
- *         name: from
+ *         name: output_version
+ *         required: true
  *         schema:
  *           type: string
- *         description: The input schema name.
+ *         description: Output metadata model version
+ *       - in: query
+ *         name: output_model
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
+ *       - in: query
+ *         name: output_version
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Input metadata model version. If unknown, the route will attempt to determine which schema version the metadata matches and use that as the input metadata model version
  *     responses:
  *       200:
  *         description: Template or mapping retrieved successfully.
@@ -32,48 +49,77 @@ const router = express.Router();
  *                   type: object
  *                   description: The retrieved template or mapping.
  */
-router.get('/map',
+router.get(
+    "/map",
     [
-        query('to').notEmpty().escape(),
-        query('from').notEmpty().escape(),
+        query("output_schema").notEmpty().bail(),
+        query("output_version").notEmpty().bail(),
+        query("input_schema").notEmpty().bail(),
+        query("input_version").notEmpty().bail(),
     ],
     async (req, res) => {
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            publishMessage(
+                "GET", 
+                "map", 
+                `Failed to retrieve mapping due to invalid inputs`
+            );
+            return res.status(400).json({
+                message: "Invalid query parameters.",
+                errors: result.array(),
+            });
+        }
 
-	const result = validationResult(req);
-	if (!result.isEmpty()) {
-	    return res.status(400).json({ 
-		message: 'Invalid query parameters.',
-		errors: result.array()
-	    });
-	}
+        const queryString = matchedData(req);
+        const inputModelName = queryString["input_schema"];
+        const inputModelVersion = queryString["input_version"];
+        const outputModelName = queryString["output_schema"];
+        const outputModelVersion = queryString["output_version"];
 
-	const queryString = matchedData(req);
-	const output_model_name = queryString['to'];
-	const input_model_name = queryString['from'];
-	
-	const template = cacheHandler.getTemplate(output_model_name,input_model_name);
-	if (template == null){
-	    return res.status(400).json({ 
-		error: 'Template file is null!', 
-		details: `Could not retrieve the template for output:${output_model_name} input:${input_model_name}`
-	    });
-	}
-	
-	res.send({
-	    "from":input_model_name,
-	    "to":output_model_name,
-	    "translation_map":template
-	});
+        let template;
+        try {
+            template = await getTemplate(
+                inputModelName,
+                inputModelVersion,
+                outputModelName,
+                outputModelVersion
+            );
+        } catch (error) {
+            publishMessage(
+                "GET", 
+                "map", 
+                `Failed to retrieve mapping for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion}`
+            );
+            return res.status(400).json({
+                error: "Translation not found",
+                message: error.message,
+                details: `Translation for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} is not implemented`,
+            });
+        }
 
-    });
+        publishMessage(
+            "GET", 
+            "map", 
+            `Mapping for ${inputModelName}-${inputModelVersion} to ${outputModelName}-${outputModelVersion} retrieved`
+        );
 
+        res.send({
+            input_schema: inputModelName,
+            input_version: inputModelVersion,
+            output_schema: outputModelName,
+            output_version: outputModelVersion,
+            translation_map: template,
+        });
+    }
+);
 
 /**
  * @swagger
  * /get/schema:
  *   get:
  *     summary: Retrieve a schema by name
- *     description: Retrieve a schema by its name from the cacheHandler.
+ *     description: Retrieve a schema by its name from the cache.
  *     parameters:
  *       - in: query
  *         name: name
@@ -81,6 +127,11 @@ router.get('/map',
  *           type: string
  *         required: true
  *         description: The name of the schema to retrieve.
+ *       - in: query
+ *         name: version
+ *         schema:
+ *           type: string
+ *         description: The version of the schema to retrieve
  *     responses:
  *       200:
  *         description: Schema retrieved successfully.
@@ -111,37 +162,144 @@ router.get('/map',
  *                     $ref: '#/components/schemas/ValidationError'
  */
 router.get(
-    '/schema',
-    [
-        query('name').notEmpty().escape()
-    ],
+    "/schema",
+    [query("name").notEmpty().escape(), query("version").optional()],
     async (req, res) => {
-	
-	// possibly repeating code here..
-	const result = validationResult(req);
-	if (!result.isEmpty()) {
-	    return res.status(400).json({ 
-		message: 'Invalid query parameters.',
-		errors: result.array()
-	    });
-	}
+        // possibly repeating code here..
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            return res.status(400).json({
+                message: "Invalid query parameters.",
+                errors: result.array(),
+            });
+        }
 
-	const queryString = matchedData(req);
-	const schema_name = queryString['name'];
+        const queryString = matchedData(req);
+        const schemaModelName = queryString["name"];
+        const schemaModelVersion = queryString["version"] || "";
 
-	try {
-	    const schema = cacheHandler.getSchemas()[schema_name].schema;
-	    res.send({
-		"name":schema_name,
-		"schema":schema
-	    });
+        try {
+            getSchema(schemaModelName, schemaModelVersion)
+                .then((validator) => {
+                    if (validator.schema) {
+                        publishMessage(
+                            "GET",
+                            "schema",
+                            `${schemaModelName}-${schemaModelVersion} retrieved`
+                        );
+                        res.send({
+                            name: schemaModelName,
+                            version: schemaModelVersion,
+                            schema: validator.schema,
+                        });
+                    }
+                })
+                .catch((error) => {
+                    publishMessage(
+                        "GET",
+                        "schema",
+                        `Failed to retrieve ${schemaModelName}-${schemaModelVersion}`
+                    );
+                    res.status(400).json({
+                        error: error.message,
+                    });
+                });
+        } catch (error) {
+            publishMessage(
+                "GET",
+                "schema",
+                `Failed to retrieve ${schemaModelName}-${schemaModelVersion}`
+            );
+            res.status(400).json({
+                error: error.message,
+            });
+        }
+    }
+);
 
-	} catch (error){
-	    res.status(400).json({
-		error: `Bad Request: failed to get schema for ${schema_name}`
-	    });
-	}
+/**
+ * @swagger
+ * /get/form_hydration:
+ *   get:
+ *     summary: Retrieve a hydrated form template
+ *     description: Retrieve a hydrated form template for Gateway usage
+ *     parameters:
+ *       - in: query
+ *         name: name
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Model name
+ *       - in: query
+ *         name: version
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Model version
+ *       - in: query
+ *         name: dataTypes
+ *         schema:
+ *           type: string
+ *         description: The optional data types to retrieve schema sections for
+ *     responses:
+ *       200:
+ *         description: Hydrated template retrieved successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 metadata:
+ *                   type: object
+ *                   description: The retrieved hydrated template.
+ */
+router.get(
+    "/form_hydration",
+    [query("name").notEmpty().escape(), query("version").optional(), query("dataTypes").optional()],
+    async (req, res) => {
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            return res.status(400).json({
+                message: "Invalid query parameters.",
+                errors: result.array(),
+            });
+        }
 
+        const queryString = matchedData(req);
+        const hydrationModelName = queryString["name"];
+        const hydrationModelVersion = queryString["version"] || process.env.HYDRATION_MAP_VERSION; // Default to the only one we have
+        const dataTypes = queryString["dataTypes"] || "";
+
+        try {
+            const metadata = await hydrate(hydrationModelName, hydrationModelVersion, dataTypes);
+
+            if (metadata.translatedMetadata) {
+                publishMessage(
+                    "GET",
+                    "hydration",
+                    `${hydrationModelName}-${hydrationModelVersion} retrieved`
+                );
+                return res.status(200).json(metadata.translatedMetadata);
+            }
+
+            publishMessage(
+                "GET",
+                "hydration",
+                `${hydrationModelName}-${hydrationModelVersion} failed to hydrate`
+            );
+            return res.status(400).json({
+                message: "Hydration failed.",
+            });
+        } catch (error) {
+            publishMessage(
+                "GET",
+                "hydration",
+                `Failed to retrieve ${hydrationModelName}-${hydrationModelVersion}`
+            );
+            res.status(400).json({
+                error: error.message,
+            });
+        }
     }
 );
 

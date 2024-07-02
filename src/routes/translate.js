@@ -1,8 +1,21 @@
-const express = require('express');
-const jsonata = require('jsonata');
-const cacheHandler = require('../middleware/cacheHandler');
-const { body, query, validationResult, matchedData } = require('express-validator');
+const express = require("express");
+const {
+    translate,
+    findModelAndVersion,
+    getDefaultModelAndVersion,
+} = require("./utils/translate");
 
+const { TranslationGraph } = require("./utils/graphHelpers");
+
+const publishMessage = require("../middleware/auditHandler");
+const { validateMetadata } = require("../middleware/schemaHandler");
+
+const {
+    body,
+    query,
+    validationResult,
+    matchedData,
+} = require("express-validator");
 const router = express.Router();
 
 /**
@@ -13,17 +26,29 @@ const router = express.Router();
  *     description: Translates metadata known to HDRUK from one schema into another with optional input and output validation.
  *     parameters:
  *       - in: query
- *         name: to
- *         required: true
+ *         name: output_schema
+ *         required: false
  *         schema:
  *           type: string
  *         description: Output metadata model name
  *       - in: query
- *         name: from
+ *         name: output_version
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Output metadata model version
+ *       - in: query
+ *         name: input_schema
  *         required: false
  *         schema:
  *           type: string
  *         description: Input metadata model name. If unknown, the route will attempt to determine which schema the metadata matches and use that as the input metadata model name
+ *       - in: query
+ *         name: input_version
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Input metadata model version. If unknown, the route will attempt to determine which schema version the metadata matches and use that as the input metadata model version
  *       - in: query
  *         name: validate_input
  *         required: false
@@ -37,7 +62,7 @@ const router = express.Router();
  *         schema:
  *           type: integer
  *           enum: [0, 1]
- *         description: Whether to validate output metadata (optional, 0[no] or  1[yes]) 
+ *         description: Whether to validate output metadata (optional, 0[no] or  1[yes])
  *     requestBody:
  *       required: true
  *       content:
@@ -75,159 +100,243 @@ const router = express.Router();
  *                      type: object
  */
 router.post(
-    '/',
+    "/",
     [
-	body('metadata')
-	    .isObject()
-	    .notEmpty()
-	    .bail(),
-	body('extra')
-	    .optional()
-	    .isObject(),
-	query(['validate_input','validate_output'])
-	    .default('1')
-	    .isIn(['0','1'])//this seems to work for [0,1] as well
-	    .customSanitizer(value => {
-		//needed to make sure/force the value to be bool
-		// - can be seen if you do console.log(typeof(value))
-		return value === '1'
-	    })
-	    .withMessage('Needs to be boolean (either 1 or 0)'),
-	query('to')
-	    .exists()
-	    .bail()
-	    .if(query('validate_output').equals(true))
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Output is not a known schema. Options: "+cacheHandler.getAvailableSchemas()),
-	query('from')
-	    .optional()
-	    .if(query('validate_input').equals(true))
-	    .isIn(cacheHandler.getAvailableSchemas())
-	    .withMessage("Input is not a known schema. Options: "+cacheHandler.getAvailableSchemas())
+        body("metadata").isObject().notEmpty().bail(),
+        body("extra").optional().isObject(),
+        query(["validate_input", "validate_output"])
+            .default("1")
+            .isIn(["0", "1"]) //this seems to work for [0,1] as well
+            .customSanitizer((value) => {
+                //needed to make sure/force the value to be bool
+                // - can be seen if you do console.log(typeof(value))
+                return value === "1";
+            })
+            .withMessage("Needs to be boolean (either 1 or 0)"),
+        query("output_schema").optional(),
+        query("output_version").optional(),
+        query("input_schema").optional(),
+        query("input_version").optional(),
+        query("select_first_matching").default(true),
     ],
     async (req, res) => {
-
-	//return errors from express-validator 
-	const result = validationResult(req);
-	if (!result.isEmpty()) {
-	    return res.status(400).json({ 
-		message: 'Translation has failed.',
-		errors: result.array()
-	    });
-	}
-
-	const data = matchedData(req);
-	const {metadata,extra} = data;
-	const validateInput = data.validate_input;
-	const validateOutput = data.validate_output;
-
-	let inputModelName = data.from;
-
-	if(inputModelName == null){
-	    const matchingSchemas = cacheHandler.findMatchingSchema(metadata);
-	    const matchingSchemasOnly = matchingSchemas
-		  .filter(item => item.matches === true)
-		  .map(item => item.name)
-	    
-	    if (matchingSchemasOnly.length < 1){
-		return res.status(400).json({
-                    message: 'Input metadata object matched no known schemas',
-		    details:{
-			'available_schemas':cacheHandler.getAvailableSchemas()
-		    }
-		});
-	    }
-	    else if(matchingSchemasOnly.length > 1){
-		//need to think about this in the future....
-		// - a schema.org could match a bioschema
-		// - similar things could happen with variations of the GWDM
-		// - may need to start requiring the name of the input model to be passed to the service
-		// - could implement an override i.e. 'pick_first_matching=1'
-		return res.status(400).json({
-                    message: 'Input metadata object matched multiple schemas! Something could be wrong..',
-		    details: matchingSchemas
-		});
-	    }
-	    inputModelName = matchingSchemasOnly[0];
-	}
-	
-	
-	const outputModelName = data.to;
-	
-	let template;
-	try{
-	    template = cacheHandler.getTemplate(outputModelName,inputModelName);
-	}
-	catch(error){
-	    return res.status(400).json({
-		error: 'Translation not found',
-		details:`Translation for ${inputModelName} to ${outputModelName} is not implemented`
-	    });				
-	}
-	
-	if (template === null){
-	    return res.status(400).json({
-		error: 'Translation not found',
-		details:`Failed to load translation map for ${inputModelName} to ${outputModelName}`
-	    });
-	}
-		
-	//if asked to validate the input, perform the validation
-	// - we have already checked if the schemas (inputModelName) as allowed/valid
-	if(validateInput){
-	    const resultInputValidation = cacheHandler.validateMetadata(metadata,inputModelName);
-            if (resultInputValidation.length>0) {
-		return res.status(400).json({ 
-                    error: 'Input metadata validation failed', 
-                    details: resultInputValidation,
-                    data: metadata
-		});
-	    }
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to translate metadata`
+            );
+            return res.status(400).json({
+                message: "Translation has failed.",
+                errors: result.array(),
+            });
         }
-        
-	//create an object to be used within JSONata
-	//note:
-	// - might want to revisit calling this 'input'?
-	// - using 'input' as this is used in the templates
-	const source = {
-            input: metadata,
-            extra: extra 
-	}
 
-	let expression;
-	try {
-            expression = jsonata(template);
-	}
-	catch(error){
-	    return res.status(400).json({
-		details: error,
-		error: 'JSONata failure'
-	    })
-	}
+        let {
+            metadata,
+            extra,
+            validate_input: validateInput,
+            validate_output: validateOutput,
+            select_first_matching: selectFirstMatching,
+            input_schema: inputModelName,
+            input_version: inputModelVersion,
+            output_schema: outputModelName,
+            output_version: outputModelVersion,
+        } = matchedData(req);
 
-	let outputMetadata;
-	try{ //note: would it be better as a .then() and .catch() ?
-            outputMetadata = await expression.evaluate(source);
-	}
-	catch(error){ 
-	    return res.status(400).json({
-		details: error,
-		error: 'Translation evaluation failure'
-	    })
-	};	  
-    
-	if(validateOutput){
-	    const resultOutputValidation = cacheHandler.validateMetadata(outputMetadata,outputModelName);
-            if (resultOutputValidation.length>0) {
-		return res.status(400).json({ 
-                    error: 'Output metadata validation failed', 
+        if (inputModelName == undefined || inputModelVersion == undefined) {
+            const { name, version, error } = await findModelAndVersion(
+                metadata,
+                selectFirstMatching
+            );
+            if (error) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to translate metadata`
+                );
+                return res.status(error.status).json({
+                    message: error.message,
+                    details: error.details,
+                });
+            }
+            inputModelName = name;
+            inputModelVersion = version;
+        }
+
+        if (outputModelName == undefined || outputModelVersion == undefined) {
+            const { name, version, error } = await getDefaultModelAndVersion(
+                outputModelName,
+                outputModelVersion
+            );
+
+            if (!error && (version == undefined || name == undefined)) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - output model undefined`
+                );
+                return res.status(500).json({
+                    message: "undefined outputModel!",
+                });
+            }
+
+            if (error) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to translate metadata from ${inputModelName}:${inputModelVersion}`
+                );
+                return res.status(error.status).json({
+                    message: error.message,
+                    details: error.details,
+                });
+            }
+            outputModelName = name;
+            outputModelVersion = version;
+        }
+
+        const templatesGraph = await new TranslationGraph();
+
+        const inputSupported = Object.keys(templatesGraph.nodes).includes(
+            `${inputModelName}:${inputModelVersion}`
+        );
+
+        const outputSupported = Object.keys(templatesGraph.nodes).includes(
+            `${outputModelName}:${outputModelVersion}`
+        );
+
+        if (!inputSupported) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - input model unsupported`
+            );
+            return res.status(400).json({
+                message: `Cannot support the input model (${inputModelName}:${inputModelVersion})`,
+            });
+        }
+
+        if (!outputSupported) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - output model unsupported`
+            );
+            return res.status(400).json({
+                message: `Cannot support the output model (${outputModelName}:${outputModelVersion})`,
+            });
+        }
+
+        //if asked to validate the input, perform the validation
+        // - we have already checked if the schemas (inputModelName) as allowed/valid
+        if (validateInput) {
+            const resultInputValidation = await validateMetadata(
+                metadata,
+                inputModelName,
+                inputModelVersion
+            );
+
+            if (resultInputValidation.length > 0) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to validate input metadata as ${inputModelName}:${inputModelVersion}`
+                );
+                return res.status(400).json({
+                    message: "Input metadata validation failed",
+                    details: {
+                        validationErrors: resultInputValidation,
+                        data: metadata,
+                    },
+                });
+            }
+        }
+
+        // build a graph of all the available translations
+
+        let startNode = `${inputModelName}:${inputModelVersion}`;
+        let endNode = `${outputModelName}:${outputModelVersion}`;
+
+        //find the best route between the translations
+        let predecessors = templatesGraph.dijkstra(startNode);
+        const { translationsToApply, error } = templatesGraph.getPath(
+            startNode,
+            endNode,
+            predecessors
+        );
+        if (error) {
+            publishMessage(
+                "POST",
+                "translate",
+                `Failed to find translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
+            );
+            return res.status(error.status).json({
+                message: error.message,
+            });
+        }
+
+        let initialMetadata = metadata;
+
+        for (let i = 1; i < translationsToApply.length; i++) {
+            const { name: outputModelName, version: outputModelVersion } =
+                translationsToApply[i];
+
+            const { name: inputModelName, version: inputModelVersion } =
+                translationsToApply[i - 1];
+
+            const { translatedMetadata, error } = await translate(
+                initialMetadata,
+                extra,
+                inputModelName,
+                inputModelVersion,
+                outputModelName,
+                outputModelVersion
+            );
+
+            if (error) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to execute translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
+                );
+                return res.status(error.status).json({
+                    message: error.message,
+                    details: error.details,
+                });
+            }
+            initialMetadata = translatedMetadata;
+        }
+        let outputMetadata = initialMetadata;
+
+        if (validateOutput) {
+            const resultOutputValidation = await validateMetadata(
+                outputMetadata,
+                outputModelName,
+                outputModelVersion
+            );
+            if (resultOutputValidation.length > 0) {
+                publishMessage(
+                    "POST",
+                    "translate",
+                    `Failed to validate translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
+                );
+                return res.status(400).json({
+                    message: "Output metadata validation failed",
                     details: resultOutputValidation,
-                    data: metadata
-		});
-	    }
-	}
-	res.send(outputMetadata);
-});
+                    data: outputMetadata,
+                });
+            }
+        }
 
+        publishMessage(
+            "POST",
+            "translate",
+            `Translated metadata from ${inputModelName}:${inputModelVersion} to ${outputModelName}:${outputModelVersion}`
+        );
+        return res.send(outputMetadata);
+    }
+);
 
 module.exports = router;

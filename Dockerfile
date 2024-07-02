@@ -11,10 +11,10 @@ COPY package*.json ./
 RUN npm install
 
 # Copy source files
-COPY ./src ./src
+COPY . .
 
 # Expose the API port
-EXPOSE 3000
+EXPOSE 3001
 
 # Start the API server in dev
 CMD ["npm","run","dev"]

@@ -1,175 +1,60 @@
-const Ajv = require("ajv");
-const fs = require('fs');
-const path = require('path');
+const axios = require("axios");
+const fs = require("fs");
+const NodeCache = require("node-cache");
+const cacheStore = new NodeCache({ stdTTL: process.env.CACHE_REFRESH_STDTLL });
 
-const ajv = new Ajv(
-    { 
-        strict: false,
-        strictSchema: false,
-        allErrors: false,
-        coerceTypes: true
-    });
-
-
-
-// Function to load template file
-function loadTemplate(filePath) {
-    const templatePath = path.resolve(filePath);
+const getFromLocal = (path) => {
     return new Promise((resolve, reject) => {
-        fs.readFile(templatePath, 'utf8', (err, data) => {
-        if (err) {
-            reject(err);
-        } else {
-            resolve(data);
-        }
+        fs.readFile(path, "utf8", (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
         });
     });
-}
-
-let templates = {
-    gdmv1: {
-        hdrukv211:{
-            fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
-            template:null
-        },
-        schemaorg:{
-            fpath:'./src/templates/GDMv1/SchemaOrg.jsonata',
-            template:null
-        }
-    },
-    hdrukv211:{
-        datasetv2:{
-            fpath:'./src/templates/HDRUKv211/datasetv2.jsonata',
-            template:null 
-        },
-	gdmv1:{
-            fpath:'./src/templates/HDRUKv211/GDMv1.jsonata',
-            template:null 
-        }
-
-    },
-    schemaorg:{
-        gdmv1:{
-            fpath:'./src/templates/SchemaOrg/GDMv1.jsonata',
-            template:null
-        }
-    }
-    /*gdmv0: {
-        test:{
-            fpath:'./src/templates/GDMv1/HDRUKv211.jsonata',
-            template:null
-        }
-    }*/
-}
-
-//load templates asynchronously
-//bit messy? bit of an overkill?
-const loadTemplates = async () => {
-    const updatedTemplates = {};
-    const promises = Object.entries(templates)
-    .map(async ([oname, inputs]) => {
-        await Promise.all(
-            Object.entries(inputs).map( async ([iname,obj]) => {
-                return loadTemplate(obj.fpath)
-                .then((template) => {
-                    if(!Object.keys(updatedTemplates).includes(oname)){
-                        updatedTemplates[oname] = {}
-                    }
-                    updatedTemplates[oname][iname] = { ...obj, template };
-                });
-            })
-        );
-    });
-    await Promise.all(promises);
-    Object.assign(templates, updatedTemplates); 
 };
 
+const getFromUri = async (uri) => {
+    //need to implement catching errors...
+    const response = await axios.get(uri);
+    data = response.data;
+    return data;
+};
 
-let schemas = {
-    hdrukv211:{
-        fpath: './src/schemas/hdruk_2_1_1.json',
-        validator: null
-    },
-    gdmv1:{
-        fpath: './src/schemas/gdmv1.json',
-        validator: null
-    },
-    schemaorg:{
-        //fpath: './src/schemas/schema.org/dataset.json',
-        fpath: './src/schemas/schema.org/supermodel.json',
-        validator: null
+const saveToCache = async (key, data) => {
+    cacheStore.set(key, data);
+};
+
+const getFromCache = async (key) => {
+    const data = await cacheStore.get(key);
+    return data;
+};
+
+const getFromCacheOrUri = async (key, uri) => {
+    let data = await getFromCache(key);
+    if (data === undefined) {
+        data = await getFromUri(uri);
+        saveToCache(key, data);
     }
-}
-const loadSchemas = async () => {
-    for (const [key, value] of Object.entries(schemas)) {
-        const schemaPath = path.resolve(value.fpath);
-	const schema = require(schemaPath);
-	schemas[key].schema = schema
-        const validator = ajv.compile(schema);
-        schemas[key].validator = validator;
-	
+    return data;
+};
+
+const getFromCacheOrLocal = async (key, uri) => {
+    let data = await getFromCache(key);
+    if (data === undefined) {
+        data = await getFromLocal(uri);
+        saveToCache(key, data);
     }
-}
-
-const loadData = async () => {
-    loadTemplates();
-    loadSchemas();
-    //other
-}
-
-//catch errors for if not loaded (?)
-const getTemplates = () => templates;
-const getSchemas = () => schemas;
-const getAvailableSchemas = () => Object.keys(schemas);
-
-//update soon with output 
-const getTemplate = (output,input) => templates[output][input].template;
-
-
-const findMatchingSchema = (metadata) => {
-    const result = Object.keys(schemas).map(name => {
-	//for the schema to check, retrieve the validator
-	const input_validator =  schemas[name].validator;
-	//check if the metadata is valid 
-	let isValid = input_validator(metadata);
-	
-	const retval = {"name":name,"matches":isValid};
-	
-	return retval;
-    });
-    return result;
-}
-
-
-function validateMetadata(metadata,modelName){
-
-    if(!Object.keys(schemas).includes(modelName)){
-	return [{'message':`${modelName} is not a known schema to validate!`}]
-    }
-
-    const schema = schemas[modelName];
-    const validator = schema.validator;
-    if (validator == null){
-	return [{'message':`${modelName} schemas file is undefined!`}]
-    }
-    
-    const isValid = validator(metadata);
-    if(!isValid){
-	return validator.errors;
-    }
-    else{
-	return [];
-    }
-}
-
-
+    return data;
+};
 
 module.exports = {
-    loadData,
-    getTemplates,
-    getTemplate,
-    getSchemas,
-    getAvailableSchemas,
-    findMatchingSchema,
-    validateMetadata
+    cacheStore,
+    saveToCache,
+    getFromCache,
+    getFromUri,
+    getFromLocal,
+    getFromCacheOrUri,
+    getFromCacheOrLocal,
 };
