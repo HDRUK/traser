@@ -320,7 +320,7 @@ router.get(
   }
 );
 
-router.get("/latest", async (req, res) => {
+router.get("/schema/latest", async (req, res) => {
   const available = await getAvailableSchemas();
 
   const latestVersions = Object.fromEntries(
