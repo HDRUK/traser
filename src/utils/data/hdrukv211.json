@@ -48,10 +48,7 @@
         "formatAndStandards": {
             "language": "en",
             "vocabularyEncodingScheme": "OTHER",
-            "format": [
-                "CSV",
-                "JSON"
-            ],
+            "format": [],
             "conformsTo": "OTHER"
         },
         "usage": {

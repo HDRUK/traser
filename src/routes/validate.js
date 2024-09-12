@@ -1,6 +1,6 @@
 const express = require("express");
 const publishMessage = require("../middleware/auditHandler");
-const { validateMetadata } = require("../middleware/schemaHandler");
+const { validateMetadata, validateMetadataSection } = require("../middleware/schemaHandler");
 const {
     body,
     query,
@@ -30,6 +30,13 @@ const router = express.Router();
  *           type: string
  *         description: Model version to be validated against
  *         example: 1.0 
+ *       - in: query
+ *         name: subsection
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Subsection of the schema to validate
+ *         example: structuralMetadata
  *     requestBody:
  *       required: true
  *       content:
@@ -73,6 +80,7 @@ router.post(
         body("metadata").isObject().notEmpty().bail(),
         query("input_schema").exists(),
         query("input_version").exists(),
+        query("subsection").optional(),
     ],
     async (req, res) => {
         const result = validationResult(req);
@@ -92,12 +100,24 @@ router.post(
         const { metadata } = data;
         const modelName = data.input_schema;
         const modelVersion = data.input_version;
+        const subsection = data.subsection;
+        
+        var metadataValidationResult;
 
-        const metadataValidationResult = await validateMetadata(
-            metadata,
-            modelName,
-            modelVersion
-        );
+        if (subsection == undefined) {
+            metadataValidationResult = await validateMetadata(
+                metadata,
+                modelName,
+                modelVersion
+            );
+        } else {
+            metadataValidationResult = await validateMetadataSection(
+                metadata,
+                modelName,
+                modelVersion,
+                subsection
+            );
+        }
         if (metadataValidationResult.length > 0) {
             publishMessage(
                 "POST",

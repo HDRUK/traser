@@ -8,7 +8,7 @@ const {
 const { TranslationGraph } = require("./utils/graphHelpers");
 
 const publishMessage = require("../middleware/auditHandler");
-const { validateMetadata } = require("../middleware/schemaHandler");
+const { validateMetadata, validateMetadataSection } = require("../middleware/schemaHandler");
 
 const {
     body,
@@ -63,6 +63,12 @@ const router = express.Router();
  *           type: integer
  *           enum: [0, 1]
  *         description: Whether to validate output metadata (optional, 0[no] or  1[yes])
+ *       - in: query
+ *         name: subsection
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Subsection of the schema to translate. Only that section will be validated and returned if translation is successful
  *     requestBody:
  *       required: true
  *       content:
@@ -117,6 +123,7 @@ router.post(
         query("output_version").optional(),
         query("input_schema").optional(),
         query("input_version").optional(),
+        query("subsection").optional(),
         query("select_first_matching").default(true),
     ],
     async (req, res) => {
@@ -143,6 +150,7 @@ router.post(
             input_version: inputModelVersion,
             output_schema: outputModelName,
             output_version: outputModelVersion,
+            subsection: subsection,
         } = matchedData(req);
 
         if (inputModelName == undefined || inputModelVersion == undefined) {
@@ -232,11 +240,21 @@ router.post(
         //if asked to validate the input, perform the validation
         // - we have already checked if the schemas (inputModelName) as allowed/valid
         if (validateInput) {
-            const resultInputValidation = await validateMetadata(
-                metadata,
-                inputModelName,
-                inputModelVersion
-            );
+            var resultInputValidation;
+            if (subsection == undefined) {
+                resultInputValidation = await validateMetadata(
+                    metadata,
+                    inputModelName,
+                    inputModelVersion
+                );
+            } else {
+                resultInputValidation = await validateMetadataSection(
+                    metadata,
+                    inputModelName,
+                    inputModelVersion,
+                    subsection
+                );
+            }
 
             if (resultInputValidation.length > 0) {
                 publishMessage(
@@ -311,11 +329,21 @@ router.post(
         let outputMetadata = initialMetadata;
 
         if (validateOutput) {
-            const resultOutputValidation = await validateMetadata(
-                outputMetadata,
-                outputModelName,
-                outputModelVersion
-            );
+            var resultOutputValidation;
+            if (subsection == undefined) {
+                resultOutputValidation = await validateMetadata(
+                    outputMetadata,
+                    outputModelName,
+                    outputModelVersion
+                );
+            } else {
+                resultOutputValidation = await validateMetadataSection(
+                    outputMetadata,
+                    outputModelName,
+                    outputModelVersion,
+                    subsection
+                );
+            }
             if (resultOutputValidation.length > 0) {
                 publishMessage(
                     "POST",

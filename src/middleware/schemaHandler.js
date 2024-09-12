@@ -88,6 +88,33 @@ const validateMetadata = async (metadata, modelName, modelVersion) => {
     }
 };
 
+const validateMetadataSection = async (metadata, modelName, modelVersion, subsection) => {
+    const name = `${modelName}:${modelVersion}`;
+    const schemaUri = `${name}#/properties/` + subsection;
+    const validator = ajv.getSchema(schemaUri);
+    if (validator == null) {
+        return [
+            {
+                message: `Schema for model=${modelName} version=${modelVersion} subsection=${subsection} is not known!`,
+            },
+        ];
+    }
+    const metadataSubsection = metadata[subsection];
+    if (metadataSubsection == null) {
+        return [
+            {
+                message: `Subsection ${subsection} not found in provided metadata.`,
+            },
+        ];
+    }
+    const isValid = validator(metadataSubsection);
+    if (!isValid) {
+        return validator.errors;
+    } else {
+        return [];
+    }
+};
+
 const findMatchingSchemas = async (metadata, with_errors = false) => {
     const schemas = await getAvailableSchemas();
     let retval = [];
@@ -134,6 +161,7 @@ module.exports = {
     getSchema,
     getAvailableSchemas,
     validateMetadata,
+    validateMetadataSection,
     findMatchingSchemas,
     retrieveHydrationSchema,
 };

@@ -11,7 +11,8 @@ const translate = async (
     outputModelVersion,
     validateInput = "1",
     validateOutput = "1",
-    extra = null
+    extra = null,
+    subsection = null
 ) => {
     const requestBody = {
         metadata: metadata,
@@ -20,16 +21,21 @@ const translate = async (
         requestBody.extra = extra;
     }
 
+    const queryObj = {
+        output_schema: outputModel,
+        output_version: outputModelVersion,
+        input_schema: inputModel,
+        input_version: inputModelVersion,
+        validate_input: validateInput,
+        validate_output: validateOutput
+    };
+    if (subsection !== null) {
+        queryObj.subsection = subsection
+    };
+
     const response = await request(app)
         .post("/translate")
-        .query({
-            output_schema: outputModel,
-            output_version: outputModelVersion,
-            input_schema: inputModel,
-            input_version: inputModelVersion,
-            validate_input: validateInput,
-            validate_output: validateOutput,
-        })
+        .query(queryObj)
         .send(requestBody);
 
     return response;
@@ -166,6 +172,26 @@ describe("POST /translate", () => {
             );
             expect(response.status).toBe(200);
             expect(response.body).toMatchObject(sampleMetadata.gdmv1);
+        });
+    });
+
+    describe("POST /translate?output_schema=HDRUK&output_version=2.1.2&input_schema=GWDM&input_version=1.0&subsection=summary", () => {
+        it("should return 200 if subsection of GDM translated to subsection of HDRUK 2.1.2", async () => {
+            const partialMetadata = {
+                summary: sampleMetadata.gdmv1.summary
+            };
+            const response = await translate(
+                partialMetadata,
+                "GWDM",
+                "1.0",
+                "HDRUK",
+                "2.1.2",
+                "1",
+                "1",
+                sampleMetadata.extra_gdmv1,
+                "summary"
+            );
+            expect(response.status).toBe(200);
         });
     });
 
