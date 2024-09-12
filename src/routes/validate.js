@@ -101,23 +101,18 @@ router.post(
         const modelName = data.input_schema;
         const modelVersion = data.input_version;
         const subsection = data.subsection;
-        
-        var metadataValidationResult;
 
-        if (subsection == undefined) {
-            metadataValidationResult = await validateMetadata(
-                metadata,
-                modelName,
-                modelVersion
-            );
-        } else {
-            metadataValidationResult = await validateMetadataSection(
-                metadata,
-                modelName,
-                modelVersion,
-                subsection
-            );
-        }
+        const metadataValidationResult = (subsection === undefined) ? await validateMetadata(
+            metadata,
+            modelName,
+            modelVersion
+        ) : await validateMetadataSection(
+            metadata,
+            modelName,
+            modelVersion,
+            subsection
+        );
+
         if (metadataValidationResult.length > 0) {
             publishMessage(
                 "POST",

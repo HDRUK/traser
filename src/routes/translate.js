@@ -240,21 +240,16 @@ router.post(
         //if asked to validate the input, perform the validation
         // - we have already checked if the schemas (inputModelName) as allowed/valid
         if (validateInput) {
-            var resultInputValidation;
-            if (subsection == undefined) {
-                resultInputValidation = await validateMetadata(
-                    metadata,
-                    inputModelName,
-                    inputModelVersion
-                );
-            } else {
-                resultInputValidation = await validateMetadataSection(
-                    metadata,
-                    inputModelName,
-                    inputModelVersion,
-                    subsection
-                );
-            }
+            const resultInputValidation = (subsection === undefined) ? await validateMetadata(
+                metadata,
+                inputModelName,
+                inputModelVersion
+            ) : await validateMetadataSection(
+                metadata,
+                inputModelName,
+                inputModelVersion,
+                subsection
+            );
 
             if (resultInputValidation.length > 0) {
                 publishMessage(
@@ -329,21 +324,16 @@ router.post(
         let outputMetadata = initialMetadata;
 
         if (validateOutput) {
-            var resultOutputValidation;
-            if (subsection == undefined) {
-                resultOutputValidation = await validateMetadata(
-                    outputMetadata,
-                    outputModelName,
-                    outputModelVersion
-                );
-            } else {
-                resultOutputValidation = await validateMetadataSection(
-                    outputMetadata,
-                    outputModelName,
-                    outputModelVersion,
-                    subsection
-                );
-            }
+            const resultOutputValidation = (subsection === undefined) ? await validateMetadata(
+                outputMetadata,
+                outputModelName,
+                outputModelVersion
+            ) : await validateMetadataSection(
+                outputMetadata,
+                outputModelName,
+                outputModelVersion,
+                subsection
+            );
             if (resultOutputValidation.length > 0) {
                 publishMessage(
                     "POST",
