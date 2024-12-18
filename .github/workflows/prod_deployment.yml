@@ -44,10 +44,14 @@ jobs:
           echo "version=$(sed '/.*\"\(.*\)\".*/ s//\1/g' version)" >> $GITHUB_OUTPUT
 
       - name: Create the release
-        uses: "marvinpinto/action-automatic-releases@latest"
+        id: create_release
+        uses: comnoco/create-release-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: '${{ steps.getversion.outputs.version }}'
+          tag_name: '${{ steps.getversion.outputs.version }}'
+          release_name: Release ${{ steps.getversion.outputs.version }}
+          draft: false
           prerelease: false
 
       - name: Deploy to Cloud Run
