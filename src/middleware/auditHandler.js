@@ -6,13 +6,13 @@ const auditEnabled = process.env.AUDIT_LOG_ENABLED || 0;
 const publishMessage = async (actionType, actionName, description = "") => {
     if (auditEnabled == true) {
         const pubSubClient = new PubSub({projectId});
-        const hrTime = process.hrtime();
+        const now = new Date();
         const messageJson = {
             "action_type": actionType,
             "action_name": actionName,
             "action_service": "traser",
             "description": description,
-            "created_at": hrTime[0] * 1000000 + hrTime[1] / 1000 
+            "created_at": now.getTime() * 1000 + now.getMilliseconds() * 1000, 
         };
         const topic = pubSubClient.topic(topicName);
         const messageBuffer = Buffer.from(JSON.stringify(messageJson));
