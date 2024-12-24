@@ -13,9 +13,9 @@ describe("POST /find", () => {
                 i => i.name === "GWDM" && i.version === "1.0"
             );
 
-            found = found.matches || false;
+            matches = found.matches || false;
 
-            expect(found).toBe(true);
+            expect(matches).toBe(true);
         });
     });
 
