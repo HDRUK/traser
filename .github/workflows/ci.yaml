@@ -44,9 +44,9 @@ jobs:
         id: setupenv
         run: "cp env_template .env"
 
-      # - name: Run testing
-      #   id: unittest
-      #   run: "npm run test:gh"
+      - name: Run testing
+        id: unittest
+        run: "npm run test:gh"
 
       - name: Run Notification
         id: runnotificationsent
