@@ -4,7 +4,7 @@ const {
     findModelAndVersion,
     getDefaultModelAndVersion,
 } = require("./utils/translate");
-
+// const lodash = require("lodash");
 const { TranslationGraph } = require("./utils/graphHelpers");
 
 const publishMessage = require("../middleware/auditHandler");
@@ -206,11 +206,9 @@ router.post(
         }
 
         const templatesGraph = await new TranslationGraph();
-
         const inputSupported = Object.keys(templatesGraph.nodes).includes(
             `${inputModelName}:${inputModelVersion}`
         );
-
         const outputSupported = Object.keys(templatesGraph.nodes).includes(
             `${outputModelName}:${outputModelVersion}`
         );
@@ -250,7 +248,7 @@ router.post(
                 inputModelVersion,
                 subsection
             );
-
+          
             if (resultInputValidation.length > 0) {
                 publishMessage(
                     "POST",
@@ -266,7 +264,6 @@ router.post(
                 });
             }
         }
-
         // build a graph of all the available translations
 
         let startNode = `${inputModelName}:${inputModelVersion}`;
@@ -290,9 +287,9 @@ router.post(
             });
         }
 
-        let initialMetadata = metadata;
+        let initialItterationMetadata = metadata;
 
-        for (let i = 1; i < translationsToApply.length; i++) {
+       for (let i = 1; i < translationsToApply.length; i++) {
             const { name: outputModelName, version: outputModelVersion } =
                 translationsToApply[i];
 
@@ -300,13 +297,27 @@ router.post(
                 translationsToApply[i - 1];
 
             const { translatedMetadata, error } = await translate(
-                initialMetadata,
+                initialItterationMetadata,
                 extra,
                 inputModelName,
                 inputModelVersion,
                 outputModelName,
                 outputModelVersion
             );
+            // const clonedTranslated = lodash.cloneDeep(translatedMetadata);
+           
+            // const validatedClone =  await validateMetadata(
+            //     clonedTranslated,
+            //     outputModelName,
+            //     outputModelVersion
+            // )
+            // console.log('versions- inputModelName',   inputModelName )
+            // console.log('versions- inputModelVersion',   inputModelVersion)
+            // console.log('versions- outputModelName',   outputModelName )
+            // console.log('versions- outputModelVersion',   outputModelVersion)
+            // console.log('validatedClone' + -i, validatedClone)
+
+            // console.log('translateerror',error)
 
             if (error) {
                 publishMessage(
@@ -319,10 +330,13 @@ router.post(
                     details: error.details,
                 });
             }
-            initialMetadata = translatedMetadata;
+            initialItterationMetadata = translatedMetadata;
         }
-        let outputMetadata = initialMetadata;
 
+
+        let outputMetadata = initialItterationMetadata;
+
+     
         if (validateOutput) {
             const resultOutputValidation = (subsection === undefined) ? await validateMetadata(
                 outputMetadata,

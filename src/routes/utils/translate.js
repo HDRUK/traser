@@ -1,4 +1,5 @@
 const jsonata = require("jsonata");
+
 const {
     getAvailableSchemas,
     findMatchingSchemas,
@@ -11,17 +12,16 @@ const {
 
 const findModelAndVersion = async (metadata, selectFirstMatching) => {
     const availableSchemas = await getAvailableSchemas();
-
     const matchingSchemas = await findMatchingSchemas(metadata);
     const matchingSchemasOnly = matchingSchemas.filter(
         (item) => item.matches === true
     );
 
     if (matchingSchemasOnly.length < 1) {
-        return {
+         return {
             error: {
                 status: 400,
-                message: "Input metadata object matched no known schemas",
+                message: "Input metadata object matched no known schemass",
                 details: {
                     available_schemas: availableSchemas,
                 },
@@ -39,9 +39,19 @@ const findModelAndVersion = async (metadata, selectFirstMatching) => {
             },
         };
     }
+
+    
+    const matchingItems = matchingSchemasOnly.filter(item => item.matches);
+    const latestMatch = matchingItems.reduce((latest, current) => {
+        return latest && latest.version > current.version ? latest : current;
+    }, null);
+    // return {
+    //     name: matchingSchemasOnly[0].name,
+    //     version: matchingSchemasOnly[0].version,
+    // };
     return {
-        name: matchingSchemasOnly[0].name,
-        version: matchingSchemasOnly[0].version,
+        name: latestMatch.name,
+        version: latestMatch.version,
     };
 };
 
