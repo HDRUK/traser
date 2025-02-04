@@ -22,7 +22,7 @@ const findModelAndVersion = async (metadata, selectFirstMatching) => {
          return {
             error: {
                 status: 400,
-                message: "Input metadata object matched no known schemass",
+                message: "Input metadata object matched no known schemas",
                 details: {
                     available_schemas: availableSchemas,
                 },
