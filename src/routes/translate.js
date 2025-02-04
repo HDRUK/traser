@@ -4,7 +4,7 @@ const {
     findModelAndVersion,
     getDefaultModelAndVersion,
 } = require("./utils/translate");
-// const lodash = require("lodash");
+
 const { TranslationGraph } = require("./utils/graphHelpers");
 
 const publishMessage = require("../middleware/auditHandler");
