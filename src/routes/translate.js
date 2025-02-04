@@ -338,6 +338,7 @@ router.post(
 
      
         if (validateOutput) {
+            
             const resultOutputValidation = (subsection === undefined) ? await validateMetadata(
                 outputMetadata,
                 outputModelName,

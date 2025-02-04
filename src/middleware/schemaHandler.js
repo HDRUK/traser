@@ -124,7 +124,7 @@ const findMatchingSchemas = async (metadata, with_errors = false) => {
         for (const version of versions) {
             try {
                 const validator = await getSchema(schema, version);
-                  //need to do a shallowcopy of the metadata as ajv is configured
+                //need to do a deep of the metadata as ajv is configured
                 // to fill missing data
                 const isValid = validator(deepClonedMetadata);
                 const outcome = {
