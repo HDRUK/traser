@@ -4,7 +4,6 @@ const {
     getAvailableSchemas,
     findMatchingSchemas,
 } = require("../../middleware/schemaHandler");
-
 const {
     getTemplate,
 } = require("../../middleware/templateHandler");
@@ -39,16 +38,9 @@ const findModelAndVersion = async (metadata, selectFirstMatching) => {
             },
         };
     }
-
-    
-    const matchingItems = matchingSchemasOnly.filter(item => item.matches);
-    const latestMatch = matchingItems.reduce((latest, current) => {
-        return latest && latest.version > current.version ? latest : current;
-    }, null);
-
     return {
-        name: latestMatch.name,
-        version: latestMatch.version,
+        name: matchingSchemasOnly[0].name,
+        version: matchingSchemasOnly[0].version,
     };
 };
 
