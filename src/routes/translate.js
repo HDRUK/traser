@@ -304,20 +304,6 @@ router.post(
                 outputModelName,
                 outputModelVersion
             );
-            // const clonedTranslated = lodash.cloneDeep(translatedMetadata);
-           
-            // const validatedClone =  await validateMetadata(
-            //     clonedTranslated,
-            //     outputModelName,
-            //     outputModelVersion
-            // )
-            // console.log('versions- inputModelName',   inputModelName )
-            // console.log('versions- inputModelVersion',   inputModelVersion)
-            // console.log('versions- outputModelName',   outputModelName )
-            // console.log('versions- outputModelVersion',   outputModelVersion)
-            // console.log('validatedClone' + -i, validatedClone)
-
-            // console.log('translateerror',error)
 
             if (error) {
                 publishMessage(

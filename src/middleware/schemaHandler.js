@@ -117,10 +117,10 @@ const validateMetadataSection = async (metadata, modelName, modelVersion, subsec
 };
 
 const findMatchingSchemas = async (metadata, with_errors = false) => {
-    const deepClonedMetadata = lodash.cloneDeep(metadata);
     const schemas = await getAvailableSchemas();
     let retval = [];
     for (const [schema, versions] of Object.entries(schemas)) {
+        const deepClonedMetadata = lodash.cloneDeep(metadata);
         for (const version of versions) {
             try {
                 const validator = await getSchema(schema, version);
