@@ -4,6 +4,7 @@ const {
     getFromLocal,
     getFromCacheOrLocal,
 } = require("./cacheHandler");
+const lodash = require("lodash");
 
 const Ajv = require("ajv").default;
 const addFormats = require("ajv-formats").default;
@@ -119,12 +120,13 @@ const findMatchingSchemas = async (metadata, with_errors = false) => {
     const schemas = await getAvailableSchemas();
     let retval = [];
     for (const [schema, versions] of Object.entries(schemas)) {
+        const deepClonedMetadata = lodash.cloneDeep(metadata);
         for (const version of versions) {
             try {
                 const validator = await getSchema(schema, version);
-                //need to do a shallowcopy of the metadata as ajv is configured
+                //need to do a deep of the metadata as ajv is configured
                 // to fill missing data
-                const isValid = validator({ ...metadata });
+                const isValid = validator(deepClonedMetadata);
                 const outcome = {
                     name: schema,
                     version: version,

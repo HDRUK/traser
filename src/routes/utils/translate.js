@@ -1,24 +1,23 @@
 const jsonata = require("jsonata");
+
 const {
     getAvailableSchemas,
     findMatchingSchemas,
 } = require("../../middleware/schemaHandler");
-
 const {
     getTemplate,
-    getAvailableTemplates,
 } = require("../../middleware/templateHandler");
 
 const findModelAndVersion = async (metadata, selectFirstMatching) => {
     const availableSchemas = await getAvailableSchemas();
-
     const matchingSchemas = await findMatchingSchemas(metadata);
+
     const matchingSchemasOnly = matchingSchemas.filter(
         (item) => item.matches === true
     );
 
     if (matchingSchemasOnly.length < 1) {
-        return {
+         return {
             error: {
                 status: 400,
                 message: "Input metadata object matched no known schemas",
