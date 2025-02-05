@@ -45,10 +45,7 @@ const findModelAndVersion = async (metadata, selectFirstMatching) => {
     const latestMatch = matchingItems.reduce((latest, current) => {
         return latest && latest.version > current.version ? latest : current;
     }, null);
-    // return {
-    //     name: matchingSchemasOnly[0].name,
-    //     version: matchingSchemasOnly[0].version,
-    // };
+
     return {
         name: latestMatch.name,
         version: latestMatch.version,
