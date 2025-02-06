@@ -4,7 +4,7 @@ run-name: ${{ github.actor }} triggered Release workflow
 on:
   push:
     branches:
-      - "release"
+      - "main"
 
 env:
   PROJECT_ID: "${{ secrets.PROJECT_ID }}"
@@ -25,13 +25,43 @@ jobs:
         id: checkout
         uses: actions/checkout@v4
         with:
-          ref: release
+          ref: main
 
       - name: Read VERSION file
         id: getversion
-        run: |
+        run: | 
           sed -n 's/^appVersion:\(.*\)/\1/p' < chart/traser/Chart.yaml > version
           echo "version=$(sed '/.*\"\(.*\)\".*/ s//\1/g' version)" >> $GITHUB_OUTPUT
+
+      - name: Get Current Release
+        id: get_current_release
+        uses: joutvhu/get-release@v1
+        with:
+          tag_name: '${{ steps.getversion.outputs.version }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for Existing Release
+        id: check_existing_release
+        run: |
+          if [[ -n "${{ steps.get_current_release.outputs.id }}" ]]; then
+            echo "release_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "release_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create the release
+        id: create_release
+        uses: comnoco/create-release-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: '${{ steps.getversion.outputs.version }}'
+          release_name: Release ${{ steps.getversion.outputs.version }}
+          draft: false
+          prerelease: false
+        if: |
+          steps.check_existing_release.outputs.release_exists == 'false'
 
       - name: Google Auth
         id: auth
