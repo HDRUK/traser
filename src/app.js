@@ -1,7 +1,7 @@
 const express = require('express');
 
 //documentation
-const swaggerJsdoc = require('swagger-jsdoc')
+const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
 //recommendations for express.js
@@ -35,10 +35,9 @@ const validateRouter = require('./routes/validate');
 //create the app
 const app = express();
 
-//additional setups
-app.use(helmet()); // https://expressjs.com/en/advanced/best-practice-security.html#use-helmet
-app.use(logger('dev')); //may want to remove/change this for production (?)
-//setup express.js
+// additional setups
+app.use(helmet());
+app.use(logger('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
@@ -48,21 +47,33 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }));
    - dataIsLoaded will expire based on {stdTTL:process.env.CACHE_REFRESH_STDTLL}
 */
 const loadData = async (req, res, next) => {
-	const isLoaded = await getFromCache('dataIsLoaded');
-	if (isLoaded) {
-		next();
-	} else {
-		publishMessage(
-			'UPDATE',
-			'loadData',
-			'Refreshing the data cache'
-		);
-		Promise.all([loadSchemas(), loadTemplates()]).then(async () => {
-			await saveToCache('dataIsLoaded', true);
-			next();
-		});
-	}
+  try {
+    const isLoaded = await getFromCache('dataIsLoaded');
+    if (isLoaded) {
+      return next();
+    }
+
+    publishMessage('UPDATE', 'loadData', 'Refreshing the data cache');
+    
+    const lock = await getFromCache('dataLoading');
+    if (lock) {
+      setTimeout(() => loadData(req, res, next), 500);
+      return;
+    }
+
+    await saveToCache('dataLoading', true);
+
+    await Promise.all([loadSchemas(), loadTemplates()]);
+    await saveToCache('dataIsLoaded', true);
+    await saveToCache('dataLoading', false);
+
+    next();
+  } catch (error) {
+    console.error("Data loading failed:", error);
+    next(createError(500, "Failed to load data"));
+  }
 };
+
 app.use(loadData);
 
 // Temporary loading up swagger API for auto documentations
@@ -71,15 +82,15 @@ app.use(loadData);
 // - const swaggerDocument = require('../swagger.json');
 // - could/should put this in a seperate file (not in app.js)
 const swaggerDefinition = {
-	openapi: '3.0.0',
-	info: {
-		title: 'Express API for metadata JSON translation service',
-		version: '1.0.0',
-	},
+  openapi: '3.0.0',
+  info: {
+    title: 'Express API for metadata JSON translation service',
+    version: '1.0.0',
+  },
 };
 const options = {
-	swaggerDefinition,
-	apis: ['src/routes/*.js'],
+  swaggerDefinition,
+  apis: ['src/routes/*.js'],
 };
 const swaggerSpec = swaggerJsdoc(options);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -98,7 +109,7 @@ app.use('/files', express.static(path.join(__dirname, 'public')));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-	next(createError.NotFound());
+  next(createError.NotFound());
 });
 
 // pass any unhandled errors to the error handler
