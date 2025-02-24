@@ -1,6 +1,6 @@
 const express = require('express');
 //documentation
-// const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
 //recommendations for express.js
