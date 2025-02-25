@@ -1,12 +1,13 @@
-const { 
-    getFromCache, 
-    saveToCache 
+const {
+    getFromUri,
+    getFromCacheOrUri,
+    getFromLocal,
+    getFromCacheOrLocal,
 } = require("./cacheHandler");
 const lodash = require("lodash");
 
 const Ajv = require("ajv").default;
 const addFormats = require("ajv-formats").default;
-
 
 const ajv = new Ajv({
     strict: false,
@@ -17,40 +18,16 @@ const ajv = new Ajv({
     useDefaults: true,
 });
 
+//needed to remove warnings about dates and date-times
 addFormats(ajv);
 
 const schemataPath = process.env.SCHEMA_LOCATION;
 const loadFromLocalFile = !schemataPath.startsWith("http");
 
-
-const retrieveSchema = async (schemaName, schemaVersion) => {
-    const cacheKey = `${schemaName}:${schemaVersion}`;
-
-    let schema = getFromCache(cacheKey);
-    if (schema) {
-        return schema;
-    }
-
-
-    const schemaPath = getSchemaPath(schemaName, schemaVersion);
-    schema = await getFromCacheOrOther(schemaPath, schemaPath);
-    if (typeof schema === "string") {
-        schema = JSON.parse(schema);
-    }
-
-    saveToCache(cacheKey, schema);
-    return schema;
-};
-
-const retrieveHydrationSchema = async (model, version) => {
-    const schemaPath = getHydrationSchemaPath(model, version);
-    let schema = await getFromCacheOrOther(schemaPath, schemaPath);
-    if (typeof schema === "string") {
-        schema = JSON.parse(schema);
-    }
-    return schema;
-};
-
+const getFromCacheOrOther = loadFromLocalFile
+    ? getFromCacheOrLocal
+    : getFromCacheOrUri;
+const getFromOther = loadFromLocalFile ? getFromLocal : getFromUri;
 
 const getSchemaPath = (model, version) => {
     return `${schemataPath}/hdr_schemata/models/${model}/${version}/schema.json`;
@@ -60,20 +37,32 @@ const getHydrationSchemaPath = (model, version) => {
     return `${schemataPath}/docs/${model}/${version}.form.json`;
 };
 
+const retrieveHydrationSchema = async (model, version) => {
+    const schemaPath = getHydrationSchemaPath(model, version);
+    let schema = await getFromOther(schemaPath, schemaPath);
+    if (typeof schema === "string") {
+        schema = JSON.parse(schema);
+    }
+    return schema;
+};
+
+const retrieveSchema = async (schemaName, schemaVersion) => {
+    const schemaPath = getSchemaPath(schemaName, schemaVersion);
+    let schema = await getFromOther(schemaPath, schemaPath);
+    if (typeof schema === "string") {
+        schema = JSON.parse(schema);
+    }
+    return schema;
+};
 
 const getAvailableSchemas = async () => {
-    const cachedSchemas = getFromCache('schemas:available');
-    if (cachedSchemas) {
-        return cachedSchemas;
-    }
-
-    let available = await getFromCacheOrOther("schemas:available", schemataPath + "/available.json");
+    let available = await getFromCacheOrOther(
+        "schemas:available",
+        schemataPath + "/available.json"
+    );
     if (typeof available === "string") {
         available = JSON.parse(available);
     }
-
-
-    saveToCache('schemas:available', available);
     return available;
 };
 
@@ -162,7 +151,7 @@ const loadSchemas = async () => {
             const schema = await retrieveSchema(schemaName, schemaVersion);
             const key = `${schemaName}:${schemaVersion}`;
             //use ajv as the cache for the schema
-            ajv.removeSchema(key);
+            await ajv.removeSchema(key);
             ajv.addSchema(schema, key);
         }
     }
