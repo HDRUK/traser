@@ -1,13 +1,14 @@
-const {
-    getFromUri,
-    getFromCacheOrUri,
-    getFromLocal,
-    getFromCacheOrLocal,
+const { 
+    getFromCache, 
+    getFromCacheOrUri, 
+    getFromCacheOrLocal, 
+    saveToCache 
 } = require("./cacheHandler");
 const lodash = require("lodash");
 
 const Ajv = require("ajv").default;
 const addFormats = require("ajv-formats").default;
+
 
 const ajv = new Ajv({
     strict: false,
@@ -17,142 +18,175 @@ const ajv = new Ajv({
     coerceTypes: true,
     useDefaults: true,
 });
-
 //needed to remove warnings about dates and date-times
 addFormats(ajv);
 
 const schemataPath = process.env.SCHEMA_LOCATION;
 const loadFromLocalFile = !schemataPath.startsWith("http");
 
-const getFromCacheOrOther = loadFromLocalFile
-    ? getFromCacheOrLocal
-    : getFromCacheOrUri;
-const getFromOther = loadFromLocalFile ? getFromLocal : getFromUri;
 
-const getSchemaPath = (model, version) => {
-    return `${schemataPath}/hdr_schemata/models/${model}/${version}/schema.json`;
-};
+const getSchemaPath = (model, version) =>
+    `${schemataPath}/hdr_schemata/models/${model}/${version}/schema.json`;
 
-const getHydrationSchemaPath = (model, version) => {
-    return `${schemataPath}/docs/${model}/${version}.form.json`;
-};
-
-const retrieveHydrationSchema = async (model, version) => {
-    const schemaPath = getHydrationSchemaPath(model, version);
-    let schema = await getFromOther(schemaPath, schemaPath);
-    if (typeof schema === "string") {
-        schema = JSON.parse(schema);
-    }
-    return schema;
-};
+const getHydrationSchemaPath = (model, version) =>
+    `${schemataPath}/docs/${model}/${version}.form.json`;
 
 const retrieveSchema = async (schemaName, schemaVersion) => {
+    console.log('hello')
+    const cacheKey = `${schemaName}:${schemaVersion}`;
+
+    console.log(cacheKey)
+    let schema = getFromCache(cacheKey);
+    console.log(schema)
+    if (schema) {
+        console.log('hello1')
+        return schema;
+    }
+
+   
     const schemaPath = getSchemaPath(schemaName, schemaVersion);
-    let schema = await getFromOther(schemaPath, schemaPath);
+
+
+    schema = loadFromLocalFile
+        ? await getFromCacheOrLocal(cacheKey, schemaPath)
+        : await getFromCacheOrUri(cacheKey, schemaPath);
+
+    if (!schema) {
+        throw new Error(`Schema not found: ${schemaPath}`);
+    }
+
     if (typeof schema === "string") {
         schema = JSON.parse(schema);
     }
+
+    console.log('saviving')
+    saveToCache(cacheKey, schema);
     return schema;
 };
 
-const getAvailableSchemas = async () => {
-    let available = await getFromCacheOrOther(
-        "schemas:available",
-        schemataPath + "/available.json"
-    );
-    if (typeof available === "string") {
-        available = JSON.parse(available);
+
+const retrieveHydrationSchema = async (model, version) => {
+    const cacheKey = `hydration:${model}:${version}`;
+    let schema = getFromCache(cacheKey);
+    
+    if (!schema) {
+        const schemaPath = getHydrationSchemaPath(model, version);
+        schema = loadFromLocalFile
+            ? await getFromCacheOrLocal(cacheKey, schemaPath)
+            : await getFromCacheOrUri(cacheKey, schemaPath);
+
+        if (!schema) {
+            throw new Error(`Hydration schema not found: ${schemaPath}`);
+        }
+
+        if (typeof schema === "string") {
+            schema = JSON.parse(schema);
+        }
+
+        saveToCache(cacheKey, schema);
     }
+    
+    return schema;
+};
+
+
+const getAvailableSchemas = async () => {
+    const cacheKey = 'schemas:available';
+    let available = getFromCache(cacheKey);
+    
+    if (!available) {
+        available = await getFromCacheOrUri(cacheKey, `${schemataPath}/available.json`);
+        
+        if (!available) {
+            throw new Error("Failed to fetch available schemas.");
+        }
+
+        if (typeof available === "string") {
+            available = JSON.parse(available);
+        }
+
+        saveToCache(cacheKey, available);
+    }
+
     return available;
 };
 
 const getSchema = async (schemaName, schemaVersion) => {
-    const name = `${schemaName}:${schemaVersion}`;
-    let validator = ajv.getSchema(name);
-    return validator;
+    return ajv.getSchema(`${schemaName}:${schemaVersion}`);
 };
 
 const validateMetadata = async (metadata, modelName, modelVersion) => {
     const validator = await getSchema(modelName, modelVersion);
-    if (validator == null) {
-        return [
-            {
-                message: `Schema for model=${modelName} version=${modelVersion} is not known!`,
-            },
-        ];
+    if (!validator) {
+        return [{ message: `Schema for model=${modelName} version=${modelVersion} is not known!` }];
     }
+
     const isValid = validator(metadata);
-    if (!isValid) {
-        return validator.errors;
-    } else {
-        return [];
-    }
+    return isValid ? [] : validator.errors;
 };
+
 
 const validateMetadataSection = async (metadata, modelName, modelVersion, subsection) => {
-    const name = `${modelName}:${modelVersion}`;
-    const schemaUri = `${name}#/properties/` + subsection;
-    const validator = ajv.getSchema(schemaUri);
-    if (validator == null) {
-        return [
-            {
-                message: `Schema for model=${modelName} version=${modelVersion} subsection=${subsection} is not known!`,
-            },
-        ];
+    const schemaRef = `${modelName}:${modelVersion}#/properties/${subsection}`;
+    const validator = ajv.getSchema(schemaRef);
+
+    if (!validator) {
+        return [{ message: `Schema for model=${modelName} version=${modelVersion} subsection=${subsection} is not known!` }];
     }
+
     const metadataSubsection = metadata[subsection];
-    if (metadataSubsection == null) {
-        return [
-            {
-                message: `Subsection ${subsection} not found in provided metadata.`,
-            },
-        ];
+    if (!metadataSubsection) {
+        return [{ message: `Subsection ${subsection} not found in provided metadata.` }];
     }
+
     const isValid = validator(metadataSubsection);
-    if (!isValid) {
-        return validator.errors;
-    } else {
-        return [];
-    }
+    return isValid ? [] : validator.errors;
 };
 
-const findMatchingSchemas = async (metadata, with_errors = false) => {
+const findMatchingSchemas = async (metadata, withErrors = false) => {
     const schemas = await getAvailableSchemas();
-    let retval = [];
+    let matches = [];
+
     for (const [schema, versions] of Object.entries(schemas)) {
-        const deepClonedMetadata = lodash.cloneDeep(metadata);
+        const metadataClone = lodash.cloneDeep(metadata);
+
         for (const version of versions) {
             try {
                 const validator = await getSchema(schema, version);
-                //need to do a deep of the metadata as ajv is configured
-                // to fill missing data
-                const isValid = validator(deepClonedMetadata);
-                const outcome = {
-                    name: schema,
-                    version: version,
-                    matches: isValid,
-                };
-                if (with_errors) {
-                    outcome.errors = validator.errors;
+                if (!validator) continue;
+
+                const isValid = validator(metadataClone);
+                const result = { name: schema, version, matches: isValid };
+
+                if (withErrors) {
+                    result.errors = validator.errors;
                 }
-                retval.push(outcome);
+
+                matches.push(result);
             } catch (error) {
-                console.log(error);
+                console.error(`Error validating ${schema}:${version}`, error);
             }
         }
     }
-    return retval;
+
+    return matches;
 };
+
 
 const loadSchemas = async () => {
     const schemas = await getAvailableSchemas();
+
     for (const [schemaName, schemaVersions] of Object.entries(schemas)) {
         for (const schemaVersion of schemaVersions) {
-            const schema = await retrieveSchema(schemaName, schemaVersion);
-            const key = `${schemaName}:${schemaVersion}`;
-            //use ajv as the cache for the schema
-            await ajv.removeSchema(key);
-            ajv.addSchema(schema, key);
+            try {
+                const schema = await retrieveSchema(schemaName, schemaVersion);
+                const key = `${schemaName}:${schemaVersion}`;
+                //use ajv as the cache for the schema
+                ajv.removeSchema(key);
+                ajv.addSchema(schema, key);
+            } catch (error) {
+                console.error(`Failed to load schema ${schemaName}:${schemaVersion}`, error);
+            }
         }
     }
 };
