@@ -17,7 +17,6 @@ require('dotenv').config();
 //load middleware
 const errorHandler = require('./middleware/errorHandler');
 const {
-	cacheStore,
 	getFromCache,
 	saveToCache,
 } = require('./middleware/cacheHandler');
