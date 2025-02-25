@@ -166,7 +166,7 @@ router.post(
                 outputModelVersion = version;
             }
 
-            const templatesGraph = new TranslationGraph();
+            const templatesGraph = await new TranslationGraph();
 
 
             const inputSupported = templatesGraph.nodes.hasOwnProperty(`${inputModelName}:${inputModelVersion}`);

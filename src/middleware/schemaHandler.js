@@ -32,14 +32,10 @@ const getHydrationSchemaPath = (model, version) =>
     `${schemataPath}/docs/${model}/${version}.form.json`;
 
 const retrieveSchema = async (schemaName, schemaVersion) => {
-    console.log('hello')
     const cacheKey = `${schemaName}:${schemaVersion}`;
-
-    console.log(cacheKey)
     let schema = getFromCache(cacheKey);
-    console.log(schema)
+
     if (schema) {
-        console.log('hello1')
         return schema;
     }
 
@@ -59,7 +55,6 @@ const retrieveSchema = async (schemaName, schemaVersion) => {
         schema = JSON.parse(schema);
     }
 
-    console.log('saviving')
     saveToCache(cacheKey, schema);
     return schema;
 };
