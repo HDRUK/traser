@@ -1,7 +1,5 @@
 const { 
     getFromCache, 
-    getFromCacheOrUri, 
-    getFromCacheOrLocal, 
     saveToCache 
 } = require("./cacheHandler");
 const lodash = require("lodash");
