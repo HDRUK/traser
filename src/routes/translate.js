@@ -127,176 +127,89 @@ router.post(
         query("select_first_matching").default(true),
     ],
     async (req, res) => {
+        const result = validationResult(req);
+        if (!result.isEmpty()) {
+            publishMessage("POST", "translate", `Failed to translate metadata`);
+            return res.status(400).json({
+                message: "Translation has failed.",
+                errors: result.array(),
+            });
+        }
+
+        let {
+            metadata,
+            extra,
+            validate_input: validateInput,
+            validate_output: validateOutput,
+            select_first_matching: selectFirstMatching,
+            input_schema: inputModelName,
+            input_version: inputModelVersion,
+            output_schema: outputModelName,
+            output_version: outputModelVersion,
+            subsection: subsection,
+        } = matchedData(req);
+
         try {
-            const result = validationResult(req);
-            if (!result.isEmpty()) {
-                publishMessage(
-                    "POST",
-                    "translate",
-                    `Failed to translate metadata`
-                );
-                return res.status(400).json({
-                    message: "Translation has failed.",
-                    errors: result.array(),
-                });
-            }
-    
-            let {
-                metadata,
-                extra,
-                validate_input: validateInput,
-                validate_output: validateOutput,
-                select_first_matching: selectFirstMatching,
-                input_schema: inputModelName,
-                input_version: inputModelVersion,
-                output_schema: outputModelName,
-                output_version: outputModelVersion,
-                subsection: subsection,
-            } = matchedData(req);
-    
             if (inputModelName == undefined || inputModelVersion == undefined) {
-                const { name, version, error } = await findModelAndVersion(
-                    metadata,
-                    selectFirstMatching
-                );
-                if (error) {
-                    publishMessage(
-                        "POST",
-                        "translate",
-                        `Failed to translate metadata`
-                    );
-                    return res.status(error.status).json({
-                        message: error.message,
-                        details: error.details,
-                    });
-                }
+                const { name, version, error } = await findModelAndVersion(metadata, selectFirstMatching);
+                if (error) throw error;
                 inputModelName = name;
                 inputModelVersion = version;
             }
-    
+
             if (outputModelName == undefined || outputModelVersion == undefined) {
-                const { name, version, error } = await getDefaultModelAndVersion(
-                    outputModelName,
-                    outputModelVersion
-                );
-    
-                if (!error && (version == undefined || name == undefined)) {
-                    publishMessage(
-                        "POST",
-                        "translate",
-                        `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - output model undefined`
-                    );
-                    return res.status(500).json({
-                        message: "undefined outputModel!",
-                    });
-                }
-    
-                if (error) {
-                    publishMessage(
-                        "POST",
-                        "translate",
-                        `Failed to translate metadata from ${inputModelName}:${inputModelVersion}`
-                    );
-                    return res.status(error.status).json({
-                        message: error.message,
-                        details: error.details,
-                    });
-                }
+                const { name, version, error } = await getDefaultModelAndVersion(outputModelName, outputModelVersion);
+                if (error) throw error;
                 outputModelName = name;
                 outputModelVersion = version;
             }
-    
-            const templatesGraph = await new TranslationGraph();
-            const inputSupported = Object.keys(templatesGraph.nodes).includes(
-                `${inputModelName}:${inputModelVersion}`
-            );
-            const outputSupported = Object.keys(templatesGraph.nodes).includes(
-                `${outputModelName}:${outputModelVersion}`
-            );
-    
+
+            const templatesGraph = new TranslationGraph();
+
+            const inputSupported = templatesGraph.nodes.hasOwnProperty(`${inputModelName}:${inputModelVersion}`);
+            const outputSupported = templatesGraph.nodes.hasOwnProperty(`${outputModelName}:${outputModelVersion}`);
+
             if (!inputSupported) {
-                publishMessage(
-                    "POST",
-                    "translate",
-                    `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - input model unsupported`
-                );
-                return res.status(400).json({
-                    message: `Cannot support the input model (${inputModelName}:${inputModelVersion})`,
-                });
+                throw { status: 400, message: `Cannot support the input model (${inputModelName}:${inputModelVersion})` };
             }
-    
+
             if (!outputSupported) {
-                publishMessage(
-                    "POST",
-                    "translate",
-                    `Failed to translate metadata from ${inputModelName}:${inputModelVersion} - output model unsupported`
-                );
-                return res.status(400).json({
-                    message: `Cannot support the output model (${outputModelName}:${outputModelVersion})`,
-                });
+                throw { status: 400, message: `Cannot support the output model (${outputModelName}:${outputModelVersion})` };
             }
-    
+
             //if asked to validate the input, perform the validation
             // - we have already checked if the schemas (inputModelName) as allowed/valid
             if (validateInput) {
-                const resultInputValidation = (subsection === undefined) ? await validateMetadata(
-                    metadata,
-                    inputModelName,
-                    inputModelVersion
-                ) : await validateMetadataSection(
-                    metadata,
-                    inputModelName,
-                    inputModelVersion,
-                    subsection
-                );
-              
+                const validationFn = subsection === undefined ? validateMetadata : validateMetadataSection;
+                const resultInputValidation = await validationFn(metadata, inputModelName, inputModelVersion, subsection);
                 if (resultInputValidation.length > 0) {
-                    publishMessage(
-                        "POST",
-                        "translate",
-                        `Failed to validate input metadata as ${inputModelName}:${inputModelVersion}`
-                    );
-                    return res.status(400).json({
+                    throw {
+                        status: 400,
                         message: "Input metadata validation failed",
-                        details: {
-                            validationErrors: resultInputValidation,
-                            data: metadata,
-                        },
-                    });
+                        details: { validationErrors: resultInputValidation, data: metadata },
+                    };
                 }
             }
-            // build a graph of all the available translations
+
+             // build a graph of all the available translations
     
-            let startNode = `${inputModelName}:${inputModelVersion}`;
-            let endNode = `${outputModelName}:${outputModelVersion}`;
-    
+            const startNode = `${inputModelName}:${inputModelVersion}`;
+            const endNode = `${outputModelName}:${outputModelVersion}`;
+            const predecessors = templatesGraph.dijkstra(startNode);
             //find the best route between the translations
-            let predecessors = templatesGraph.dijkstra(startNode);
-            const { translationsToApply, error } = templatesGraph.getPath(
-                startNode,
-                endNode,
-                predecessors
-            );
+            const { translationsToApply, error } = templatesGraph.getPath(startNode, endNode, predecessors);
+
             if (error) {
-                publishMessage(
-                    "POST",
-                    "translate",
-                    `Failed to find translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
-                );
-                return res.status(error.status).json({
-                    message: error.message,
-                });
+                throw { status: 500, message: `Failed to find translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}` };
             }
-    
+
             let initialItterationMetadata = metadata;
-    
-           for (let i = 1; i < translationsToApply.length; i++) {
-                const { name: outputModelName, version: outputModelVersion } =
-                    translationsToApply[i];
-    
-                const { name: inputModelName, version: inputModelVersion } =
-                    translationsToApply[i - 1];
-    
+
+            
+            for (let i = 1; i < translationsToApply.length; i++) {
+                const { name: outputModelName, version: outputModelVersion } = translationsToApply[i];
+                const { name: inputModelName, version: inputModelVersion } = translationsToApply[i - 1];
+
                 const { translatedMetadata, error } = await translate(
                     initialItterationMetadata,
                     extra,
@@ -305,61 +218,40 @@ router.post(
                     outputModelName,
                     outputModelVersion
                 );
-    
+
                 if (error) {
-                    publishMessage(
-                        "POST",
-                        "translate",
-                        `Failed to execute translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
-                    );
-                    return res.status(error.status).json({
-                        message: error.message,
-                        details: error.details,
-                    });
+                    throw { status: 500, message: `Failed to execute translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}` };
                 }
+
                 initialItterationMetadata = translatedMetadata;
             }
-    
-    
+
             let outputMetadata = initialItterationMetadata;
-    
-         
+
+            
             if (validateOutput) {
-                
-                const resultOutputValidation = (subsection === undefined) ? await validateMetadata(
-                    outputMetadata,
-                    outputModelName,
-                    outputModelVersion
-                ) : await validateMetadataSection(
-                    outputMetadata,
-                    outputModelName,
-                    outputModelVersion,
-                    subsection
-                );
+                const validationFn = subsection === undefined ? validateMetadata : validateMetadataSection;
+                const resultOutputValidation = await validationFn(outputMetadata, outputModelName, outputModelVersion, subsection);
                 if (resultOutputValidation.length > 0) {
-                    publishMessage(
-                        "POST",
-                        "translate",
-                        `Failed to validate translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}`
-                    );
-                    return res.status(400).json({
+                    throw {
+                        status: 400,
                         message: "Output metadata validation failed",
                         details: resultOutputValidation,
                         data: outputMetadata,
-                    });
+                    };
                 }
             }
-    
-            publishMessage(
-                "POST",
-                "translate",
-                `Translated metadata from ${inputModelName}:${inputModelVersion} to ${outputModelName}:${outputModelVersion}`
-            );
+
+            publishMessage("POST", "translate", `Translated metadata from ${inputModelName}:${inputModelVersion} to ${outputModelName}:${outputModelVersion}`);
             return res.send(outputMetadata);
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            // Handle errors
+            publishMessage("POST", "translate", `Failed to translate metadata`);
+            return res.status(err.status || 500).json({
+                message: err.message,
+                details: err.details || {},
+            });
         }
-       
     }
 );
 
