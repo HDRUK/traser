@@ -200,6 +200,8 @@ router.post(
             const { translationsToApply, error } = templatesGraph.getPath(startNode, endNode, predecessors);
 
             if (error) {
+                console.log('1 here')
+                console.log(error)
                 throw { status: 500, message: `Failed to find translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}` };
             }
 
@@ -220,6 +222,8 @@ router.post(
                 );
 
                 if (error) {
+                    console.log('2 here')
+                    console.log(error)
                     throw { status: 500, message: `Failed to execute translation between ${inputModelName}:${inputModelVersion} and ${outputModelName}:${outputModelVersion}` };
                 }
 
@@ -247,6 +251,8 @@ router.post(
         } catch (err) {
             // Handle errors
             publishMessage("POST", "translate", `Failed to translate metadata`);
+            console.log('3 here')
+            console.log(err)
             return res.status(err.status || 500).json({
                 message: err.message,
                 details: err.details || {},
