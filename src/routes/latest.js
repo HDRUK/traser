@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { getAvailableSchemas } = require("../middleware/schemaHandler");
 
 /**
  * @swagger
@@ -16,7 +17,8 @@ const router = express.Router();
  *               GWDM_TRASER_IDENT: "gdmv1"
  *               GWDM: "GWDM"
  *               GWDM_CURRENT_VERSION: "1.0"
- *               HDRUK: "HDRUK"
+ *               FORM_HYDRATION_SCHEMA_MODEL: "HDRUK"
+ *               FORM_HYDRATION_SCHEMA_LATEST_VERSION: "1.0"
  *       500:
  *         description: Internal server error.
  *         content:
@@ -29,13 +31,19 @@ const router = express.Router();
  *                   description: Description of the error.
  */
 router.get("/", async (_req, res) => {
-    res.status(200).json({
-        GWDM_TRASER_IDENT: "gdmv1",
-        GWDM: "GWDM",
-        GWDM_CURRENT_VERSION: "2.0",
-        FORM_HYDRATION_SCHEMA_MODEL:"HDRUK",
-        FORM_HYDRATION_SCHEMA_LATEST_VERSION:"3.0.0"
-    });
+    try {
+        const availableSchemas = await getAvailableSchemas();
+
+        res.status(200).json({
+            GWDM_TRASER_IDENT: "gdmv1",
+            GWDM: "GWDM",
+            GWDM_CURRENT_VERSION: availableSchemas.GWDM?.slice(-1)[0] || "2.0",
+            FORM_HYDRATION_SCHEMA_MODEL: "HDRUK",
+            FORM_HYDRATION_SCHEMA_LATEST_VERSION: availableSchemas.HDRUK?.slice(-1)[0] || "3.0.0"
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to retrieve schema information." });
+    }
 });
 
 module.exports = router;
