@@ -29,6 +29,7 @@ const translateRouter = require('./routes/translate');
 const getRouter = require('./routes/get');
 const findRouter = require('./routes/find');
 const listRouter = require('./routes/list');
+const latestRouter = require('./routes/latest');
 const validateRouter = require('./routes/validate');
 
 //create the app
@@ -101,6 +102,7 @@ app.use('/translate', translateRouter);
 app.use('/get', getRouter);
 app.use('/find', findRouter);
 app.use('/list', listRouter);
+app.use('/latest', latestRouter);
 app.use('/validate', validateRouter);
 
 // Serve static files from the "public" folder
