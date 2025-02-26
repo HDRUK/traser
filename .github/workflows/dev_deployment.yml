@@ -4,7 +4,7 @@ run-name: ${{ github.actor }} triggered deploy to DEV pipeline
 on:
   push:
     branches:
-      - "dev"
+      - "fix/useprodinprod"
 
 env:
   PROJECT_ID: "${{ secrets.PROJECT_ID }}"
@@ -25,7 +25,7 @@ jobs:
         id: checkout
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: fix/useprodinprod
 
       - name: Read VERSION file
         id: getversion
@@ -58,7 +58,7 @@ jobs:
           GAR_NAME: ${{ secrets.GAR_NAME }}
 
         run: |-
-          docker build -t '${{ env.GAR_LOCATION }}'-docker.pkg.dev/'${{ env.PROJECT_ID }}'/'${{ env.GAR_NAME }}'/${{ steps.getversion.outputs.version }}:${{ github.sha }} -t '${{ env.GAR_LOCATION }}'-docker.pkg.dev/'${{ env.PROJECT_ID }}'/'${{ env.GAR_NAME }}'/${{ steps.getversion.outputs.version }}:latest ./
+          docker build -f Dockerfile.prod -t '${{ env.GAR_LOCATION }}'-docker.pkg.dev/'${{ env.PROJECT_ID }}'/'${{ env.GAR_NAME }}'/${{ steps.getversion.outputs.version }}:${{ github.sha }} -t '${{ env.GAR_LOCATION }}'-docker.pkg.dev/'${{ env.PROJECT_ID }}'/'${{ env.GAR_NAME }}'/${{ steps.getversion.outputs.version }}:latest ./
           docker push --all-tags '${{ env.GAR_LOCATION }}'-docker.pkg.dev/'${{ env.PROJECT_ID }}'/'${{ env.GAR_NAME }}'/${{ steps.getversion.outputs.version }}
 
   deploy:
@@ -73,7 +73,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: fix/useprodinprod
 
       - name: Google Auth
         id: auth

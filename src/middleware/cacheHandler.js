@@ -1,7 +1,13 @@
 const axios = require("axios");
 const fs = require("fs");
 const NodeCache = require("node-cache");
-const cacheStore = new NodeCache({ stdTTL: process.env.CACHE_REFRESH_STDTLL });
+
+const cacheStore = new NodeCache({ 
+    stdTTL: process.env.CACHE_REFRESH_STDTLL || 3600,
+    checkperiod: 600,
+    useClones: false, 
+    maxKeys: 1000 
+});
 
 const getFromLocal = (path) => {
     return new Promise((resolve, reject) => {
@@ -16,35 +22,47 @@ const getFromLocal = (path) => {
 };
 
 const getFromUri = async (uri) => {
-    //need to implement catching errors...
-    const response = await axios.get(uri);
-    data = response.data;
-    return data;
+    try {
+        const response = await axios.get(uri);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching data from URI: ${uri}`, error.message);
+        throw error;
+    }
 };
 
-const saveToCache = async (key, data) => {
+const saveToCache = (key, data) => {
     cacheStore.set(key, data);
 };
 
-const getFromCache = async (key) => {
-    const data = await cacheStore.get(key);
-    return data;
+const getFromCache = (key) => {
+    return cacheStore.get(key);
 };
 
 const getFromCacheOrUri = async (key, uri) => {
-    let data = await getFromCache(key);
+    let data = getFromCache(key);
     if (data === undefined) {
-        data = await getFromUri(uri);
-        saveToCache(key, data);
+        try {
+            data = await getFromUri(uri);
+            saveToCache(key, data);
+        } catch (error) {
+            console.error(`Failed to fetch data for key ${key} from URI`);
+            return null;
+        }
     }
     return data;
 };
 
-const getFromCacheOrLocal = async (key, uri) => {
-    let data = await getFromCache(key);
+const getFromCacheOrLocal = async (key, path) => {
+    let data = getFromCache(key);
     if (data === undefined) {
-        data = await getFromLocal(uri);
-        saveToCache(key, data);
+        try {
+            data = await getFromLocal(path);
+            saveToCache(key, data);
+        } catch (error) {
+            console.error(`Failed to read local file: ${path}`, error.message);
+            return null;
+        }
     }
     return data;
 };
