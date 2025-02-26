@@ -29,13 +29,13 @@ const router = express.Router();
  *                   description: Description of the error.
  */
 router.get("/", async (_req, res) => {
-    const latest = {
+    res.status(200).json({
         GWDM_TRASER_IDENT: "gdmv1",
         GWDM: "GWDM",
         GWDM_CURRENT_VERSION: "2.0",
-        HDRUK: "HDRUK"
-    };
-    res.status(200).json(latest);
+        FORM_HYDRATION_SCHEMA_MODEL:"HDRUK",
+        FORM_HYDRATION_SCHEMA_LATEST_VERSION:"3.0.0"
+    });
 });
 
 module.exports = router;
