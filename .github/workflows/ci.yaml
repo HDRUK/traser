@@ -42,7 +42,7 @@ jobs:
 
       - name: Setup env
         id: setupenv
-        run: "cp env_template .env"
+        run: "cp env.example .env"
 
       - name: Run testing
         id: unittest
