@@ -14,7 +14,7 @@ cd traser
 
 ### Setup env varialbes
 ```
-cp env_template .env
+cp env.example .env
 ```
 
 ### Run the API (Dev)
