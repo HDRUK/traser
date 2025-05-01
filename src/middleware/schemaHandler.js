@@ -144,6 +144,7 @@ const findMatchingSchemas = async (metadata, withErrors = false) => {
 
     for (const [schema, versions] of Object.entries(schemas)) {
         const metadataClone = lodash.cloneDeep(metadata);
+        Object.freeze(metadataClone);
 
         for (const version of versions) {
             try {
@@ -166,7 +167,6 @@ const findMatchingSchemas = async (metadata, withErrors = false) => {
 
     return matches;
 };
-
 
 const loadSchemas = async () => {
     const schemas = await getAvailableSchemas();
