@@ -142,10 +142,10 @@ const findMatchingSchemas = async (metadata, withErrors = false) => {
     const schemas = await getAvailableSchemas();
     let matches = [];
 
-    for (const [schema, versions] of Object.entries(schemas)) {
-        const metadataClone = lodash.cloneDeep(metadata);
-        Object.freeze(metadataClone);
+    const metadataClone = lodash.cloneDeep(metadata);
+    Object.freeze(metadataClone);
 
+    for (const [schema, versions] of Object.entries(schemas)) {
         for (const version of versions) {
             try {
                 const validator = await getSchema(schema, version);
