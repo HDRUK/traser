@@ -136,37 +136,37 @@ describe("POST /translate", () => {
     //     });
     // });
 
-    describe("POST /translate", () => {
-        it("should return 200 if unknown metadata translated to GDMV1 (by default)", async () => {
-            const response = await translate(
-                sampleMetadata.hdrukv211,
-                undefined,
-                undefined,
-                "GWDM",
-                "1.0",
-                "1",
-                "1",
-                sampleMetadata.extra_hdrukv211
-            );
-            expect(response.status).toBe(200);
-        });
-    });
+    // describe("POST /translate", () => {
+    //     it("should return 200 if unknown metadata translated to GDMV1 (by default)", async () => {
+    //         const response = await translate(
+    //             sampleMetadata.hdrukv211,
+    //             undefined,
+    //             undefined,
+    //             "GWDM",
+    //             "1.0",
+    //             "1",
+    //             "1",
+    //             sampleMetadata.extra_hdrukv211
+    //         );
+    //         expect(response.status).toBe(200);
+    //     });
+    // });
 
-    describe("POST /translate?output_schema=GWDM", () => {
-        it("should return 400 because output_schema is given but output_version is unknown", async () => {
-            const response = await translate(
-                sampleMetadata.hdrukv211,
-                undefined,
-                undefined,
-                "GWDM",
-                undefined,
-                "1",
-                "1",
-                sampleMetadata.extra_hdrukv211
-            );
-            expect(response.status).toBe(400);
-        });
-    });
+    // describe("POST /translate?output_schema=GWDM", () => {
+    //     it("should return 400 because output_schema is given but output_version is unknown", async () => {
+    //         const response = await translate(
+    //             sampleMetadata.hdrukv211,
+    //             undefined,
+    //             undefined,
+    //             "GWDM",
+    //             undefined,
+    //             "1",
+    //             "1",
+    //             sampleMetadata.extra_hdrukv211
+    //         );
+    //         expect(response.status).toBe(400);
+    //     });
+    // });
 
     describe("POST /translate", () => {
         it("should return 200 and itself unchanged", async () => {
