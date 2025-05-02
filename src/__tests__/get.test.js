@@ -49,6 +49,7 @@ describe("GET /get/form_hydration?", () => {
     it("should return 200 if form hydration can be retrieved with no/default version", async () => {
         const response = await request(app).get("/get/form_hydration").query({
             name: "HDRUK",
+            version: "2.2.1",
         });
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty("schema_fields");
