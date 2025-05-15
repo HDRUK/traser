@@ -9,6 +9,14 @@ on:
     branches:
       - main
       - dev
+  workflow_dispatch:
+    inputs:
+      schemata_branch:
+        description: "Schemata branch to be used by the unit tests"
+        default: master
+      traser_mapping_branch:
+        description: "Traser mapping files branch to be used by the unit tests"
+        default: master
 
 env:
   SLACK_WEBHOOK_URL: "${{ secrets.SLACK_WEBHOOK_URL}}"
@@ -39,6 +47,21 @@ jobs:
       - name: NPM install
         id: npminstall
         run: "npm install"
+
+      - name: Update env
+        id: updateenv
+        run: |
+          if [[ -n "${{ github.event.inputs.schemata_branch }}" ]]; then
+              sed -i "s|\(SCHEMA_LOCATION=https://raw.githubusercontent.com/HDRUK/schemata-2/\)[^/]*|\1${{ github.event.inputs.schemata_branch }}|" .env.example
+          else
+              echo "No branch input provided. Skipping SCHEMA_LOCATION update."
+          fi
+
+          if [[ -n "${{ github.event.inputs.traser_mapping_branch }}" ]]; then
+              sed -i "s|\(TEMPLATES_LOCATION=https://raw.githubusercontent.com/HDRUK/schemata-2/\)[^/]*|\1${{ github.event.inputs.traser_mapping_branch }}|" .env.example
+          else
+              echo "No branch input provided. Skipping TEMPLATES_LOCATION update."
+          fi
 
       - name: Setup env
         id: setupenv
