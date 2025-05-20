@@ -1,6 +1,6 @@
 {
   "name": "traser",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "",
   "scripts": {
     "start": "NODE_ENV=production node ./src/bin/www",
