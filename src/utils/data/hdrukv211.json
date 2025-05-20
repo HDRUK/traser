@@ -27,19 +27,19 @@
     "revisions": [
         {
             "version": "1.0.0",
-            "url": "https://d5faf9c6-6c34-46d7-93c4-7706a5436ed9"
+            "url": "https://healthdatagateway.org/dataset/1?version=1.0.0"
         },
         {
             "version": "2.0.0",
-            "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
+            "url": "https://healthdatagateway.org/dataset/1?version=2.0.0"
         },
         {
             "version": "0.0.1",
-            "url": "https://9e798632-442a-427b-8d0e-456f754d28dc"
+            "url": "https://healthdatagateway.org/dataset/1?version=3.0.0"
         },
         {
             "version": "2.1.1",
-            "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
+            "url": "https://healthdatagateway.org/dataset/1?version=4.0.0"
         }
     ],
     "modified": "2021-01-28T14:15:46Z",
