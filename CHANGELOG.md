@@ -1,3 +1,9 @@
+## [1.4.5](https://github.com/HDRUK/traser/compare/v1.4.4...v1.4.5) (2025-06-04)
+
+### 🐛 Bug Fixes
+
+* **GAT-7254:** update urls in example - timing out validating previous ones (#75) ([dedb7ed](https://github.com/HDRUK/traser/commit/dedb7ed490cd8baa802bac3051a2a87bd7309b5b)), closes [GAT-7254](GAT-7254)
+
 ## [1.4.4](https://github.com/HDRUK/traser/compare/v1.4.3...v1.4.4) (2025-05-20)
 
 ### 🐛 Bug Fixes
