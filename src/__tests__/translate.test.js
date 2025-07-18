@@ -313,5 +313,46 @@ describe("POST /translate", () => {
             );
             expect(response.status).toBe(200);
         });
+
+        it("should return 200 can translate from 3.0.0 to 4.0.0", async () => {
+            let response = await translate(
+                sampleMetadata.hdruk300,
+                "HDRUK",
+                "3.0.0",
+                "HDRUK",
+                "4.0.0",
+                "1",
+                "1"
+            );
+            const AReallyNiceV4Metadata = response.body;
+
+            expect(response.status).toBe(200);
+            
+        });
+    it("should return 200 can translate from GWDM 2.0 to HDR 4.0.0 and back again to GWDM 2.0", async () => {
+            let response = await translate(
+                sampleMetadata.gwdm20,
+                "GWDM",
+                "2.0",
+                "HDRUK",
+                "4.0.0",
+                "1",
+                "1",
+                sampleMetadata.extra_hdrukv211
+            );
+            const AReallyNiceV4MetadataTheKindYouWouldShowYourMah = response.body;
+            expect(response.status).toBe(200);
+
+            response = await translate(
+                AReallyNiceV4MetadataTheKindYouWouldShowYourMah,
+                "HDRUK",
+                "4.0.0",
+                "GWDM",
+                "2.0",
+                "1",
+                "1"
+            );
+            expect(response.status).toBe(200);
+        });
     });
 });
