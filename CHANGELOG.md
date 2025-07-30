@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/HDRUK/traser/compare/v1.4.5...v1.5.0) (2025-07-30)
+
+### ✨ Features
+
+* **GAT-7530:** V4 schema tests (#78) ([8215550](https://github.com/HDRUK/traser/commit/82155502f37df94605f59280bcaa84c11849e29e)), closes [GAT-7530](GAT-7530)
+
 ## [1.4.5](https://github.com/HDRUK/traser/compare/v1.4.4...v1.4.5) (2025-06-04)
 
 ### 🐛 Bug Fixes
