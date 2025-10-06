@@ -152,7 +152,7 @@ router.post(
         try {
 
             if (inputModelName == undefined || inputModelVersion == undefined) {
-                const { name, version, error } = await findModelAndVersion(metadata, selectFirstMatching);
+                const { name, version, error } = await findModelAndVersion(metadata, selectFirstMatching, true);
                 if (error) throw error;
                 inputModelName = name;
                 inputModelVersion = version;
@@ -183,6 +183,7 @@ router.post(
             if (validateInput) {
                 const validationFn = subsection === undefined ? validateMetadata : validateMetadataSection;
                 const resultInputValidation = await validationFn(metadata, inputModelName, inputModelVersion, subsection);
+
                 if (resultInputValidation.length > 0) {
                     throw {
                         status: 400,
