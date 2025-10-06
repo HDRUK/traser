@@ -139,11 +139,9 @@ const validateMetadataSection = async (metadata, modelName, modelVersion, subsec
 };
 
 const findMatchingSchemas = async (metadata, withErrors = false) => {
-    const schemas = await getAvailableSchemas();
+   const schemas = await getAvailableSchemas();
     let matches = [];
-
-    const metadataClone = lodash.cloneDeep(metadata);
-    Object.freeze(metadataClone);
+    const shadllowClone = {...metadata}
 
     for (const [schema, versions] of Object.entries(schemas)) {
         for (const version of versions) {
@@ -151,9 +149,8 @@ const findMatchingSchemas = async (metadata, withErrors = false) => {
                 const validator = await getSchema(schema, version);
                 if (!validator) continue;
 
-                const isValid = validator(metadataClone);
+                const isValid = validator({...shadllowClone});
                 const result = { name: schema, version, matches: isValid };
-
                 if (withErrors) {
                     result.errors = validator.errors;
                 }
