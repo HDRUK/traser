@@ -138,7 +138,7 @@ const validateMetadataSection = async (metadata, modelName, modelVersion, subsec
     return isValid ? [] : validator.errors;
 };
 
-const findMatchingSchemas = async (metadata, withErrors = false, deepClone = false) => {
+const findMatchingSchemas = async (metadata, withErrors = false) => {
    const schemas = await getAvailableSchemas();
     let matches = [];
     const metadataClone = lodash.cloneDeep(metadata);
@@ -150,7 +150,7 @@ const findMatchingSchemas = async (metadata, withErrors = false, deepClone = fal
                 const validator = await getSchema(schema, version);
                 if (!validator) continue;
 
-                const isValid = validator(deepClone ? metadataClone : {...metadataClone});
+                const isValid = validator({...metadataClone});
                 const result = { name: schema, version, matches: isValid };
                 if (withErrors) {
                     result.errors = validator.errors;
