@@ -8,10 +8,10 @@ const {
     getTemplate,
 } = require("../../middleware/templateHandler");
 
-const findModelAndVersion = async (metadata, selectFirstMatching, deepClone) => {
+const findModelAndVersion = async (metadata, selectFirstMatching) => {
     const availableSchemas = await getAvailableSchemas();
     
-    const matchingSchemas = await findMatchingSchemas(metadata, false, deepClone);
+    const matchingSchemas = await findMatchingSchemas(metadata, false);
 
     const matchingSchemasOnly = matchingSchemas.filter(
         (item) => item.matches === true
