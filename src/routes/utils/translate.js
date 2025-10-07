@@ -10,7 +10,8 @@ const {
 
 const findModelAndVersion = async (metadata, selectFirstMatching) => {
     const availableSchemas = await getAvailableSchemas();
-    const matchingSchemas = await findMatchingSchemas(metadata);
+    
+    const matchingSchemas = await findMatchingSchemas(metadata, false);
 
     const matchingSchemasOnly = matchingSchemas.filter(
         (item) => item.matches === true

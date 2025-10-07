@@ -183,6 +183,7 @@ router.post(
             if (validateInput) {
                 const validationFn = subsection === undefined ? validateMetadata : validateMetadataSection;
                 const resultInputValidation = await validationFn(metadata, inputModelName, inputModelVersion, subsection);
+
                 if (resultInputValidation.length > 0) {
                     throw {
                         status: 400,
