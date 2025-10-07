@@ -152,7 +152,7 @@ router.post(
         try {
 
             if (inputModelName == undefined || inputModelVersion == undefined) {
-                const { name, version, error } = await findModelAndVersion(metadata, selectFirstMatching, true);
+                const { name, version, error } = await findModelAndVersion(metadata, selectFirstMatching);
                 if (error) throw error;
                 inputModelName = name;
                 inputModelVersion = version;
