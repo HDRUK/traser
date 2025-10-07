@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/HDRUK/traser/compare/v1.5.0...v1.5.1) (2025-10-07)
+
+### 🐛 Bug Fixes
+
+* **GAT-8013:** Passes validation but fails find (#83) ([081e239](https://github.com/HDRUK/traser/commit/081e2396c520a3de983421ac139b1b1c3bcfe1b8)), closes [GAT-8013](GAT-8013)
+* **GAT-8013:** Should not mutate ever! (#84) ([f457810](https://github.com/HDRUK/traser/commit/f457810b4b1c8e968c21befa403284b8f444edea)), closes [GAT-8013](GAT-8013)
+
 ## [1.5.0](https://github.com/HDRUK/traser/compare/v1.4.5...v1.5.0) (2025-07-30)
 
 ### ✨ Features
