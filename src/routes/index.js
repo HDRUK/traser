@@ -11,8 +11,9 @@ router.get("/favicon.ico", function (req, res) {
 });
 
 router.get("/status", (req, res) => {
-    res.sendStatus(200);
-    res.send({ message: "ok" });
+    return res.status(200).json({
+        message: "ok",
+    });
 });
 
 module.exports = router;
