@@ -10,4 +10,10 @@ router.get("/favicon.ico", function (req, res) {
     res.sendStatus(204);
 });
 
+router.get("/status", (req, res) => {
+    return res.status(200).json({
+        message: "ok",
+    });
+});
+
 module.exports = router;
