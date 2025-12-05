@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/HDRUK/traser/compare/v1.5.1...v1.6.0) (2025-12-05)
+
+### ✨ Features
+
+* **GAT-1234:** Add healthcheck endpoint (#89) ([7c40e0c](https://github.com/HDRUK/traser/commit/7c40e0c54a90522b5862f6ad87dd506a6303b249)), closes [GAT-1234](GAT-1234)
+
 ## [1.5.1](https://github.com/HDRUK/traser/compare/v1.5.0...v1.5.1) (2025-10-07)
 
 ### 🐛 Bug Fixes
