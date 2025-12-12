@@ -90,7 +90,9 @@ const getAvailableSchemas = async () => {
     let available = getFromCache(cacheKey);
     
     if (!available) {
-        available = await getFromCacheOrUri(cacheKey, `${schemataPath}/available.json`);
+        available = loadFromLocalFile
+        ? await getFromCacheOrLocal(cacheKey, `${schemataPath}/available.json`)
+        : await getFromCacheOrUri(cacheKey, `${schemataPath}/available.json`);
         
         if (!available) {
             throw new Error("Failed to fetch available schemas.");
