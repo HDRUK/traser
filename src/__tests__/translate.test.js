@@ -259,6 +259,22 @@ describe("POST /translate", () => {
         });
     });
 
+    describe("POST /translate?input_schema=HDRUK&input_version=4.0.0&output_schema=GWDM&output_version=2.0", () => {
+        it("should return 200 can detect HDR 4.0.0 and translate to GWDM 2.0", async () => {
+            let response = await translate(
+                sampleMetadata.hdruk400,
+                undefined,
+                undefined,
+                "GWDM",
+                "2.0",
+                "1",
+                "1"
+            );
+
+            expect(response.status).toBe(200);
+        });
+    });
+
     describe("Perform a multi-step translations", () => {
         it("should return 200 can translate from 2.1.2 to 1.1", async () => {
             const response = await translate(
