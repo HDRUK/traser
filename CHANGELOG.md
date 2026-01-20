@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/HDRUK/traser/compare/v1.6.0...v1.6.1) (2026-01-20)
+
+### 🐛 Bug Fixes
+
+* **GAT-0000:** Revert local file loading change (#95) ([ab302e1](https://github.com/HDRUK/traser/commit/ab302e1e97df7600583d661350cbd63f2c47a7a5)), closes [GAT-0000](GAT-0000)
+* **GAT-8077:** Traser failing to detect correct schema (#97) ([19871a0](https://github.com/HDRUK/traser/commit/19871a0ba2962e50ecbb0218689af769f2f2784c)), closes [GAT-8077](GAT-8077)
+
 ## [1.6.0](https://github.com/HDRUK/traser/compare/v1.5.1...v1.6.0) (2025-12-05)
 
 ### ✨ Features
