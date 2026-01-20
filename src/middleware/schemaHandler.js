@@ -90,8 +90,12 @@ const getAvailableSchemas = async () => {
     let available = getFromCache(cacheKey);
     
     if (!available) {
-        available = await getFromCacheOrUri(cacheKey, `${schemataPath}/available.json`);
-        
+
+        available =
+        loadFromLocalFile
+            ? await getFromCacheOrLocal(cacheKey, `${schemataPath}/available.json`)
+            : await getFromCacheOrUri(cacheKey, `${schemataPath}/available.json`);
+
         if (!available) {
             throw new Error("Failed to fetch available schemas.");
         }
@@ -141,15 +145,14 @@ const validateMetadataSection = async (metadata, modelName, modelVersion, subsec
 const findMatchingSchemas = async (metadata, withErrors = false) => {
    const schemas = await getAvailableSchemas();
     let matches = [];
-    const metadataClone = lodash.cloneDeep(metadata);
-    Object.freeze(metadataClone);
 
     for (const [schema, versions] of Object.entries(schemas)) {
         for (const version of versions) {
             try {
                 const validator = await getSchema(schema, version);
                 if (!validator) continue;
-
+                const metadataClone = lodash.cloneDeep(metadata);
+                Object.freeze(metadataClone);
                 const isValid = validator({...metadataClone});
                 const result = { name: schema, version, matches: isValid };
                 if (withErrors) {
