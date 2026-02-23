@@ -30,8 +30,8 @@ jobs:
       - name: Read VERSION file
         id: getversion
         run: |
-          sed -n 's/^appVersion:\(.*\)/\1/p' < chart/traser/Chart.yaml > version
-          echo "version=$(sed '/.*\"\(.*\)\".*/ s//\1/g' version)" >> $GITHUB_OUTPUT
+          sed -n 's/^appVersion:\(.*\)/\1/p' < chart/traser/Chart.yaml" > "version"
+          echo "version=$(sed 's/.*\"\(.*\)\".*/\1/g' "version")" >> "$GITHUB_OUTPUT"
 
       - name: Google Auth
         id: auth
@@ -86,8 +86,8 @@ jobs:
       - name: Read VERSION file
         id: getversion
         run: |
-          sed -n 's/^appVersion:\(.*\)/\1/p' < chart/traser/Chart.yaml > version
-          echo "version=$(sed '/.*\"\(.*\)\".*/ s//\1/g' version)" >> $GITHUB_OUTPUT
+          sed -n 's/^appVersion:\(.*\)/\1/p' < chart/traser/Chart.yaml" > "version"
+          echo "version=$(sed 's/.*\"\(.*\)\".*/\1/g' "version")" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to Cloud Run
         uses: actions-hub/gcloud@540.0.0
