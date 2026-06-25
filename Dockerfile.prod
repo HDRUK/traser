@@ -1,20 +1,22 @@
-# Base image
-FROM node:20-alpine
-
-
-# Set working directory
+FROM node:20-alpine AS development-dependencies-env
+COPY . /app
 WORKDIR /app
+RUN npm ci
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+FROM node:20-alpine AS production-dependencies-env
+COPY ./package.json package-lock.json /app/
+WORKDIR /app
+RUN npm ci --omit=dev
 
-# Install dependencies for production build
-RUN npm ci --only=production
+FROM node:20-alpine AS build-env
+COPY . /app/
+COPY --from=development-dependencies-env /app/node_modules /app/node_modules
+WORKDIR /app
+RUN npm run build
 
-# Copy source files
-COPY ./src ./src
-
-# Expose the API port
-EXPOSE 3001
-# Start the API server
-CMD ["npm", "start"]
+FROM node:20-alpine
+COPY ./package.json package-lock.json /app/
+COPY --from=production-dependencies-env /app/node_modules /app/node_modules
+COPY --from=build-env /app/build /app/build
+WORKDIR /app
+CMD ["npm", "run", "start"]
