@@ -1,12 +1,17 @@
-name: Release workflow
-run-name: ${{ github.actor }} triggered Release workflow
+name: Semantic Release workflow
 
 on:
   push:
     branches:
-      - "release/*"
+      - main
 
 jobs:
+  semantic:
+    uses: HDRUK/github-actions-templates/.github/workflows/semantic.yaml@main
+    with:
+      chart_path: chart/traser/Chart.yaml
+    secrets: inherit
+
   release:
     uses: HDRUK/github-actions-templates/.github/workflows/docker-build.yaml@main
     with:
