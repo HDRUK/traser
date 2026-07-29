@@ -236,8 +236,7 @@ export async function action({ request }: { request: Request }) {
     publishMessage("POST", "translate", `Translated ${inputSchema}:${inputVersion} → ${outputSchema}:${outputVersion}`).catch(console.error);
     return Response.json(outputMetadata);
   } catch (err) {
-    // Unexpected/thrown error — genericise any 5xx so internal detail can't leak
-    // (the old central error handler's err.expose gate).
+    // Unexpected/thrown error — genericise any 5xx so internal detail can't leak.
     publishMessage("POST", "translate", "Translation failed").catch(console.error);
     return errorResponse(err, 500);
   }

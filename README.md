@@ -23,8 +23,13 @@ docker-compose up --build   # exposes :3001
 ```
 
 Schemas and translation maps are fetched at runtime from `SCHEMA_LOCATION` and
-`TEMPLATES_LOCATION` (URLs by default; set to a local path like `../schemata-2`
-to develop against a checkout). See `env.example` for all settings.
+`TEMPLATES_LOCATION`:
+
+- Schemas — [HDRUK/schemata](https://github.com/HDRUK/schemata)
+- Translation maps — [HDRUK/traser-mapping-files](https://github.com/HDRUK/traser-mapping-files)
+
+Both default to the public `dev` branches on GitHub; set either to a local path
+(e.g. a sibling checkout) to develop offline. See `env.example` for all settings.
 
 ## How it works
 
@@ -119,9 +124,3 @@ npm run typecheck
 it locally on :3001. For Kubernetes dev via Tilt, enable TRASER in the
 gateway-api `tiltconf.json` (`traserServiceRoot`, `traserEnabled: true`) —
 `tilt up` forwards it to :8002.
-
-## More detail
-
-Architecture, module responsibilities, and the schemata-2 source models are
-documented in [`CLAUDE.md`](./CLAUDE.md); design diagrams live in
-[`diagrams/`](./diagrams).

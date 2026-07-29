@@ -1,43 +1,21 @@
 import { readFile } from "fs/promises";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
+import { createFetchCache } from "./ttlCache.server";
 
 const SCHEMA_LOCATION = process.env.SCHEMA_LOCATION ?? "";
 const CACHE_TTL = parseInt(process.env.CACHE_REFRESH_STDTLL ?? "3600") * 1000;
 
-// ─── In-process TTL cache ─────────────────────────────────────────────────
-
-const _cache = new Map<string, { data: unknown; expires: number }>();
-
-function getCached(key: string): unknown | undefined {
-  const entry = _cache.get(key);
-  if (!entry) return undefined;
-  if (Date.now() > entry.expires) { _cache.delete(key); return undefined; }
-  return entry.data;
-}
-
-function setCached(key: string, data: unknown): void {
-  _cache.set(key, { data, expires: Date.now() + CACHE_TTL });
-}
-
 // ─── I/O ──────────────────────────────────────────────────────────────────
 
-async function fetchOrReadJson(url: string): Promise<unknown> {
-  const cached = getCached(url);
-  if (cached !== undefined) return cached;
-
-  let data: unknown;
+const fetchOrReadJson = createFetchCache(async (url: string): Promise<unknown> => {
   if (url.startsWith("http")) {
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
     if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
-    data = await res.json();
-  } else {
-    data = JSON.parse(await readFile(url, "utf-8"));
+    return res.json();
   }
-
-  setCached(url, data);
-  return data;
-}
+  return JSON.parse(await readFile(url, "utf-8"));
+}, { ttlMs: CACHE_TTL });
 
 // ─── AJV ──────────────────────────────────────────────────────────────────
 
@@ -312,11 +290,10 @@ export async function loadSchemas(): Promise<void> {
 
 // ─── Background periodic reload ────────────────────────────────────────────
 //
-// ensureLoaded() memoises the FIRST load for the process lifetime. Without this
-// reloader the compiled validators would stay frozen at first-load until a
-// restart, even after the raw-fetch TTL cache (CACHE_TTL) served fresher JSON —
-// a regression vs the old Express `loadData` which reloaded on the TTL. This
-// re-runs loadSchemas() every CACHE_TTL so schemata-2 changes are picked up.
+// ensureLoaded() memoises the first load for the process lifetime, so without a
+// reloader the compiled validators would stay frozen until a restart even after
+// the raw-fetch TTL cache (CACHE_TTL) served fresher JSON. This re-runs
+// loadSchemas() every CACHE_TTL so upstream schema changes are picked up live.
 
 let _reloaderStarted = false;
 

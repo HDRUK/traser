@@ -52,9 +52,9 @@ const ADMIN_NAV_LINKS = [
   { to: "/benchmark", label: "Benchmark" },
 ];
 
-// ── Global request middleware (replaces the old Express helmet() + body limit) ──
-// Runs for every route including the JSON API resource routes, in dev and prod.
-// The old service set security headers via helmet() and capped bodies at 512mb.
+// ── Global request middleware ──
+// Runs for every route (UI pages and JSON API resource routes). Sets baseline
+// security headers and enforces a request body-size limit.
 
 const MAX_BODY_MB = parseInt(process.env.MAX_BODY_MB ?? "512", 10);
 

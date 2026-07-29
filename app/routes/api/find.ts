@@ -46,16 +46,14 @@ export async function action({ request }: { request: Request }) {
 
   const errors: FieldError[] = [];
 
-  // Content-Type must be application/json. The old service used
-  // req.is('application/json'), which also rejects a *missing* header — the new
-  // `?.includes(...) === false` check silently passed when the header was absent.
+  // Content-Type must be application/json — reject when the header is absent or
+  // any other type.
   const contentType = request.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
     errors.push(fieldError("Invalid content type. Expected JSON.", "", "body"));
   }
 
-  // with_errors is optional and defaults to 0, but when present must be 0 or 1
-  // (old: isInt({ min: 0, max: 1 })).
+  // with_errors is optional and defaults to 0, but when present must be 0 or 1.
   let withErrors = false;
   if (withErrorsRaw !== null && withErrorsRaw !== "") {
     if (withErrorsRaw === "0" || withErrorsRaw === "1") {

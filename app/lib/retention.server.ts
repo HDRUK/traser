@@ -162,7 +162,7 @@ export async function trimTestResults(): Promise<{ trimmed: number; prunedPids: 
       const cell = cells[key];
       const age = cell.at ? Date.parse(cell.at) : NaN;
       // Trim when the cell is older than the body-TTL. Cells with no timestamp
-      // (written before this change) are treated as old and trimmed too.
+      // are treated as stale and trimmed too.
       const stale = Number.isNaN(age) || age < bodyCutoff;
       if (stale && (cell.translateBody !== undefined || cell.validateBody !== undefined)) {
         delete cell.translateBody;

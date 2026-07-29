@@ -76,8 +76,7 @@ export async function loader({ request }: { request: Request }) {
     const result = await expression.evaluate(src);
 
     // A JSONata expression that matches nothing evaluates to `undefined`, which
-    // JSON.stringify turns into a malformed empty body. Old behaviour: a 400
-    // "Hydration failed." Match it.
+    // JSON.stringify turns into a malformed empty body — return a 400 instead.
     if (result === undefined) {
       publishMessage(
         "GET",

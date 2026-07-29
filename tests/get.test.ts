@@ -66,8 +66,6 @@ describe("GET /get/form_hydration", () => {
   it("returns a hydrated form with schema_fields + validation for HDRUK 2.2.1", async () => {
     const res = await fetch(`${BASE_URL}/get/form_hydration?name=HDRUK&version=2.2.1`);
     expect(res.status).toBe(200);
-    // Contract the old service asserted (the rewrite had weakened this to a
-    // bare status check).
     const body = await res.json() as Record<string, unknown>;
     expect(body).toHaveProperty("schema_fields");
     expect(body).toHaveProperty("validation");

@@ -33,8 +33,7 @@ describe("POST /find", () => {
       body: JSON.stringify(sampleMetadata.gdmv1),
     });
     expect(res.status).toBe(400);
-    // Old service returned express-validator error objects (with `.msg`), not
-    // plain strings — restored so consumers reading errors[0].msg keep working.
+    // errors[] items are objects with `.msg` (the shape Gateway-web reads).
     const body = (await res.json()) as { errors: Array<{ msg: string }> };
     expect(body.errors[0].msg).toBe("Invalid content type. Expected JSON.");
   });

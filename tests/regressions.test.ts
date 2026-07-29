@@ -4,9 +4,8 @@ import { BASE_URL, sampleMetadata } from "./helpers";
 const M = sampleMetadata as Record<string, Record<string, unknown>>;
 
 /**
- * Regression tests pinning the response contracts the Express→React Router
- * rewrite had silently changed. Each asserts the shape the old service returned
- * so a future edit can't drop it again.
+ * Pins the JSON error-response contracts (shapes, status codes, security
+ * headers) that API consumers such as Gateway-web depend on.
  */
 
 describe("400 error-shape parity (missing/invalid params)", () => {
@@ -35,7 +34,7 @@ describe("400 error-shape parity (missing/invalid params)", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe("Translation not found");
-    expect(typeof body.message).toBe("string"); // regression: this key had been dropped
+    expect(typeof body.message).toBe("string");
   });
 
   it("/validate missing params → { message:'Validation has failed', errors:[...] }", async () => {
@@ -61,7 +60,6 @@ describe("400 error-shape parity (missing/invalid params)", () => {
 
 describe("/find request validation", () => {
   it("rejects a missing Content-Type header", async () => {
-    // No Content-Type header at all — old service 400'd, the rewrite let it pass.
     const res = await fetch(`${BASE_URL}/find`, {
       method: "POST",
       body: JSON.stringify(M.hdrukv211 ?? {}),
@@ -85,7 +83,7 @@ describe("/find request validation", () => {
 });
 
 describe("security headers", () => {
-  it("sets helmet-equivalent headers on API responses", async () => {
+  it("sets security headers on API responses", async () => {
     const res = await fetch(`${BASE_URL}/list/schemas`);
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
     expect(res.headers.get("x-frame-options")).toBe("SAMEORIGIN");

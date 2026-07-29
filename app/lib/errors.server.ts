@@ -1,17 +1,17 @@
 /**
- * Shared response-shaping helpers.
+ * Shared response-shaping helpers for the JSON API.
  *
- * The old Express service used `express-validator` for query/body validation
- * (producing `{ message, errors: [...] }` 400s) and a central error handler with
- * an `err.expose` gate that stopped internal 5xx details leaking to clients. The
- * React Router rewrite dropped both. These helpers restore that behaviour so the
- * JSON API stays contract-compatible with existing consumers (e.g. gateway-web).
+ * - fieldError / invalidParams / invalidRequest build the
+ *   `{ message, errors: [...] }` 400 body used for query/body validation
+ *   failures.
+ * - shapeError / errorResponse gate what an error exposes: client errors keep
+ *   their message/details; unexpected server errors are genericised so internal
+ *   detail can't leak.
  */
 
-// ─── express-validator-style field errors ─────────────────────────────────
+// ─── field errors ──────────────────────────────────────────────────────────
 //
-// Shape mirrors express-validator v7's `result.array()` items so callers that
-// read `errors[0].msg` keep working.
+// `errors[]` items match the shape Gateway-web reads (`errors[0].msg`, `.path`).
 
 export interface FieldError {
   type: "field";
@@ -36,17 +36,17 @@ export function fieldError(
   };
 }
 
-/** 400 with `{ message, errors }` — the old "invalid query parameters" shape. */
+/** 400 with `{ message, errors }` for invalid query parameters. */
 export function invalidParams(message: string, errors: FieldError[]): Response {
   return Response.json({ message, errors }, { status: 400 });
 }
 
-/** 400 with `{ errors }` and no message — the old `/find` shape. */
+/** 400 with `{ errors }` and no top-level message (used by `/find`). */
 export function invalidRequest(errors: FieldError[]): Response {
   return Response.json({ errors }, { status: 400 });
 }
 
-// ─── internal-error shaping (err.expose gate) ─────────────────────────────
+// ─── internal-error shaping ────────────────────────────────────────────────
 
 interface InternalError {
   status?: number;
@@ -61,9 +61,8 @@ interface InternalError {
  * HTTP status. The internal `status` field is never echoed into the body.
  *
  * Client errors (4xx) and errors explicitly marked `expose: true` keep their
- * message/details, matching how the old route handlers forwarded known failures.
- * Genuinely unexpected 5xx are genericised so stack/internal detail can't leak —
- * the behaviour the old central error handler's `err.expose` gate provided.
+ * message/details. Unexpected server errors (5xx) are genericised so stack /
+ * internal detail can't leak to the client.
  */
 export function shapeError(
   err: unknown,

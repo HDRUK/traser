@@ -106,15 +106,13 @@ export async function action({ request }: { request: Request }) {
   }
   const { metadata } = body;
 
-  // The old service validated params + metadata through a single
-  // express-validator gate and returned every failure together under one
-  // "Validation has failed" 400 with an `errors` array. Restore that shape.
+  // Collect missing-param and bad-metadata failures together into one
+  // "Validation has failed" 400 with an `errors` array.
   const paramErrors: FieldError[] = [];
   if (!inputSchema) paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
   if (!inputVersion) paramErrors.push(fieldError("Invalid value", "input_version", "query"));
-  // Match the old `body("metadata").isObject()` gate: reject missing / non-object
-  // / array metadata, but let an empty object `{}` through to AJV validation
-  // (old `.notEmpty()` stringified the object, so `{}` passed the gate).
+  // Reject missing / non-object / array metadata; an empty object `{}` is allowed
+  // through to AJV, which reports the missing required fields.
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     paramErrors.push(fieldError("Invalid value", "metadata", "body", metadata));
   }

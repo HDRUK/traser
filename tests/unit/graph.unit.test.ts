@@ -2,9 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 // Multi-hop routing is driven by the template set fetched from TEMPLATES_LOCATION.
 // Mock it with a synthetic set that has NO direct HDRUK:2.1.2 -> SchemaOrg edge,
-// so a correct router MUST chain through GWDM:1.0. This reproduces the
-// "multi-step translation" coverage the old translate.test.js had and the
-// rewrite dropped — without depending on the live templates repo.
+// so routing MUST chain through GWDM:1.0 — no dependency on the live templates repo.
 vi.mock("../../app/lib/templates.server", () => ({
   getAvailableTemplates: async () => [
     { input_model: "HDRUK", input_version: "2.1.2", output_model: "GWDM", output_version: "1.0" },

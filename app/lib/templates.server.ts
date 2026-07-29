@@ -1,55 +1,34 @@
 import { readFile } from "fs/promises";
+import { createFetchCache } from "./ttlCache.server";
 
 const TEMPLATES_LOCATION = process.env.TEMPLATES_LOCATION ?? "";
 const CACHE_TTL = parseInt(process.env.CACHE_REFRESH_STDTLL ?? "3600") * 1000;
 
-// ─── In-process TTL cache ─────────────────────────────────────────────────
-
-const _cache = new Map<string, { data: unknown; expires: number }>();
-
-function getCached(key: string): unknown | undefined {
-  const entry = _cache.get(key);
-  if (!entry) return undefined;
-  if (Date.now() > entry.expires) { _cache.delete(key); return undefined; }
-  return entry.data;
-}
-
-function setCached(key: string, data: unknown): void {
-  _cache.set(key, { data, expires: Date.now() + CACHE_TTL });
-}
-
 // ─── I/O ──────────────────────────────────────────────────────────────────
 
-async function fetchOrReadText(url: string): Promise<string | null> {
-  const cached = getCached(url);
-  if (cached !== undefined) return cached as string;
+// Loader throws on failure (rather than returning null) so the cache never
+// stores a failed fetch — fetchOrReadText below is what converts that to null.
+const fetchText = createFetchCache(async (url: string): Promise<string> => {
+  if (url.startsWith("http")) {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
+    return res.text();
+  }
+  return readFile(url, "utf-8");
+}, { ttlMs: CACHE_TTL });
 
+async function fetchOrReadText(url: string): Promise<string | null> {
   try {
-    let data: string;
-    if (url.startsWith("http")) {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-      if (!res.ok) return null;
-      data = await res.text();
-    } else {
-      data = await readFile(url, "utf-8");
-    }
-    setCached(url, data);
-    return data;
+    return await fetchText(url);
   } catch {
     return null;
   }
 }
 
 async function fetchOrReadJson(url: string): Promise<unknown> {
-  const cached = getCached(url);
-  if (cached !== undefined) return cached;
-
   const text = await fetchOrReadText(url);
   if (!text) throw new Error(`Failed to fetch: ${url}`);
-
-  const data = JSON.parse(text);
-  setCached(url, data);
-  return data;
+  return JSON.parse(text);
 }
 
 // ─── Paths ────────────────────────────────────────────────────────────────

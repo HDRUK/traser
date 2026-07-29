@@ -62,7 +62,11 @@
  */
 import { getTemplate } from "~/lib/templates.server";
 import { publishMessage } from "~/lib/audit.server";
-import { fieldError, invalidParams, type FieldError } from "~/lib/errors.server";
+import {
+  fieldError,
+  invalidParams,
+  type FieldError,
+} from "~/lib/errors.server";
 
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -72,24 +76,35 @@ export async function loader({ request }: { request: Request }) {
   const outputVersion = url.searchParams.get("output_version");
 
   const paramErrors: FieldError[] = [];
-  if (!inputSchema) paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
-  if (!inputVersion) paramErrors.push(fieldError("Invalid value", "input_version", "query"));
-  if (!outputSchema) paramErrors.push(fieldError("Invalid value", "output_schema", "query"));
-  if (!outputVersion) paramErrors.push(fieldError("Invalid value", "output_version", "query"));
+  if (!inputSchema)
+    paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
+  if (!inputVersion)
+    paramErrors.push(fieldError("Invalid value", "input_version", "query"));
+  if (!outputSchema)
+    paramErrors.push(fieldError("Invalid value", "output_schema", "query"));
+  if (!outputVersion)
+    paramErrors.push(fieldError("Invalid value", "output_version", "query"));
   if (paramErrors.length > 0) {
-    publishMessage("GET", "get/map", "Failed to retrieve mapping due to invalid inputs").catch(console.error);
+    publishMessage(
+      "GET",
+      "get/map",
+      "Failed to retrieve mapping due to invalid inputs",
+    ).catch(console.error);
     return invalidParams("Invalid query parameters.", paramErrors);
   }
 
-  const template = await getTemplate(inputSchema!, inputVersion!, outputSchema!, outputVersion!);
+  const template = await getTemplate(
+    inputSchema!,
+    inputVersion!,
+    outputSchema!,
+    outputVersion!,
+  );
   if (!template) {
-    // Old shape: { error, message, details } — keep the `message` key that the
-    // rewrite had dropped.
     const notImplemented = `Translation for ${inputSchema}-${inputVersion} to ${outputSchema}-${outputVersion} is not implemented`;
     publishMessage(
       "GET",
       "get/map",
-      `Failed to retrieve mapping for ${inputSchema}-${inputVersion} to ${outputSchema}-${outputVersion}`
+      `Failed to retrieve mapping for ${inputSchema}-${inputVersion} to ${outputSchema}-${outputVersion}`,
     ).catch(console.error);
     return Response.json(
       {
@@ -97,11 +112,15 @@ export async function loader({ request }: { request: Request }) {
         message: notImplemented,
         details: notImplemented,
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  publishMessage("GET", "get/map", `Map ${inputSchema}-${inputVersion} → ${outputSchema}-${outputVersion} retrieved`).catch(console.error);
+  publishMessage(
+    "GET",
+    "get/map",
+    `Map ${inputSchema}-${inputVersion} → ${outputSchema}-${outputVersion} retrieved`,
+  ).catch(console.error);
   return Response.json({
     input_schema: inputSchema,
     input_version: inputVersion,
