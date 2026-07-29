@@ -1,6 +1,6 @@
 {
   "name": "traser",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "Metadata translation service",
   "private": true,
   "type": "module",
