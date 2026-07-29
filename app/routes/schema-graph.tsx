@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useTheme } from "@mui/material/styles";
-import { useLoaderData, useNavigate, useSearchParams } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -133,7 +133,7 @@ function buildFullGraph(templates: TemplateEntry[]): string {
     [
       `  subgraph ${model}`,
       ...ids.map((id) => `    ${id}["${nodeLabels[id]}"]`),
-      `  end`,
+      "  end",
     ].join("\n"),
   );
 
@@ -253,7 +253,6 @@ export default function SchemaGraphPage() {
     useLoaderData<typeof loader>();
 
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<ViewMode>(
     schema && version ? "paths" : "full",
   );

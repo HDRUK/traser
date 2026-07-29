@@ -43,7 +43,7 @@ import FindInPageIcon from "@mui/icons-material/FindInPage";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 
-import { playgroundStore, type SchemaRef, type TemplateRef, type DatasetRef } from "../stores/playgroundStore";
+import { playgroundStore, type SchemaRef } from "../stores/playgroundStore";
 import { DEFAULT_JSON } from "../config/playgroundDefaults";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -481,7 +481,7 @@ export default function PlaygroundPage() {
         setLoadedTemplateText(null);
       }
     }
-  }, [inputSchema, selectedMapping]);
+  }, [inputSchema, selectedMapping, setLoadedTemplateText, setSelectedMapping]);
 
   // ── Input validation (debounced)
 
@@ -650,7 +650,7 @@ export default function PlaygroundPage() {
         }
       } catch { /* ignore */ }
     })();
-  }, [jsonText, inputSchema]);
+  }, [jsonText, inputSchema, setInputSchema]);
 
   // ── Find Schemas dialog
 

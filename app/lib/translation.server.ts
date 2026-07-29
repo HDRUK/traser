@@ -59,7 +59,7 @@ export async function getDefaultModelAndVersion(
     error: {
       status: 500,
       message: "Translation not possible",
-      details: `Unknown model and version to translate to`,
+      details: "Unknown model and version to translate to",
     },
   };
 }

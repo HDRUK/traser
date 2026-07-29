@@ -7,7 +7,6 @@ import {
   rmSync,
   existsSync,
   utimesSync,
-  readdirSync,
 } from "fs";
 import os from "os";
 import path from "path";

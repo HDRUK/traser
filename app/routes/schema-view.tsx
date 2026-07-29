@@ -113,10 +113,6 @@ function isObjectDef(schema: JsonSchema): boolean {
   return schema["type"] === "object" && "properties" in schema;
 }
 
-function isArrayDef(schema: JsonSchema): boolean {
-  return schema["type"] === "array";
-}
-
 function defNameFromRef(ref: string): string {
   return ref.split("/").pop() ?? ref;
 }

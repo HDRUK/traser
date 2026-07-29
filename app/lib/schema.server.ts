@@ -243,7 +243,7 @@ export async function loadSchemas(): Promise<void> {
   const failedKeys: string[] = [];
 
   const schemas = await getAvailableSchemas();
-  console.log(`[schema] available schemas:`, JSON.stringify(schemas));
+  console.log("[schema] available schemas:", JSON.stringify(schemas));
   for (const [name, versions] of Object.entries(schemas)) {
     for (const version of versions) {
       const key = `${name}:${version}`;
