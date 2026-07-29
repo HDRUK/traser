@@ -41,25 +41,34 @@ async function fetchOrReadJson(url: string): Promise<unknown> {
 
 // ─── AJV ──────────────────────────────────────────────────────────────────
 
-const ajv = new Ajv({
-  strict: false,
-  strictSchema: false,
-  strictTypes: false,
-  allErrors: true,
-  coerceTypes: true,
-  useDefaults: true,
-});
-addFormats(ajv);
+function createAjv(): Ajv {
+  const instance = new Ajv({
+    strict: false,
+    strictSchema: false,
+    strictTypes: false,
+    allErrors: true,
+    coerceTypes: true,
+    useDefaults: true,
+  });
+  addFormats(instance);
+  return instance;
+}
+
+// The compiled-validator store. These are `let`, not `const`, so a background
+// reload (see startSchemaReloader) can build a fresh instance + fresh caches
+// and swap all three references atomically — readers never see a half-populated
+// store the way per-key removeSchema/addSchema would expose.
+let ajv = createAjv();
 
 // ─── Property index ───────────────────────────────────────────────────────
 
-const _propertyIndexCache = new Map<string, Map<string, string[]>>();
+let _propertyIndexCache = new Map<string, Map<string, string[]>>();
 
 // ─── Name-discriminator map ───────────────────────────────────────────────
 // Maps a discriminator name literal (e.g. "Health and disease") to the allowed
 // enum values for its subTypes property. Used to correct anyOf branch errors.
 
-const _nameDiscriminatorCache = new Map<string, Map<string, unknown[]>>();
+let _nameDiscriminatorCache = new Map<string, Map<string, unknown[]>>();
 
 export function buildNameDiscriminatorMap(schema: object): Map<string, unknown[]> {
   const map = new Map<string, unknown[]>();
@@ -221,10 +230,40 @@ export async function getAvailableSchemas(): Promise<Record<string, string[]>> {
   return fetchOrReadJson(availablePath()) as Promise<Record<string, string[]>>;
 }
 
+// ─── Load status (partial-load visibility) ────────────────────────────────
+
+export interface SchemaLoadStatus {
+  loaded: number;
+  failed: number;
+  failedKeys: string[];
+  lastLoadedAt: string | null;
+}
+
+let _loadStatus: SchemaLoadStatus = {
+  loaded: 0,
+  failed: 0,
+  failedKeys: [],
+  lastLoadedAt: null,
+};
+
+export function getSchemaLoadStatus(): SchemaLoadStatus {
+  return { ..._loadStatus, failedKeys: [..._loadStatus.failedKeys] };
+}
+
 export async function loadSchemas(): Promise<void> {
   console.log(`[schema] loadSchemas() starting — SCHEMA_LOCATION=${SCHEMA_LOCATION || "(not set)"}`);
+
+  // Build into FRESH structures so an in-flight reload never exposes a
+  // half-populated store to concurrent readers; swap references only once
+  // everything is compiled.
+  const nextAjv = createAjv();
+  const nextPropertyIndex = new Map<string, Map<string, string[]>>();
+  const nextNameDiscriminator = new Map<string, Map<string, unknown[]>>();
+
   let loaded = 0;
   let failed = 0;
+  const failedKeys: string[] = [];
+
   const schemas = await getAvailableSchemas();
   console.log(`[schema] available schemas:`, JSON.stringify(schemas));
   for (const [name, versions] of Object.entries(schemas)) {
@@ -232,19 +271,66 @@ export async function loadSchemas(): Promise<void> {
       const key = `${name}:${version}`;
       try {
         const schema = await fetchOrReadJson(schemaPath(name, version));
-        ajv.removeSchema(key);
-        ajv.addSchema(schema as object, key);
-        _propertyIndexCache.set(key, buildPropertyIndex(schema as object));
-        _nameDiscriminatorCache.set(key, buildNameDiscriminatorMap(schema as object));
+        nextAjv.addSchema(schema as object, key);
+        nextPropertyIndex.set(key, buildPropertyIndex(schema as object));
+        nextNameDiscriminator.set(key, buildNameDiscriminatorMap(schema as object));
         console.log(`[schema] loaded ${key}`);
         loaded++;
       } catch (err) {
         console.error(`[schema] FAILED to load ${key} from ${schemaPath(name, version)}:`, err);
         failed++;
+        failedKeys.push(key);
       }
     }
   }
-  console.log(`[schema] loadSchemas() complete — ${loaded} loaded, ${failed} failed`);
+
+  // If EVERY schema failed, keep the previous (working) store rather than
+  // swapping in an empty one — a transient outage of SCHEMA_LOCATION shouldn't
+  // wipe validation until the next reload.
+  if (loaded === 0 && ajv && _loadStatus.lastLoadedAt) {
+    console.error(
+      `[schema] loadSchemas() loaded 0 of ${loaded + failed} — keeping previous store`
+    );
+    _loadStatus = { ..._loadStatus, failed, failedKeys };
+    return;
+  }
+
+  // Atomic swap.
+  ajv = nextAjv;
+  _propertyIndexCache = nextPropertyIndex;
+  _nameDiscriminatorCache = nextNameDiscriminator;
+  _loadStatus = { loaded, failed, failedKeys, lastLoadedAt: new Date().toISOString() };
+
+  if (failed > 0) {
+    console.warn(
+      `[schema] loadSchemas() complete with GAPS — ${loaded} loaded, ${failed} FAILED: [${failedKeys.join(", ")}]`
+    );
+  } else {
+    console.log(`[schema] loadSchemas() complete — ${loaded} loaded, 0 failed`);
+  }
+}
+
+// ─── Background periodic reload ────────────────────────────────────────────
+//
+// ensureLoaded() memoises the FIRST load for the process lifetime. Without this
+// reloader the compiled validators would stay frozen at first-load until a
+// restart, even after the raw-fetch TTL cache (CACHE_TTL) served fresher JSON —
+// a regression vs the old Express `loadData` which reloaded on the TTL. This
+// re-runs loadSchemas() every CACHE_TTL so schemata-2 changes are picked up.
+
+let _reloaderStarted = false;
+
+export function startSchemaReloader(): void {
+  if (_reloaderStarted) return;
+  _reloaderStarted = true;
+  if (CACHE_TTL <= 0) {
+    console.log("[schema] CACHE_REFRESH_STDTLL <= 0 — periodic schema reload disabled");
+    return;
+  }
+  const timer = setInterval(() => {
+    loadSchemas().catch((err) => console.error("[schema] periodic reload failed:", err));
+  }, CACHE_TTL);
+  timer.unref?.(); // don't keep the process alive solely for this timer
 }
 
 export function getSchema(name: string, version: string) {

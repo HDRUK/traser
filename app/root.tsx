@@ -52,8 +52,49 @@ const ADMIN_NAV_LINKS = [
   { to: "/benchmark", label: "Benchmark" },
 ];
 
+// ── Global request middleware (replaces the old Express helmet() + body limit) ──
+// Runs for every route including the JSON API resource routes, in dev and prod.
+// The old service set security headers via helmet() and capped bodies at 512mb.
+
+const MAX_BODY_MB = parseInt(process.env.MAX_BODY_MB ?? "512", 10);
+
+const SECURITY_HEADERS: Record<string, string> = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "no-referrer",
+  "Strict-Transport-Security": "max-age=15552000; includeSubDomains",
+  "X-DNS-Prefetch-Control": "off",
+};
+
+export const middleware: Route.MiddlewareFunction[] = [
+  async ({ request }, next) => {
+    // Reject over-limit bodies up front (declared Content-Length).
+    if (MAX_BODY_MB > 0) {
+      const len = request.headers.get("content-length");
+      if (len && Number(len) > MAX_BODY_MB * 1024 * 1024) {
+        return Response.json(
+          { message: `Request body too large (limit ${MAX_BODY_MB}mb)` },
+          { status: 413 }
+        );
+      }
+    }
+
+    const response = await next();
+    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+      if (!response.headers.has(key)) response.headers.set(key, value);
+    }
+    return response;
+  },
+];
+
 export async function loader({ request }: Route.LoaderArgs) {
   const { getUser } = await import("./lib/auth.server");
+  // Kick off the once-per-server background jobs. All are idempotent
+  // lazy-singletons, so calling them on every request is free after the first.
+  const { ensureRetentionSweeperStarted } = await import("./lib/retention.server");
+  const { startSchemaReloader } = await import("./lib/schema.server");
+  ensureRetentionSweeperStarted();
+  startSchemaReloader();
   return { user: getUser(request) };
 }
 

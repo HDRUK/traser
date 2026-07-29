@@ -40,6 +40,7 @@
 import { ensureLoaded, getAvailableSchemas } from "~/lib/schema.server";
 import { TranslationGraph } from "~/lib/graph.server";
 import { publishMessage } from "~/lib/audit.server";
+import { fieldError, invalidParams, type FieldError } from "~/lib/errors.server";
 
 export async function loader({ request }: { request: Request }) {
   await ensureLoaded();
@@ -48,11 +49,12 @@ export async function loader({ request }: { request: Request }) {
   const schema = url.searchParams.get("schema");
   const version = url.searchParams.get("version");
 
-  if (!schema || !version) {
-    return Response.json(
-      { message: "schema and version query params are required" },
-      { status: 400 }
-    );
+  const paramErrors: FieldError[] = [];
+  if (!schema) paramErrors.push(fieldError("Invalid value", "schema", "query"));
+  if (!version) paramErrors.push(fieldError("Invalid value", "version", "query"));
+  if (paramErrors.length > 0) {
+    publishMessage("GET", "list/translations", "Failed to retrieve available translations").catch(console.error);
+    return invalidParams("Translation has failed.", paramErrors);
   }
 
   const startNode = `${schema}:${version}`;

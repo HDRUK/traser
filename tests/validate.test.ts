@@ -75,8 +75,9 @@ describe("POST /validate", () => {
       body: JSON.stringify({ metadata: sampleMetadata.hdrukv211 }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json() as { message: string };
-    expect(body.message).toMatch(/input_schema.*input_version/i);
+    const body = await res.json() as { message: string; errors: unknown[] };
+    expect(body.message).toBe("Validation has failed");
+    expect(Array.isArray(body.errors)).toBe(true);
   });
 
   it("returns 400 with details array when metadata fails HDRUK 2.1.2 validation", async () => {

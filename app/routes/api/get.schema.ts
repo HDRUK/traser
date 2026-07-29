@@ -43,6 +43,7 @@
  */
 import { ensureLoaded, getSchema } from "~/lib/schema.server";
 import { publishMessage } from "~/lib/audit.server";
+import { fieldError, invalidParams } from "~/lib/errors.server";
 
 export async function loader({ request }: { request: Request }) {
   await ensureLoaded();
@@ -52,7 +53,9 @@ export async function loader({ request }: { request: Request }) {
   const version = url.searchParams.get("version") ?? "";
 
   if (!name) {
-    return Response.json({ message: "name query param is required" }, { status: 400 });
+    return invalidParams("Invalid query parameters.", [
+      fieldError("Invalid value", "name", "query"),
+    ]);
   }
 
   const validator = getSchema(name, version);

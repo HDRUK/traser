@@ -23,8 +23,9 @@ describe("GET /get/schema", () => {
   it("returns 400 when name param is missing", async () => {
     const res = await fetch(`${BASE_URL}/get/schema?version=2.1.2`);
     expect(res.status).toBe(400);
-    const body = await res.json() as { message: string };
-    expect(body.message).toMatch(/name/i);
+    const body = await res.json() as { message: string; errors: unknown[] };
+    expect(body.message).toBe("Invalid query parameters.");
+    expect(Array.isArray(body.errors)).toBe(true);
   });
 
   it("returns 400 for an unknown schema", async () => {
@@ -55,15 +56,30 @@ describe("GET /get/map", () => {
   it("returns 400 when any required param is missing", async () => {
     const res = await fetch(`${BASE_URL}/get/map?input_schema=HDRUK&input_version=2.1.2`);
     expect(res.status).toBe(400);
-    const body = await res.json() as { message: string };
-    expect(body.message).toMatch(/required/i);
+    const body = await res.json() as { message: string; errors: unknown[] };
+    expect(body.message).toBe("Invalid query parameters.");
+    expect(Array.isArray(body.errors)).toBe(true);
   });
 });
 
 describe("GET /get/form_hydration", () => {
-  it("returns 200 for HDRUK 2.2.1", async () => {
+  it("returns a hydrated form with schema_fields + validation for HDRUK 2.2.1", async () => {
     const res = await fetch(`${BASE_URL}/get/form_hydration?name=HDRUK&version=2.2.1`);
     expect(res.status).toBe(200);
+    // Contract the old service asserted (the rewrite had weakened this to a
+    // bare status check).
+    const body = await res.json() as Record<string, unknown>;
+    expect(body).toHaveProperty("schema_fields");
+    expect(body).toHaveProperty("validation");
+  });
+
+  it("falls back to HYDRATION_MAP_VERSION when no version is given", async () => {
+    // Exercises the get.form_hydration.ts version-default branch.
+    const res = await fetch(`${BASE_URL}/get/form_hydration?name=HDRUK`);
+    expect(res.status).toBe(200);
+    const body = await res.json() as Record<string, unknown>;
+    expect(body).toHaveProperty("schema_fields");
+    expect(body).toHaveProperty("validation");
   });
 
   it("returns 200 with dataTypes filter", async () => {
@@ -74,6 +90,14 @@ describe("GET /get/form_hydration", () => {
     });
     const res = await fetch(`${BASE_URL}/get/form_hydration?${params}`);
     expect(res.status).toBe(200);
+  });
+
+  it("returns { message, errors } when name is missing", async () => {
+    const res = await fetch(`${BASE_URL}/get/form_hydration`);
+    expect(res.status).toBe(400);
+    const body = await res.json() as { message: string; errors: unknown[] };
+    expect(body.message).toBe("Invalid query parameters.");
+    expect(Array.isArray(body.errors)).toBe(true);
   });
 });
 

@@ -110,6 +110,7 @@ import { ensureLoaded, validateMetadata, validateMetadataSection } from "~/lib/s
 import { findModelAndVersion, getDefaultModelAndVersion, translate } from "~/lib/translation.server";
 import { TranslationGraph } from "~/lib/graph.server";
 import { publishMessage } from "~/lib/audit.server";
+import { forwardKnownError, errorResponse } from "~/lib/errors.server";
 
 export async function action({ request }: { request: Request }) {
   await ensureLoaded();
@@ -141,7 +142,8 @@ export async function action({ request }: { request: Request }) {
     if (!inputSchema || !inputVersion) {
       const detected = await findModelAndVersion(metadata, selectFirstMatching);
       if (detected.error) {
-        return Response.json(detected.error, { status: detected.error.status ?? 400 });
+        publishMessage("POST", "translate", "Failed to detect input schema for posted metadata").catch(console.error);
+        return forwardKnownError(detected.error);
       }
       inputSchema = detected.name!;
       inputVersion = detected.version!;
@@ -151,7 +153,8 @@ export async function action({ request }: { request: Request }) {
     if (!outputSchema || !outputVersion) {
       const defaulted = await getDefaultModelAndVersion(outputSchema, outputVersion);
       if (defaulted.error) {
-        return Response.json(defaulted.error, { status: defaulted.error.status ?? 400 });
+        publishMessage("POST", "translate", "Failed to determine output schema").catch(console.error);
+        return forwardKnownError(defaulted.error);
       }
       outputSchema = defaulted.name!;
       outputVersion = defaulted.version!;
@@ -161,12 +164,14 @@ export async function action({ request }: { request: Request }) {
     const graph = await TranslationGraph.create();
 
     if (!graph.nodes[`${inputSchema}:${inputVersion}`]) {
+      publishMessage("POST", "translate", `Unsupported input model ${inputSchema}:${inputVersion}`).catch(console.error);
       return Response.json(
         { message: `Cannot support the input model (${inputSchema}:${inputVersion})` },
         { status: 400 }
       );
     }
     if (!graph.nodes[`${outputSchema}:${outputVersion}`]) {
+      publishMessage("POST", "translate", `Unsupported output model ${outputSchema}:${outputVersion}`).catch(console.error);
       return Response.json(
         { message: `Cannot support the output model (${outputSchema}:${outputVersion})` },
         { status: 400 }
@@ -179,6 +184,7 @@ export async function action({ request }: { request: Request }) {
         ? await validateMetadataSection(metadata, inputSchema, inputVersion, subsection)
         : await validateMetadata(metadata, inputSchema, inputVersion);
       if (errors.length > 0) {
+        publishMessage("POST", "translate", `Input metadata failed validation as ${inputSchema}:${inputVersion}`).catch(console.error);
         return Response.json(
           { message: "Input metadata validation failed", details: { validationErrors: errors, data: metadata } },
           { status: 400 }
@@ -192,10 +198,10 @@ export async function action({ request }: { request: Request }) {
     const predecessors = graph.dijkstra(startNode);
     const { translationsToApply, error: pathError } = graph.getPath(startNode, endNode, predecessors);
     if (pathError) {
-      return Response.json(
-        { message: `Failed to find translation between ${startNode} and ${endNode}` },
-        { status: 500 }
-      );
+      // Forward the graph's own 400 + message rather than masking a
+      // missing-route (a client-input problem) as a 500 server fault.
+      publishMessage("POST", "translate", `No translation path between ${startNode} and ${endNode}`).catch(console.error);
+      return forwardKnownError(pathError);
     }
 
     // ── Apply chained translations ─────────────────────────────────────────
@@ -205,7 +211,8 @@ export async function action({ request }: { request: Request }) {
       const outM = translationsToApply![i];
       const result = await translate(current, extra, inM.name, inM.version, outM.name, outM.version);
       if (result.error) {
-        return Response.json(result.error, { status: result.error.status ?? 500 });
+        publishMessage("POST", "translate", `Translation step ${inM.name}:${inM.version} → ${outM.name}:${outM.version} failed`).catch(console.error);
+        return forwardKnownError(result.error);
       }
       current = result.translatedMetadata ?? result.outputMetadata;
     }
@@ -218,6 +225,7 @@ export async function action({ request }: { request: Request }) {
         ? await validateMetadataSection(outputMetadata, outputSchema, outputVersion, subsection)
         : await validateMetadata(outputMetadata, outputSchema, outputVersion);
       if (errors.length > 0) {
+        publishMessage("POST", "translate", `Output metadata failed validation as ${outputSchema}:${outputVersion}`).catch(console.error);
         return Response.json(
           { message: "Output metadata validation failed", details: errors, data: outputMetadata },
           { status: 400 }
@@ -228,8 +236,9 @@ export async function action({ request }: { request: Request }) {
     publishMessage("POST", "translate", `Translated ${inputSchema}:${inputVersion} → ${outputSchema}:${outputVersion}`).catch(console.error);
     return Response.json(outputMetadata);
   } catch (err) {
-    const e = err as { status?: number; message?: string; details?: unknown };
-    publishMessage("POST", "translate", `Translation failed`).catch(console.error);
-    return Response.json({ message: e.message, details: e.details ?? {} }, { status: e.status ?? 500 });
+    // Unexpected/thrown error — genericise any 5xx so internal detail can't leak
+    // (the old central error handler's err.expose gate).
+    publishMessage("POST", "translate", "Translation failed").catch(console.error);
+    return errorResponse(err, 500);
   }
 }

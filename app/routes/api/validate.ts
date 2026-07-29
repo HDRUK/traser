@@ -70,6 +70,7 @@
  */
 import { ensureLoaded, validateMetadata, validateMetadataSection, getPropertyIndex, getNameDiscriminatorMap } from "~/lib/schema.server";
 import { publishMessage } from "~/lib/audit.server";
+import { fieldError, invalidParams, type FieldError } from "~/lib/errors.server";
 
 function getValueAtPath(metadata: unknown, instancePath: string): unknown {
   if (!instancePath || instancePath === "/") return metadata;
@@ -97,32 +98,38 @@ export async function action({ request }: { request: Request }) {
   const inputVersion = url.searchParams.get("input_version");
   const subsection = url.searchParams.get("subsection") ?? undefined;
 
-  if (!inputSchema || !inputVersion) {
-    return Response.json(
-      { message: "input_schema and input_version query params are required" },
-      { status: 400 }
-    );
-  }
-
   let body: { metadata?: unknown };
   try {
     body = await request.json();
   } catch {
     return Response.json({ message: "Invalid JSON body" }, { status: 400 });
   }
-
   const { metadata } = body;
-  if (!metadata || typeof metadata !== "object") {
-    return Response.json({ message: "metadata must be a non-empty object" }, { status: 400 });
+
+  // The old service validated params + metadata through a single
+  // express-validator gate and returned every failure together under one
+  // "Validation has failed" 400 with an `errors` array. Restore that shape.
+  const paramErrors: FieldError[] = [];
+  if (!inputSchema) paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
+  if (!inputVersion) paramErrors.push(fieldError("Invalid value", "input_version", "query"));
+  // Match the old `body("metadata").isObject()` gate: reject missing / non-object
+  // / array metadata, but let an empty object `{}` through to AJV validation
+  // (old `.notEmpty()` stringified the object, so `{}` passed the gate).
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    paramErrors.push(fieldError("Invalid value", "metadata", "body", metadata));
+  }
+  if (paramErrors.length > 0) {
+    publishMessage("POST", "validate", "Failed to validate metadata").catch(console.error);
+    return invalidParams("Validation has failed", paramErrors);
   }
 
   const errors = subsection
-    ? await validateMetadataSection(metadata, inputSchema, inputVersion, subsection)
-    : await validateMetadata(metadata, inputSchema, inputVersion);
+    ? await validateMetadataSection(metadata, inputSchema!, inputVersion!, subsection)
+    : await validateMetadata(metadata, inputSchema!, inputVersion!);
 
   if (errors.length > 0) {
-    const propertyIndex = getPropertyIndex(inputSchema, inputVersion);
-    const nameDiscriminatorMap = getNameDiscriminatorMap(inputSchema, inputVersion);
+    const propertyIndex = getPropertyIndex(inputSchema!, inputVersion!);
+    const nameDiscriminatorMap = getNameDiscriminatorMap(inputSchema!, inputVersion!);
 
     // Deduplicate: AJV with allErrors:true emits the same error once per anyOf branch.
     // Keep only the first occurrence of each instancePath+message pair.

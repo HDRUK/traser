@@ -62,6 +62,7 @@
  */
 import { getTemplate } from "~/lib/templates.server";
 import { publishMessage } from "~/lib/audit.server";
+import { fieldError, invalidParams, type FieldError } from "~/lib/errors.server";
 
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -70,19 +71,31 @@ export async function loader({ request }: { request: Request }) {
   const outputSchema = url.searchParams.get("output_schema");
   const outputVersion = url.searchParams.get("output_version");
 
-  if (!inputSchema || !inputVersion || !outputSchema || !outputVersion) {
-    return Response.json(
-      { message: "input_schema, input_version, output_schema, output_version are all required" },
-      { status: 400 }
-    );
+  const paramErrors: FieldError[] = [];
+  if (!inputSchema) paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
+  if (!inputVersion) paramErrors.push(fieldError("Invalid value", "input_version", "query"));
+  if (!outputSchema) paramErrors.push(fieldError("Invalid value", "output_schema", "query"));
+  if (!outputVersion) paramErrors.push(fieldError("Invalid value", "output_version", "query"));
+  if (paramErrors.length > 0) {
+    publishMessage("GET", "get/map", "Failed to retrieve mapping due to invalid inputs").catch(console.error);
+    return invalidParams("Invalid query parameters.", paramErrors);
   }
 
-  const template = await getTemplate(inputSchema, inputVersion, outputSchema, outputVersion);
+  const template = await getTemplate(inputSchema!, inputVersion!, outputSchema!, outputVersion!);
   if (!template) {
+    // Old shape: { error, message, details } — keep the `message` key that the
+    // rewrite had dropped.
+    const notImplemented = `Translation for ${inputSchema}-${inputVersion} to ${outputSchema}-${outputVersion} is not implemented`;
+    publishMessage(
+      "GET",
+      "get/map",
+      `Failed to retrieve mapping for ${inputSchema}-${inputVersion} to ${outputSchema}-${outputVersion}`
+    ).catch(console.error);
     return Response.json(
       {
         error: "Translation not found",
-        details: `No map for ${inputSchema}-${inputVersion} → ${outputSchema}-${outputVersion}`,
+        message: notImplemented,
+        details: notImplemented,
       },
       { status: 400 }
     );

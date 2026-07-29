@@ -42,6 +42,7 @@ import jsonata from "jsonata";
 import { ensureLoaded, retrieveHydrationSchema } from "~/lib/schema.server";
 import { getFormHydrationTemplate } from "~/lib/templates.server";
 import { publishMessage } from "~/lib/audit.server";
+import { fieldError, invalidParams } from "~/lib/errors.server";
 
 export async function loader({ request }: { request: Request }) {
   await ensureLoaded();
@@ -53,7 +54,9 @@ export async function loader({ request }: { request: Request }) {
   const dataTypes = url.searchParams.get("dataTypes") ?? "";
 
   if (!name) {
-    return Response.json({ message: "name query param is required" }, { status: 400 });
+    return invalidParams("Invalid query parameters.", [
+      fieldError("Invalid value", "name", "query"),
+    ]);
   }
 
   try {
@@ -72,11 +75,28 @@ export async function loader({ request }: { request: Request }) {
     const expression = jsonata(template);
     const result = await expression.evaluate(src);
 
+    // A JSONata expression that matches nothing evaluates to `undefined`, which
+    // JSON.stringify turns into a malformed empty body. Old behaviour: a 400
+    // "Hydration failed." Match it.
+    if (result === undefined) {
+      publishMessage(
+        "GET",
+        "get/form_hydration",
+        `${name}-${version} failed to hydrate`
+      ).catch(console.error);
+      return Response.json({ message: "Hydration failed." }, { status: 400 });
+    }
+
     publishMessage("GET", "get/form_hydration", `${name}-${version} retrieved`).catch(console.error);
     return Response.json(result);
   } catch (err) {
+    publishMessage(
+      "GET",
+      "get/form_hydration",
+      `Failed to retrieve ${name}-${version}`
+    ).catch(console.error);
     return Response.json(
-      { error: String(err) },
+      { error: err instanceof Error ? err.message : String(err) },
       { status: 400 }
     );
   }

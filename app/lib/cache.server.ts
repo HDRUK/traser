@@ -20,6 +20,7 @@ export interface TestResult {
   reason?: string;
   translateBody?: unknown;  // full TRASER /translate response on failure
   validateBody?: unknown;   // full TRASER /validate response on failure
+  at?: string;              // ISO timestamp the result was recorded (for body-TTL trimming)
 }
 
 export interface ResultsCache {

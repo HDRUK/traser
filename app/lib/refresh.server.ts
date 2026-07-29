@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "fs/promises";
+import { readFile, writeFile, rename } from "fs/promises";
 import path from "path";
 import pLimit from "p-limit";
 import {
@@ -97,11 +97,14 @@ async function syncDatasetsFromApi(
           const pid = dataset?.pid;
           if (!pid) return;
 
-          await writeFile(
-            path.join(dataDir, `${pid}.json`),
-            JSON.stringify(dataset),
-            "utf-8"
-          );
+          // Atomic write (tmp + rename) so a process kill mid-write can't leave
+          // a truncated {pid}.json that getDatasetIndex() would silently drop.
+          // The pid is unique and toFetch is deduplicated, so the tmp name won't
+          // collide within a run.
+          const target = path.join(dataDir, `${pid}.json`);
+          const tmp = `${target}.tmp`;
+          await writeFile(tmp, JSON.stringify(dataset), "utf-8");
+          await rename(tmp, target);
           fetched++;
         } catch (err) {
           fetchFailed++;
@@ -154,14 +157,17 @@ export async function runSingleDataset(pid: string): Promise<void> {
     Object.entries(schemas).flatMap(([schema, versions]) =>
       (versions as string[]).map(async (version) => {
         try {
-          cache.results[pid][`${schema}:${version}`] = await translateAndValidate(
-            metadata,
-            schema,
-            version
-          );
+          cache.results[pid][`${schema}:${version}`] = {
+            ...(await translateAndValidate(metadata, schema, version)),
+            at: new Date().toISOString(),
+          };
         } catch (err) {
           console.error(`runSingleDataset ${pid} ${schema}:${version}:`, err);
-          cache.results[pid][`${schema}:${version}`] = { translated: false, valid: false };
+          cache.results[pid][`${schema}:${version}`] = {
+            translated: false,
+            valid: false,
+            at: new Date().toISOString(),
+          };
         }
       })
     )
@@ -239,14 +245,21 @@ export async function runAllTests(): Promise<void> {
 
           const result = await translateAndValidate(metadata, schema, version);
           if (!cache.results[pid]) cache.results[pid] = {};
-          cache.results[pid][`${schema}:${version}`] = result;
+          cache.results[pid][`${schema}:${version}`] = {
+            ...result,
+            at: new Date().toISOString(),
+          };
 
           if (result.translated) succeeded++;
           else failed++;
         } catch (err) {
           console.error(`Error testing ${pid} ${schema}:${version}:`, err);
           if (!cache.results[pid]) cache.results[pid] = {};
-          cache.results[pid][`${schema}:${version}`] = { translated: false, valid: false };
+          cache.results[pid][`${schema}:${version}`] = {
+            translated: false,
+            valid: false,
+            at: new Date().toISOString(),
+          };
           failed++;
         }
 

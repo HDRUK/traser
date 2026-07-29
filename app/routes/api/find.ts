@@ -36,15 +36,42 @@
  */
 import { ensureLoaded, findMatchingSchemas } from "~/lib/schema.server";
 import { publishMessage } from "~/lib/audit.server";
+import { fieldError, invalidRequest, type FieldError } from "~/lib/errors.server";
 
 export async function action({ request }: { request: Request }) {
   await ensureLoaded();
 
   const url = new URL(request.url);
-  const withErrors = url.searchParams.get("with_errors") === "1";
+  const withErrorsRaw = url.searchParams.get("with_errors");
 
-  if (request.headers.get("content-type")?.includes("application/json") === false) {
-    return Response.json({ errors: ["Invalid content type. Expected JSON."] }, { status: 400 });
+  const errors: FieldError[] = [];
+
+  // Content-Type must be application/json. The old service used
+  // req.is('application/json'), which also rejects a *missing* header — the new
+  // `?.includes(...) === false` check silently passed when the header was absent.
+  const contentType = request.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    errors.push(fieldError("Invalid content type. Expected JSON.", "", "body"));
+  }
+
+  // with_errors is optional and defaults to 0, but when present must be 0 or 1
+  // (old: isInt({ min: 0, max: 1 })).
+  let withErrors = false;
+  if (withErrorsRaw !== null && withErrorsRaw !== "") {
+    if (withErrorsRaw === "0" || withErrorsRaw === "1") {
+      withErrors = withErrorsRaw === "1";
+    } else {
+      errors.push(fieldError("Invalid value", "with_errors", "query", withErrorsRaw));
+    }
+  }
+
+  if (errors.length > 0) {
+    publishMessage(
+      "POST",
+      "find",
+      "Failed to validate posted metadata against available schemas"
+    ).catch(console.error);
+    return invalidRequest(errors);
   }
 
   let metadata: unknown;

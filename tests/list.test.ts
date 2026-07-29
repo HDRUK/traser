@@ -46,8 +46,9 @@ describe("GET /list/translations", () => {
   it("returns 400 when schema and version params are missing", async () => {
     const res = await fetch(`${BASE_URL}/list/translations`);
     expect(res.status).toBe(400);
-    const body = await res.json() as { message: string };
-    expect(body.message).toMatch(/schema.*version/i);
+    const body = await res.json() as { message: string; errors: unknown[] };
+    expect(body.message).toBe("Translation has failed.");
+    expect(Array.isArray(body.errors)).toBe(true);
   });
 
   it("returns 400 when only schema param is provided", async () => {
