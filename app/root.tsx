@@ -37,17 +37,20 @@ interface TRASERUser {
 }
 
 const PUBLIC_NAV_LINKS = [
-  { to: "/playground", label: "Playground" },
+  { to: "/", label: "Home" },
   { to: "/docs", label: "API Docs" },
+  { to: "/playground", label: "Playground" },
 ];
 
 const PROTECTED_NAV_LINKS = [
-  { to: "/", label: "Home" },
   { to: "/schema-graph", label: "Translation Graph" },
   { to: "/schema-view", label: "Schema View" },
 ];
 
-const ADMIN_NAV_LINKS = [{ to: "/results", label: "Test Results" }];
+const ADMIN_NAV_LINKS = [
+  { to: "/results", label: "Test Results" },
+  { to: "/benchmark", label: "Benchmark" },
+];
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { getUser } = await import("./lib/auth.server");
@@ -60,11 +63,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon-light.png" media="(prefers-color-scheme: light)" />
-        <link rel="icon" href="/favicon-dark.png" media="(prefers-color-scheme: dark)" />
+        <link
+          rel="icon"
+          href="/favicon-light.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="icon"
+          href="/favicon-dark.png"
+          media="(prefers-color-scheme: dark)"
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
         <Meta />
         <Links />
       </head>
@@ -89,9 +107,9 @@ export default function App({ loaderData }: Route.ComponentProps) {
 
   const navLinks = user
     ? [
+        ...PUBLIC_NAV_LINKS,
         ...PROTECTED_NAV_LINKS,
         ...(user.is_admin === 1 ? ADMIN_NAV_LINKS : []),
-        ...PUBLIC_NAV_LINKS,
       ]
     : PUBLIC_NAV_LINKS;
 
@@ -112,17 +130,13 @@ export default function App({ loaderData }: Route.ComponentProps) {
           fontFamily: '"Source Sans 3", sans-serif',
         },
       }),
-    [mode]
+    [mode],
   );
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar
-        position="sticky"
-        elevation={2}
-        sx={{ bgcolor: "#475DA7" }}
-      >
+      <AppBar position="sticky" elevation={2} sx={{ bgcolor: "#475DA7" }}>
         <Toolbar variant="dense" sx={{ gap: 0.5 }}>
           {/* Gateway logo */}
           <Box
@@ -133,7 +147,12 @@ export default function App({ loaderData }: Route.ComponentProps) {
           />
           <Typography
             variant="subtitle1"
-            sx={{ fontWeight: 700, color: "#fff", mr: 2, letterSpacing: "0.04em" }}
+            sx={{
+              fontWeight: 700,
+              color: "#fff",
+              mr: 2,
+              letterSpacing: "0.04em",
+            }}
           >
             TRASER
           </Typography>
@@ -146,7 +165,9 @@ export default function App({ loaderData }: Route.ComponentProps) {
                   size="small"
                   sx={{
                     color: isActive ? "#fff" : "rgba(255,255,255,0.72)",
-                    bgcolor: isActive ? "rgba(255,255,255,0.18)" : "transparent",
+                    bgcolor: isActive
+                      ? "rgba(255,255,255,0.18)"
+                      : "transparent",
                     "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
                     textTransform: "none",
                     fontWeight: isActive ? 700 : 400,
@@ -183,10 +204,17 @@ export default function App({ loaderData }: Route.ComponentProps) {
           )}
 
           {/* Dark / light mode toggle */}
-          <Tooltip title={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+          <Tooltip
+            title={
+              mode === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
+          >
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
               <LightModeIcon
-                sx={{ fontSize: 16, color: mode === "light" ? "#fff" : "rgba(255,255,255,0.45)" }}
+                sx={{
+                  fontSize: 16,
+                  color: mode === "light" ? "#fff" : "rgba(255,255,255,0.45)",
+                }}
               />
               <Switch
                 size="small"
@@ -201,7 +229,10 @@ export default function App({ loaderData }: Route.ComponentProps) {
                 }}
               />
               <DarkModeIcon
-                sx={{ fontSize: 16, color: mode === "dark" ? "#fff" : "rgba(255,255,255,0.45)" }}
+                sx={{
+                  fontSize: 16,
+                  color: mode === "dark" ? "#fff" : "rgba(255,255,255,0.45)",
+                }}
               />
             </Box>
           </Tooltip>
@@ -209,7 +240,13 @@ export default function App({ loaderData }: Route.ComponentProps) {
 
         {isNavigating && (
           <LinearProgress
-            sx={{ height: 2, position: "absolute", bottom: 0, left: 0, right: 0 }}
+            sx={{
+              height: 2,
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+            }}
           />
         )}
       </AppBar>

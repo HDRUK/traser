@@ -7,6 +7,7 @@ dotenv.config();
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter()],
+  envDir: false,
   resolve: {
     tsconfigPaths: true,
   },
@@ -30,10 +31,9 @@ export default defineConfig({
       "@emotion/react",
       "@emotion/styled",
       "@emotion/cache",
-      "react-transition-group",
     ],
-    // ajv, ajv-formats, jsonata are CJS — keep them external so Node
-    // resolves them natively via package.json#main (dist/ajv.js etc.)
-    external: ["ajv", "ajv-formats", "jsonata"],
+    // CJS-only packages: let Node resolve them natively rather than having
+    // Vite attempt to bundle them as ESM (which fails with "exports is not defined")
+    external: ["ajv", "ajv-formats", "jsonata", "react-transition-group"],
   },
 });

@@ -101,28 +101,47 @@ function nodeLabel(model: string, version: string): string {
 // ─── Mermaid builders ────────────────────────────────────────────────────
 
 function buildFullGraph(templates: TemplateEntry[]): string {
-  const edgeLines: string[] = [];
+  const edges: string[] = [];
+  const nodeLabels: Record<string, string> = {};
+  const nodeByModel: Map<string, string[]> = new Map();
   const nodeClasses: Record<string, string> = {};
-  const seen = new Set<string>();
+  const seenEdges = new Set<string>();
 
   for (const t of templates) {
+    for (const [model, version] of [
+      [t.input_model, t.input_version],
+      [t.output_model, t.output_version],
+    ] as [string, string][]) {
+      const id = nodeId(model, version);
+      if (!nodeLabels[id]) {
+        nodeLabels[id] = nodeLabel(model, version);
+        nodeClasses[id] = schemaClass(model);
+        if (!nodeByModel.has(model)) nodeByModel.set(model, []);
+        nodeByModel.get(model)!.push(id);
+      }
+    }
     const src = nodeId(t.input_model, t.input_version);
     const dst = nodeId(t.output_model, t.output_version);
-    const edgeKey = `${src}-->${dst}`;
-    if (seen.has(edgeKey)) continue;
-    seen.add(edgeKey);
-    edgeLines.push(
-      `  ${src}["${nodeLabel(t.input_model, t.input_version)}"] --> ${dst}["${nodeLabel(t.output_model, t.output_version)}"]`,
-    );
-    nodeClasses[src] = schemaClass(t.input_model);
-    nodeClasses[dst] = schemaClass(t.output_model);
+    const key = `${src}-->${dst}`;
+    if (!seenEdges.has(key)) {
+      seenEdges.add(key);
+      edges.push(`  ${src} --> ${dst}`);
+    }
   }
+
+  const subgraphs = [...nodeByModel.entries()].map(([model, ids]) =>
+    [
+      `  subgraph ${model}`,
+      ...ids.map((id) => `    ${id}["${nodeLabels[id]}"]`),
+      `  end`,
+    ].join("\n"),
+  );
 
   const classLines = Object.entries(nodeClasses).map(
     ([id, cls]) => `  class ${id} ${cls}`,
   );
 
-  return [MERMAID_HEADER, ...edgeLines, ...classLines].join("\n");
+  return [MERMAID_HEADER, ...subgraphs, ...edges, ...classLines].join("\n");
 }
 
 function buildPathsGraph(

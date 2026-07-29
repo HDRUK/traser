@@ -4,6 +4,7 @@ export default [
   // ── Frontend pages ──────────────────────────────────────────────────────
   index("routes/home.tsx"),
   route("/results", "routes/results.tsx"),
+  route("/benchmark", "routes/benchmark.tsx"),
   route("/schema-graph", "routes/schema-graph.tsx"),
   route("/schema-view", "routes/schema-view.tsx"),
   route("/playground", "routes/playground.tsx"),

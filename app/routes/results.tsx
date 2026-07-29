@@ -66,10 +66,22 @@ export async function loader({ request }: Route.LoaderArgs) {
     await writeTestResults(cache);
   }
 
+  // Strip the heavy translateBody/validateBody from each cell before sending to
+  // the client. The results table only renders status + reason; the full bodies
+  // (~90% of the payload) are only needed in /playground, which recomputes them.
+  const slimResults: ResultsMap = {};
+  for (const [pid, cols] of Object.entries(cache.results ?? {})) {
+    const slimCols: Record<string, ResultEntry> = {};
+    for (const [key, r] of Object.entries(cols)) {
+      slimCols[key] = { translated: r.translated, valid: r.valid, reason: r.reason };
+    }
+    slimResults[pid] = slimCols;
+  }
+
   return {
     datasets,
     schemas,
-    results: cache.results ?? {},
+    results: slimResults,
     lastUpdated: cache.lastUpdated ?? null,
     running: cache.running ?? false,
     progress: cache.progress ?? null,
