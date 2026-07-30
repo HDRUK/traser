@@ -25,6 +25,8 @@ import {
 import { TranslationGraph } from "~/lib/graph.server";
 import { requireAuth } from "~/lib/auth.server";
 
+export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
+
 // ─── Loader ───────────────────────────────────────────────────────────────
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -206,6 +208,10 @@ function useMermaidSvg(
       .then(({ default: mermaid }) => {
         mermaid.initialize({
           startOnLoad: false,
+          // Explicit: sanitize diagram text (labels come from schema/template
+          // names). This is mermaid's default, but the SVG is injected via
+          // dangerouslySetInnerHTML, so we pin it rather than rely on the default.
+          securityLevel: "strict",
           theme: "base",
           themeVariables:
             colorMode === "dark"

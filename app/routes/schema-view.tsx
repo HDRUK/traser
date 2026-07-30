@@ -26,6 +26,8 @@ import {
 } from "~/lib/schema.server";
 import { requireAuth } from "~/lib/auth.server";
 
+export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
+
 // ─── Loader ───────────────────────────────────────────────────────────────
 
 type JsonSchema = Record<string, unknown>;
@@ -299,6 +301,7 @@ function useMermaidSvg(code: string, mode: "light" | "dark") {
         if (mode === "dark") {
           mermaid.initialize({
             startOnLoad: false,
+            securityLevel: "strict",
             theme: "base",
             themeVariables: {
               primaryColor: "#384B91",
@@ -313,6 +316,7 @@ function useMermaidSvg(code: string, mode: "light" | "dark") {
         } else {
           mermaid.initialize({
             startOnLoad: false,
+            securityLevel: "strict",
             theme: "default",
             themeVariables: {
               primaryColor: "#475DA7",
@@ -522,6 +526,9 @@ export default function SchemaViewPage() {
       {schemaData?.schema && (
         <Paper variant="outlined" sx={{ overflow: "hidden" }}>
           <Box
+            role="button"
+            tabIndex={0}
+            aria-expanded={rawOpen}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -530,8 +537,12 @@ export default function SchemaViewPage() {
               cursor: "pointer",
               borderBottom: rawOpen ? "1px solid" : "none",
               borderColor: "divider",
+              "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
             }}
             onClick={() => setRawOpen((o) => !o)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRawOpen((o) => !o); }
+            }}
           >
             <CodeIcon
               fontSize="small"

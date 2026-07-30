@@ -55,6 +55,8 @@ import { randomUUID } from "crypto";
 
 import type { Route } from "./+types/benchmark";
 
+export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
+
 // ─── Loader ───────────────────────────────────────────────────────────────
 
 function ts(): string {
@@ -381,7 +383,7 @@ function HistoryTab({ index, onDuplicate }: { index: BenchmarkRunSummary[]; onDu
                 <TableCell align="right">{run.stats ? `${Math.round(run.stats.successRate * 100)}%` : "—"}</TableCell>
                 <TableCell align="right">
                   <Tooltip title="Duplicate into a new run">
-                    <IconButton size="small" onClick={() => onDuplicate(run)}>
+                    <IconButton size="small" aria-label={`Duplicate run ${run.label}`} onClick={() => onDuplicate(run)}>
                       <ContentCopyIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -390,7 +392,7 @@ function HistoryTab({ index, onDuplicate }: { index: BenchmarkRunSummary[]; onDu
                     <input type="hidden" name="runId" value={run.id} />
                     <Tooltip title={run.running ? "Cannot delete a running run" : "Delete run"}>
                       <span>
-                        <IconButton type="submit" size="small" disabled={run.running || fetcher.state !== "idle"}>
+                        <IconButton type="submit" size="small" aria-label={`Delete run ${run.label}`} disabled={run.running || fetcher.state !== "idle"}>
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </span>
@@ -498,10 +500,16 @@ function CompareTab({ index, comparison, compareA, compareB, statsA, statsB, lab
                   {comparison.common.map((c) => (
                     <Fragment key={c.id}>
                       <TableRow hover sx={{ cursor: c.diffs.length > 0 ? "pointer" : "default" }}
-                        onClick={() => c.diffs.length > 0 && toggleExpanded(c.id)}>
+                        role={c.diffs.length > 0 ? "button" : undefined}
+                        tabIndex={c.diffs.length > 0 ? 0 : undefined}
+                        aria-expanded={c.diffs.length > 0 ? expanded.has(c.id) : undefined}
+                        onClick={() => c.diffs.length > 0 && toggleExpanded(c.id)}
+                        onKeyDown={c.diffs.length > 0 ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(c.id); }
+                        } : undefined}>
                         <TableCell sx={{ width: 32 }}>
                           {c.diffs.length > 0 && (
-                            <IconButton size="small">
+                            <IconButton size="small" tabIndex={-1} aria-label={expanded.has(c.id) ? `Collapse diffs for id ${c.id}` : `Expand diffs for id ${c.id}`}>
                               {expanded.has(c.id) ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
                             </IconButton>
                           )}

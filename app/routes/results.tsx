@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { resultsStore } from "../stores/resultsStore";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { resultsStore, type FilterView } from "../stores/resultsStore";
 import { useFetcher, useLoaderData, useNavigate, useRevalidator } from "react-router";
 import { Pie, PieChart, Tooltip as RechartsTooltip } from "recharts";
 
@@ -46,6 +46,8 @@ import { runAllTests, runSingleDataset, isRefreshRunning } from "~/lib/refresh.s
 import { requireAdmin } from "~/lib/auth.server";
 
 import type { Route } from "./+types/results";
+
+export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
 
 // ─── Loader ───────────────────────────────────────────────────────────────
 
@@ -139,6 +141,15 @@ interface ResultEntry {
 
 type ResultsMap = Record<string, Record<string, ResultEntry>>;
 type ColFilterMap = Record<string, Set<CellStatus>>;
+
+// Canonical dataset shape from the loader's dataset index, reused everywhere a
+// row/list of datasets is rendered (avoids re-declaring the literal per prop).
+interface Dataset {
+  pid: string;
+  title: string;
+  gatewayId?: string;
+  status?: string;
+}
 
 // ─── Schema group colours ──────────────────────────────────────────────────
 
@@ -239,7 +250,7 @@ interface RowProps {
   onCellClick: (pid: string, colKey: string) => void;
 }
 
-function DatasetRow({ pid, title, gatewayId, datasetStatus, columns, results, onCellClick }: RowProps) {
+const DatasetRow = memo(function DatasetRow({ pid, title, gatewayId, datasetStatus, columns, results, onCellClick }: RowProps) {
   const fetcher = useFetcher();
   const isLoading = fetcher.state !== "idle";
 
@@ -260,6 +271,7 @@ function DatasetRow({ pid, title, gatewayId, datasetStatus, columns, results, on
             <Tooltip title={`Open on Health Data Gateway (ID ${gatewayId})`}>
               <IconButton component="a" href={`https://healthdatagateway.org/en/dataset/${gatewayId}`}
                 target="_blank" rel="noopener noreferrer" size="small"
+                aria-label={`Open dataset ${gatewayId} on the Health Data Gateway`}
                 sx={{ p: "2px", flexShrink: 0, color: "text.disabled", "&:hover": { color: "primary.light" } }}>
                 <OpenInNewIcon sx={{ fontSize: 12 }} />
               </IconButton>
@@ -270,7 +282,7 @@ function DatasetRow({ pid, title, gatewayId, datasetStatus, columns, results, on
             <input type="hidden" name="pid" value={pid} />
             <Tooltip title="Test this dataset">
               <span>
-                <IconButton type="submit" size="small" disabled={isLoading} sx={{ p: "2px", flexShrink: 0 }}>
+                <IconButton type="submit" size="small" disabled={isLoading} aria-label={`Test dataset ${title}`} sx={{ p: "2px", flexShrink: 0 }}>
                   {isLoading ? <CircularProgress size={12} /> : <RefreshIcon sx={{ fontSize: 14 }} />}
                 </IconButton>
               </span>
@@ -286,14 +298,21 @@ function DatasetRow({ pid, title, gatewayId, datasetStatus, columns, results, on
         const isGroupEnd = !isReference && idx < columns.length - 1 && columns[idx + 1].schema !== schema;
         return (
           <TableCell key={key} align="center" padding="none"
+            role={!isLoading ? "button" : undefined}
+            tabIndex={!isLoading ? 0 : undefined}
+            aria-label={`${schema} ${key.split(":")[1] ?? ""} — ${tooltipLabel} — open in Playground`}
             sx={{
               py: 0.25,
               cursor: isLoading ? "default" : "pointer",
               "&:hover": !isLoading ? { bgcolor: "action.hover" } : undefined,
+              "&:focus-visible": !isLoading ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" } : undefined,
               ...(isReference && { borderRight: "3px solid #FFD54F" }),
               ...(isGroupEnd && { borderRight: "2px solid rgba(255,255,255,0.1)" }),
             }}
-            onClick={!isLoading ? () => onCellClick(pid, key) : undefined}>
+            onClick={!isLoading ? () => onCellClick(pid, key) : undefined}
+            onKeyDown={!isLoading ? (e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCellClick(pid, key); }
+            } : undefined}>
             {isLoading ? <CircularProgress size={14} /> : (
               <Tooltip title={`${tooltipLabel} — open in Playground`}>
                 <span>{STATUS_ICON[status]}</span>
@@ -304,7 +323,7 @@ function DatasetRow({ pid, title, gatewayId, datasetStatus, columns, results, on
       })}
     </TableRow>
   );
-}
+});
 
 // ─── Overview tab — per-schema pie charts ─────────────────────────────────
 
@@ -317,7 +336,7 @@ const PIE_COLOURS: Record<CellStatus, string> = {
 
 interface SchemaStats { ok: number; invalid: number; failed: number; pending: number }
 
-function computeStats(colKey: string, datasets: Array<{ pid: string }>, results: ResultsMap): SchemaStats {
+function computeStats(colKey: string, datasets: Dataset[], results: ResultsMap): SchemaStats {
   let ok = 0, invalid = 0, failed = 0, pending = 0;
   for (const { pid } of datasets) {
     const s = cellStatus(pid, colKey, results);
@@ -331,7 +350,7 @@ function computeStats(colKey: string, datasets: Array<{ pid: string }>, results:
 
 function OverviewTab({ columns, datasets, results }: {
   columns: Column[];
-  datasets: Array<{ pid: string; title: string }>;
+  datasets: Dataset[];
   results: ResultsMap;
 }) {
   // Totals across all cells
@@ -466,7 +485,7 @@ function LogTab({ log, running }: { log: string[]; running: boolean }) {
 // ─── Results table view (used by Live and Draft tabs) ─────────────────────
 
 interface ResultsTableViewProps {
-  datasets: Array<{ pid: string; title: string; gatewayId?: string; status?: string }>;
+  datasets: Dataset[];
   results: ResultsMap;
   visibleColumns: Column[];
   hiddenColCount: number;
@@ -491,6 +510,13 @@ function ResultsTableView({
   const [filterAnchor, setFilterAnchor] = useState<{ el: HTMLElement; colKey: string } | null>(null);
 
   useEffect(() => { setPage(0); }, [searchTerm, columnFilters]);
+
+  // Stable reference so the memoized DatasetRow only re-renders when its own data changes.
+  const handleCellClick = useCallback(
+    (pid: string, colKey: string) =>
+      navigate(`/playground?pid=${encodeURIComponent(pid)}&in=GWDM:2.0&out=${encodeURIComponent(colKey)}`),
+    [navigate]
+  );
 
   if (datasets.length === 0) {
     return (
@@ -570,6 +596,7 @@ function ResultsTableView({
                       {schema}<br />{version}
                       <Tooltip title={filterActive ? "Filter active — click to edit" : "Filter this column"}>
                         <IconButton size="small" onClick={(e) => setFilterAnchor({ el: e.currentTarget, colKey: key })}
+                          aria-label={`Filter ${schema} ${version} column${filterActive ? " (filter active)" : ""}`}
                           sx={{ display: "block", mx: "auto", mt: 0.25, p: "1px", color: filterActive ? "warning.light" : "rgba(255,255,255,0.4)", "&:hover": { color: "#fff" } }}>
                           <FilterListIcon sx={{ fontSize: 12 }} />
                         </IconButton>
@@ -580,10 +607,10 @@ function ResultsTableView({
               </TableRow>
             </TableHead>
             <TableBody>
-              {pageRows.map(({ pid, title, gatewayId, status: dStatus }: { pid: string; title: string; gatewayId?: string; status?: string }) => (
+              {pageRows.map(({ pid, title, gatewayId, status: dStatus }: Dataset) => (
                 <DatasetRow key={pid} pid={pid} title={title} gatewayId={gatewayId} datasetStatus={dStatus}
                   columns={visibleColumns} results={results}
-                  onCellClick={(pid, colKey) => navigate(`/playground?pid=${encodeURIComponent(pid)}&in=GWDM:2.0&out=${encodeURIComponent(colKey)}`)} />
+                  onCellClick={handleCellClick} />
               ))}
             </TableBody>
           </Table>
@@ -653,12 +680,15 @@ export default function ResultsPage() {
 
   // Derive Sets for existing component logic
   const hiddenCols = useMemo(() => new Set(hiddenColsArr), [hiddenColsArr]);
-  const columnFilters = useMemo(
-    () => Object.fromEntries(
-      Object.entries(columnFiltersArr).map(([k, v]) => [k, new Set(v as CellStatus[])])
-    ) as ColFilterMap,
-    [columnFiltersArr]
-  );
+  // Column filters are stored per view (live/draft) so the two tabs filter
+  // independently. Build a Set-based map for each view.
+  const columnFiltersByView = useMemo(() => {
+    const build = (view: FilterView): ColFilterMap =>
+      Object.fromEntries(
+        Object.entries(columnFiltersArr[view] ?? {}).map(([k, v]) => [k, new Set(v as CellStatus[])])
+      ) as ColFilterMap;
+    return { live: build("live"), draft: build("draft") };
+  }, [columnFiltersArr]);
 
   // ── Transient UI state
   const [colMenuAnchor, setColMenuAnchor] = useState<HTMLElement | null>(null);
@@ -674,28 +704,39 @@ export default function ResultsPage() {
   const VALID_TABS: TabValue[] = ["overview", "live", "draft", "log"];
   const resolvedTab: TabValue = VALID_TABS.includes(activeTab as TabValue) ? activeTab as TabValue : "overview";
 
-  const liveColumns = buildColumns(schemas, true);
-  const draftColumns = buildColumns(schemas, false);
-  const visibleLiveColumns = liveColumns.filter((c) => !hiddenCols.has(c.key));
-  const visibleDraftColumns = draftColumns.filter((c) => !hiddenCols.has(c.key));
+  const liveColumns = useMemo(() => buildColumns(schemas, true), [schemas]);
+  const draftColumns = useMemo(() => buildColumns(schemas, false), [schemas]);
+  const visibleLiveColumns = useMemo(
+    () => liveColumns.filter((c) => !hiddenCols.has(c.key)),
+    [liveColumns, hiddenCols]
+  );
+  const visibleDraftColumns = useMemo(
+    () => draftColumns.filter((c) => !hiddenCols.has(c.key)),
+    [draftColumns, hiddenCols]
+  );
 
-  const liveDatasets = datasets.filter((d: { status?: string }) => d.status !== "DRAFT");
-  const draftDatasets = datasets.filter((d: { status?: string }) => d.status === "DRAFT");
+  const liveDatasets = useMemo(() => datasets.filter((d: Dataset) => d.status !== "DRAFT"), [datasets]);
+  const draftDatasets = useMemo(() => datasets.filter((d: Dataset) => d.status === "DRAFT"), [datasets]);
   const draftCount = draftDatasets.length;
 
   const isRefreshAllBusy = running || fetcher.state !== "idle";
   const progressPct = progress && progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : null;
 
   const sharedTableProps = {
-    results: results as ResultsMap,
+    results,
     hiddenColCount: hiddenCols.size,
-    columnFilters,
-    setColumnFilter,
-    clearColumnFilter,
-    clearAllColumnFilters,
     rowsPerPage,
     setRowsPerPage,
   };
+
+  // Per-view filter props: bind the store setters to the tab's view so each tab
+  // owns its own column filters.
+  const filterProps = (view: FilterView) => ({
+    columnFilters: columnFiltersByView[view],
+    setColumnFilter: (col: string, statuses: string[]) => setColumnFilter(view, col, statuses),
+    clearColumnFilter: (col: string) => clearColumnFilter(view, col),
+    clearAllColumnFilters: () => clearAllColumnFilters(view),
+  });
 
   return (
     <Box sx={{ p: 3 }}>
@@ -780,13 +821,14 @@ export default function ResultsPage() {
 
       {/* ── Overview tab */}
       {resolvedTab === "overview" && (
-        <OverviewTab columns={visibleLiveColumns} datasets={datasets} results={results as ResultsMap} />
+        <OverviewTab columns={visibleLiveColumns} datasets={datasets} results={results} />
       )}
 
       {/* ── Live Results tab */}
       {resolvedTab === "live" && (
         <ResultsTableView
           {...sharedTableProps}
+          {...filterProps("live")}
           datasets={liveDatasets}
           visibleColumns={visibleLiveColumns}
           emptyMessage="No live datasets available."
@@ -797,6 +839,7 @@ export default function ResultsPage() {
       {resolvedTab === "draft" && (
         <ResultsTableView
           {...sharedTableProps}
+          {...filterProps("draft")}
           datasets={draftDatasets}
           visibleColumns={visibleDraftColumns}
           emptyMessage="No draft datasets available."

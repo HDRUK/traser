@@ -3,12 +3,10 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
 import type { Route } from "./+types/home";
-import { requireAuth } from "~/lib/auth.server";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const _user = requireAuth(request);
-  return null;
-}
+// Public landing page — no auth. It appears in the logged-out nav, so requiring
+// auth here would silently bounce anonymous visitors to /playground.
+export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -24,7 +22,6 @@ export function meta({}: Route.MetaArgs) {
 export default function Home() {
   return (
     <Box
-      component="main"
       sx={{
         minHeight: "100vh",
         display: "flex",

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { useLoaderData, useNavigate } from "react-router";
 import { Group, Panel, Separator, type PanelImperativeHandle } from "react-resizable-panels";
 import LinkIcon from "@mui/icons-material/Link";
 import type { EditorProps } from "@monaco-editor/react";
@@ -45,6 +46,15 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 import { playgroundStore, type SchemaRef } from "../stores/playgroundStore";
 import { DEFAULT_JSON } from "../config/playgroundDefaults";
+import type { Route } from "./+types/playground";
+import { getDatasetIndex } from "~/lib/cache.server";
+import { getAvailableTemplates } from "~/lib/templates.server";
+import { ensureLoaded, getAvailableSchemas } from "~/lib/schema.server";
+
+// Upper bound on a template decoded from a share link, before it is seeded and
+// auto-evaluated. Guards against a maliciously large/expensive expression in a
+// URL freezing the tab on open.
+const MAX_SHARED_TEMPLATE_CHARS = 20_000;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -275,6 +285,113 @@ function LockedPanel({ message, onAction, actionLabel }: { message: string; onAc
   );
 }
 
+// ─── Header badges ────────────────────────────────────────────────────────────
+// Hoisted to module scope (not nested in PlaygroundPage) so they keep a stable
+// component identity across the parent's frequent re-renders (every keystroke in
+// the JSON editor) instead of remounting each time.
+
+function InputBadge({ inputSchema, inputValidation, finding, onFind, onOpenPicker }: {
+  inputSchema: SchemaRef | null;
+  inputValidation: ValidationState;
+  finding: "input" | "result" | null;
+  onFind: () => void;
+  onOpenPicker: () => void;
+}) {
+  if (!inputSchema) {
+    return (
+      <Chip size="small" variant="outlined"
+        label={finding === "input" ? "Finding…" : "Find schema"}
+        icon={<FindInPageIcon sx={{ fontSize: "12px !important" }} />}
+        onClick={onFind}
+        disabled={finding === "input"}
+        sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", borderColor: "primary.main", color: "primary.main", "& .MuiChip-icon": { color: "primary.main" } }} />
+    );
+  }
+  const label = `${inputSchema.name} ${inputSchema.version}`;
+  if (inputValidation.kind === "valid") {
+    return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
+      onClick={onOpenPicker}
+      sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: "rgba(76,175,80,0.15)", color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
+  }
+  if (inputValidation.kind === "invalid") {
+    const firstErr = inputValidation.errors[0];
+    const addProp = firstErr?.params?.additionalProperty as string | undefined;
+    const invalidVal = typeof firstErr?.invalidValue === "string" ? firstErr.invalidValue : undefined;
+    const valueTag = addProp ?? invalidVal;
+    const tip = firstErr
+      ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
+      : "Invalid";
+    return (
+      <Tooltip title={tip}>
+        <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
+          onClick={onOpenPicker}
+          sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: "rgba(244,67,54,0.15)", color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
+      </Tooltip>
+    );
+  }
+  return <Chip size="small" label={`Checking ${label}…`}
+    onClick={onOpenPicker}
+    sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: "rgba(255,255,255,0.06)", color: "text.secondary" }} />;
+}
+
+function OutputBadge({ outputSchema, validateOutputOn, outputValidation }: {
+  outputSchema: SchemaRef | null;
+  validateOutputOn: boolean;
+  outputValidation: ValidationState;
+}) {
+  if (!outputSchema) {
+    return (
+      <Chip size="small" variant="outlined" label="No output schema"
+        sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />
+    );
+  }
+  const label = `${outputSchema.name} ${outputSchema.version}`;
+  if (!validateOutputOn) {
+    return <Chip size="small" variant="outlined" label={`Output: ${label}`}
+      sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />;
+  }
+  if (outputValidation.kind === "valid") {
+    return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
+      sx={{ height: 20, fontSize: "0.65rem", bgcolor: "rgba(76,175,80,0.15)", color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
+  }
+  if (outputValidation.kind === "invalid") {
+    const firstErr = outputValidation.errors[0];
+    const addProp = firstErr?.params?.additionalProperty as string | undefined;
+    const invalidVal = typeof firstErr?.invalidValue === "string" ? firstErr.invalidValue : undefined;
+    const valueTag = addProp ?? invalidVal;
+    const tip = firstErr
+      ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
+      : "Invalid";
+    return (
+      <Tooltip title={tip}>
+        <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
+          sx={{ height: 20, fontSize: "0.65rem", bgcolor: "rgba(244,67,54,0.15)", color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
+      </Tooltip>
+    );
+  }
+  return <Chip size="small" label={`Checking ${label}…`}
+    sx={{ height: 20, fontSize: "0.65rem", bgcolor: "rgba(255,255,255,0.06)", color: "text.secondary" }} />;
+}
+
+// ─── Loader ─────────────────────────────────────────────────────────────────
+
+// Reference data (datasets / templates / schemas) is loaded here — in parallel
+// with the page — rather than via three client-side fetches after hydration.
+// Each source degrades to empty on failure so a reference-data hiccup never
+// blanks the whole playground.
+export async function loader(_args: Route.LoaderArgs) {
+  const [datasets, templates, schemas] = await Promise.all([
+    getDatasetIndex().catch(() => []),
+    getAvailableTemplates().catch(() => []),
+    ensureLoaded()
+      .then(() => getAvailableSchemas())
+      .catch(() => ({}) as Record<string, string[]>),
+  ]);
+  return { datasets, templates, schemas };
+}
+
+export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function meta() {
@@ -316,10 +433,9 @@ export default function PlaygroundPage() {
   const [error, setError] = useState<string | null>(null);
 
 
-  // ── Reference data
-  const [datasets, setDatasets] = useState<DatasetOption[]>([]);
-  const [templates, setTemplates] = useState<TemplateOption[]>([]);
-  const [schemaList, setSchemaList] = useState<Record<string, string[]>>({});
+  // ── Reference data (loaded server-side, available on first render)
+  const { datasets, templates, schemas: schemaList } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
   const [loadingDataset, setLoadingDataset] = useState(false);
 
   // ── Schema state
@@ -375,12 +491,8 @@ export default function PlaygroundPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Initial data loads + store rehydration
+  // ── Store rehydration + share-link seeding
   useEffect(() => {
-    fetch("/list/datasets").then(r => r.json()).then(setDatasets).catch(() => {});
-    fetch("/list/templates").then(r => r.json()).then(setTemplates).catch(() => {});
-    fetch("/list/schemas").then(r => r.json()).then(setSchemaList).catch(() => {});
-
     // Rehydrate persisted store (deferred so SSR doesn't produce a mismatch)
     playgroundStore.persist.rehydrate();
 
@@ -393,12 +505,19 @@ export default function PlaygroundPage() {
 
     if (tpl || inS || outS || pidP) {
       const patch: Parameters<typeof seed>[0] = {};
-      if (tpl)  patch.template = decodeURIComponent(atob(tpl));
+      if (tpl) {
+        try {
+          const decoded = decodeURIComponent(atob(tpl));
+          if (decoded.length <= MAX_SHARED_TEMPLATE_CHARS) patch.template = decoded;
+          else console.warn(`Shared template exceeds ${MAX_SHARED_TEMPLATE_CHARS}-char cap — ignored`);
+        } catch { /* malformed share link — ignore the template */ }
+      }
       if (inS)  { const [name, ...rest] = inS.split(":"); patch.inputSchema = { name, version: rest.join(":") }; }
       if (outS) { const [name, ...rest] = outS.split(":"); patch.customOutputSchema = { name, version: rest.join(":") }; }
       if (inS && outS) patch.validateOutputOn = true;
       seed(patch);
-      window.history.replaceState({}, "", window.location.pathname);
+      // Strip the processed query params via the router (keeps RR's history in sync)
+      navigate(window.location.pathname, { replace: true, preventScrollReset: true });
 
       // Load dataset from cache when navigating from results table
       if (pidP) {
@@ -771,82 +890,6 @@ export default function PlaygroundPage() {
   const EDITOR_OPTS = { minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false, wordWrap: "on" as const };
   const PANEL_HEADER = { display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 0.75, bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider", flexShrink: 0, minHeight: 36 };
 
-  // ── Header badges
-
-  function InputBadge() {
-    if (!inputSchema) {
-      return (
-        <Chip size="small" variant="outlined"
-          label={finding === "input" ? "Finding…" : "Find schema"}
-          icon={<FindInPageIcon sx={{ fontSize: "12px !important" }} />}
-          onClick={() => runFind("input", jsonRef.current)}
-          disabled={finding === "input"}
-          sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", borderColor: "primary.main", color: "primary.main", "& .MuiChip-icon": { color: "primary.main" } }} />
-      );
-    }
-    const label = `${inputSchema.name} ${inputSchema.version}`;
-    const openPicker = () => setSchemaPickerOpen(true);
-    if (inputValidation.kind === "valid") {
-      return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
-        onClick={openPicker}
-        sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: "rgba(76,175,80,0.15)", color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
-    }
-    if (inputValidation.kind === "invalid") {
-      const firstErr = inputValidation.errors[0];
-      const addProp = firstErr?.params?.additionalProperty as string | undefined;
-      const invalidVal = typeof firstErr?.invalidValue === "string" ? firstErr.invalidValue : undefined;
-      const valueTag = addProp ?? invalidVal;
-      const tip = firstErr
-        ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
-        : "Invalid";
-      return (
-        <Tooltip title={tip}>
-          <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
-            onClick={openPicker}
-            sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: "rgba(244,67,54,0.15)", color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
-        </Tooltip>
-      );
-    }
-    return <Chip size="small" label={`Checking ${label}…`}
-      onClick={openPicker}
-      sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: "rgba(255,255,255,0.06)", color: "text.secondary" }} />;
-  }
-
-  function OutputBadge() {
-    if (!outputSchema) {
-      return (
-        <Chip size="small" variant="outlined" label="No output schema"
-          sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />
-      );
-    }
-    const label = `${outputSchema.name} ${outputSchema.version}`;
-    if (!validateOutputOn) {
-      return <Chip size="small" variant="outlined" label={`Output: ${label}`}
-        sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />;
-    }
-    if (outputValidation.kind === "valid") {
-      return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
-        sx={{ height: 20, fontSize: "0.65rem", bgcolor: "rgba(76,175,80,0.15)", color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
-    }
-    if (outputValidation.kind === "invalid") {
-      const firstErr = outputValidation.errors[0];
-      const addProp = firstErr?.params?.additionalProperty as string | undefined;
-      const invalidVal = typeof firstErr?.invalidValue === "string" ? firstErr.invalidValue : undefined;
-      const valueTag = addProp ?? invalidVal;
-      const tip = firstErr
-        ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
-        : "Invalid";
-      return (
-        <Tooltip title={tip}>
-          <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
-            sx={{ height: 20, fontSize: "0.65rem", bgcolor: "rgba(244,67,54,0.15)", color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
-        </Tooltip>
-      );
-    }
-    return <Chip size="small" label={`Checking ${label}…`}
-      sx={{ height: 20, fontSize: "0.65rem", bgcolor: "rgba(255,255,255,0.06)", color: "text.secondary" }} />;
-  }
-
   // ── Render
 
   return (
@@ -866,11 +909,14 @@ export default function PlaygroundPage() {
           onResize={(size) => { const collapsed = size.inPixels <= 42; setLeftCollapsed(collapsed); if (!collapsed && !rightPanelRef.current?.isCollapsed() && size.asPercentage > 5) setHSplit(size.asPercentage); }}>
           {leftCollapsed ? (
             <Tooltip title="Expand JSON Input" placement="right">
-              <Box onClick={() => leftPanelRef.current?.resize(`${hSplit}%`)} sx={{
+              <Box role="button" tabIndex={0} aria-label="Expand JSON Input panel"
+                onClick={() => leftPanelRef.current?.resize(`${hSplit}%`)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); leftPanelRef.current?.resize(`${hSplit}%`); } }}
+                sx={{
                 width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center",
                 justifyContent: "center", gap: 1.5, cursor: "pointer", bgcolor: "background.paper",
                 borderRight: "1px solid", borderColor: "divider", transition: "background 0.15s",
-                "&:hover": { bgcolor: "action.hover" },
+                "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
               }}>
                 <ChevronRightIcon sx={{ fontSize: 20, color: "primary.main" }} />
                 <Typography variant="caption" sx={{
@@ -885,7 +931,13 @@ export default function PlaygroundPage() {
             <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", fontFamily: "monospace" }}>
               JSON INPUT
             </Typography>
-            <InputBadge />
+            <InputBadge
+              inputSchema={inputSchema}
+              inputValidation={inputValidation}
+              finding={finding}
+              onFind={() => runFind("input", jsonRef.current)}
+              onOpenPicker={() => setSchemaPickerOpen(true)}
+            />
             <Chip
               size="small"
               label={
@@ -1020,11 +1072,14 @@ export default function PlaygroundPage() {
           onResize={(size) => { const collapsed = size.inPixels <= 42; setRightCollapsed(collapsed); }}>
         {rightCollapsed ? (
           <Tooltip title="Expand right panels" placement="left">
-            <Box onClick={() => rightPanelRef.current?.resize(`${100 - hSplit}%`)} sx={{
+            <Box role="button" tabIndex={0} aria-label="Expand template and result panels"
+              onClick={() => rightPanelRef.current?.resize(`${100 - hSplit}%`)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); rightPanelRef.current?.resize(`${100 - hSplit}%`); } }}
+              sx={{
               width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center",
               justifyContent: "center", gap: 1.5, cursor: "pointer", bgcolor: "background.paper",
               borderLeft: "1px solid", borderColor: "divider", transition: "background 0.15s",
-              "&:hover": { bgcolor: "action.hover" },
+              "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
             }}>
               <ChevronLeftIcon sx={{ fontSize: 20, color: "primary.main" }} />
               <Typography variant="caption" sx={{
@@ -1041,11 +1096,14 @@ export default function PlaygroundPage() {
             onResize={(size) => { const collapsed = size.inPixels <= 42; setTemplateCollapsed(collapsed); if (!collapsed && !resultPanelRef.current?.isCollapsed() && size.asPercentage > 5) setVSplit(size.asPercentage); }}>
           {templateCollapsed ? (
             <Tooltip title="Expand Template" placement="bottom">
-              <Box onClick={() => templatePanelRef.current?.resize(`${vSplit}%`)} sx={{
+              <Box role="button" tabIndex={0} aria-label="Expand JSONata template panel"
+                onClick={() => templatePanelRef.current?.resize(`${vSplit}%`)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); templatePanelRef.current?.resize(`${vSplit}%`); } }}
+                sx={{
                 width: "100%", height: "100%", display: "flex", flexDirection: "row", alignItems: "center",
                 justifyContent: "center", gap: 1, cursor: "pointer", bgcolor: "background.paper",
                 borderBottom: "1px solid", borderColor: "divider", transition: "background 0.15s",
-                "&:hover": { bgcolor: "action.hover" },
+                "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
               }}>
                 <ExpandMoreIcon sx={{ fontSize: 18, color: "primary.main" }} />
                 <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.6rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
@@ -1118,10 +1176,13 @@ export default function PlaygroundPage() {
             onResize={(size) => { const collapsed = size.inPixels <= 42; setResultCollapsed(collapsed); }}>
           {resultCollapsed ? (
             <Tooltip title="Expand Result" placement="top">
-              <Box onClick={() => resultPanelRef.current?.resize(`${100 - vSplit}%`)} sx={{
+              <Box role="button" tabIndex={0} aria-label="Expand result panel"
+                onClick={() => resultPanelRef.current?.resize(`${100 - vSplit}%`)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); resultPanelRef.current?.resize(`${100 - vSplit}%`); } }}
+                sx={{
                 width: "100%", height: "100%", display: "flex", flexDirection: "row", alignItems: "center",
                 justifyContent: "center", gap: 1, cursor: "pointer", bgcolor: "background.paper",
-                transition: "background 0.15s", "&:hover": { bgcolor: "action.hover" },
+                transition: "background 0.15s", "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
               }}>
                 <ExpandLessIcon sx={{ fontSize: 18, color: "primary.main" }} />
                 <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.6rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
@@ -1135,7 +1196,13 @@ export default function PlaygroundPage() {
               <Typography variant="caption" sx={{ fontWeight: 600, color: error ? "error.main" : "text.secondary", fontFamily: "monospace" }}>
                 {error ? "ERROR" : "RESULT"}
               </Typography>
-              {inputUnlocked && !error && <OutputBadge />}
+              {inputUnlocked && !error && (
+                <OutputBadge
+                  outputSchema={outputSchema}
+                  validateOutputOn={validateOutputOn}
+                  outputValidation={outputValidation}
+                />
+              )}
 {inputUnlocked && error && <Chip label="JSONata Error" size="small" color="error" />}
               {inputUnlocked && !error && result && <Chip label="Translated" size="small" color="success" />}
               <Box sx={{ flex: 1 }} />
@@ -1439,8 +1506,8 @@ export default function PlaygroundPage() {
                     const isExpanded = expandedRows.has(rowKey);
                     const colSpan = findSource === "input" ? 5 : 4;
                     return (
-                      <>
-                        <TableRow key={rowKey} hover>
+                      <Fragment key={rowKey}>
+                        <TableRow hover>
                           <TableCell sx={{ px: "6px !important" }}>
                             {r.matches
                               ? <CheckCircleIcon sx={{ color: "success.main", fontSize: 16, display: "block" }} />
@@ -1481,7 +1548,7 @@ export default function PlaygroundPage() {
                           )}
                         </TableRow>
                         {hasErrors && (
-                          <TableRow key={`${rowKey}-errors`}>
+                          <TableRow>
                             <TableCell colSpan={colSpan} sx={{ p: 0, border: isExpanded ? undefined : 0 }}>
                               <Collapse in={isExpanded} unmountOnExit>
                                 <Box component="pre" sx={{ m: 0, px: 2, py: 1.25, bgcolor: "rgba(244,67,54,0.06)", borderTop: "1px solid rgba(244,67,54,0.2)", fontFamily: "monospace", fontSize: "0.72rem", color: "error.light", lineHeight: 1.6, overflow: "auto", maxHeight: 200 }}>
@@ -1493,7 +1560,7 @@ export default function PlaygroundPage() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                 </TableBody>
