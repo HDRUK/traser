@@ -141,6 +141,13 @@ export async function translate(
   return { translatedMetadata };
 }
 
+// Canonical hub schema that refresh.server.ts caches every dataset as
+// (fetched from the Gateway API via ?schema_model=/&schema_version=) so that
+// the assumption below — every cached {pid}.json is already shaped like this
+// schema — actually holds.
+export const REFERENCE_SCHEMA = "GWDM";
+export const REFERENCE_VERSION = "2.0";
+
 /**
  * Full pipeline: multi-hop translation from GWDM:2.0 → targetSchema:targetVersion
  * followed by validation. Used by refresh.server.ts for batch testing.
@@ -156,8 +163,8 @@ export async function translateAndValidate(
   translateBody?: unknown;
   validateBody?: unknown;
 }> {
-  const inputSchema = "GWDM";
-  const inputVersion = "2.0";
+  const inputSchema = REFERENCE_SCHEMA;
+  const inputVersion = REFERENCE_VERSION;
 
   const graph = await TranslationGraph.create();
 

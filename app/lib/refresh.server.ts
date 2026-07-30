@@ -9,9 +9,10 @@ import {
   readTestResults,
   writeTestResults,
 } from "./cache.server";
-import { listSchemas, translateAndValidate } from "./traser.server";
+import { listSchemas, translateAndValidate, REFERENCE_SCHEMA, REFERENCE_VERSION } from "./traser.server";
 
 let _running = false;
+let _cancelRequested = false;
 
 const GATEWAY_API_URL =
   process.env.GATEWAY_API_URL ?? "https://api.prod.hdruk.cloud/api/v2";
@@ -27,6 +28,15 @@ function appendLog(log: string[], entry: string): string[] {
 
 export function isRefreshRunning(): boolean {
   return _running;
+}
+
+// Cooperative cancellation: loops below poll this between iterations so a
+// long-running (or stuck, e.g. slow API) refresh can be stopped without
+// restarting the dev server, and a new refresh started right after.
+export function requestCancelRefresh(): boolean {
+  if (!_running) return false;
+  _cancelRequested = true;
+  return true;
 }
 
 // ─── Phase 1: sync dataset files from the Gateway API ─────────────────────
@@ -87,8 +97,17 @@ async function syncDatasetsFromApi(
   await Promise.all(
     toFetch.map((id) =>
       limit(async () => {
+        if (_cancelRequested) return;
         try {
-          const res = await fetch(`${GATEWAY_API_URL}/datasets/${id}`, {
+          // translateAndValidate() assumes every cached {pid}.json is already
+          // shaped like REFERENCE_SCHEMA:REFERENCE_VERSION — request the Gateway
+          // API's own translation so that assumption holds, instead of caching
+          // whichever schema the dataset happens to be natively stored as.
+          const qs = new URLSearchParams({
+            schema_model: REFERENCE_SCHEMA,
+            schema_version: REFERENCE_VERSION,
+          });
+          const res = await fetch(`${GATEWAY_API_URL}/datasets/${id}?${qs}`, {
             signal: AbortSignal.timeout(15_000),
           });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
