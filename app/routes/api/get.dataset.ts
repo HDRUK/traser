@@ -1,38 +1,4 @@
-/**
- * @openapi
- * /get/dataset:
- *   get:
- *     tags: [get]
- *     summary: Fetch a cached dataset by PID
- *     description: Returns the extracted metadata for a dataset identified by its persistent identifier (PID).
- *     parameters:
- *       - name: pid
- *         in: query
- *         required: true
- *         description: Dataset persistent identifier.
- *         schema:
- *           type: string
- *           example: abc123
- *     responses:
- *       '200':
- *         description: Dataset metadata object.
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *       '400':
- *         description: Missing pid parameter.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorMessage'
- *       '404':
- *         description: Dataset not found.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorMessage'
- */
+// Internal endpoint — intentionally undocumented (omitted from the OpenAPI/Swagger spec).
 import { readFile } from "fs/promises";
 import path from "path";
 import { extractMetadata, getDataDir } from "~/lib/cache.server";

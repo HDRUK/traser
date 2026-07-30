@@ -336,9 +336,65 @@ function RunTab({ runningRun, duplicateFrom, onConsumeDuplicate }: {
 
 // ─── History tab ────────────────────────────────────────────────────────
 
-function HistoryTab({ index, onDuplicate }: { index: BenchmarkRunSummary[]; onDuplicate: (run: BenchmarkRunSummary) => void }) {
-  const fetcher = useFetcher();
+function HistoryRow({ run, onDuplicate }: { run: BenchmarkRunSummary; onDuplicate: (run: BenchmarkRunSummary) => void }) {
+  const fetcher = useFetcher<typeof action>();
+  const { revalidate } = useRevalidator();
+  const [deleted, setDeleted] = useState(false);
 
+  // The loader list doesn't refresh on its own after the delete action, so drive
+  // a revalidation once the delete resolves — this is what makes the row go away.
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data && "deleted" in fetcher.data && fetcher.data.deleted) {
+      setDeleted(true);
+      revalidate();
+    }
+  }, [fetcher.state, fetcher.data, revalidate]);
+
+  // Hide optimistically the instant the delete is in flight, and keep it hidden
+  // once resolved so there's no flicker before revalidation unmounts the row.
+  const deleting = fetcher.state !== "idle" && fetcher.formData?.get("intent") === "delete";
+  if (deleted || deleting) return null;
+
+  return (
+    <TableRow key={run.id} hover>
+      <TableCell>{run.label}</TableCell>
+      <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{run.baseUrl}</TableCell>
+      <TableCell>{run.schemaModel ? `${run.schemaModel} ${run.schemaVersion}` : "—"}</TableCell>
+      <TableCell>{run.idRangeStart}–{run.idRangeEnd}</TableCell>
+      <TableCell align="right">{run.repeat}</TableCell>
+      <TableCell align="right">{run.concurrency}</TableCell>
+      <TableCell>{new Date(run.createdAt).toLocaleString()}</TableCell>
+      <TableCell>
+        {run.running
+          ? <Chip size="small" label="Running" color="info" />
+          : <Chip size="small" icon={<CheckCircleIcon />} label="Complete" color="success" variant="outlined" />}
+      </TableCell>
+      <TableCell align="right">{formatMs(run.stats?.median)}</TableCell>
+      <TableCell align="right">{formatMs(run.stats?.p95)}</TableCell>
+      <TableCell align="right">{run.stats ? `${Math.round(run.stats.successRate * 100)}%` : "—"}</TableCell>
+      <TableCell align="right">
+        <Tooltip title="Duplicate into a new run">
+          <IconButton size="small" aria-label={`Duplicate run ${run.label}`} onClick={() => onDuplicate(run)}>
+            <ContentCopyIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <fetcher.Form method="post" style={{ display: "inline" }}>
+          <input type="hidden" name="intent" value="delete" />
+          <input type="hidden" name="runId" value={run.id} />
+          <Tooltip title={run.running ? "Cannot delete a running run" : "Delete run"}>
+            <span>
+              <IconButton type="submit" size="small" aria-label={`Delete run ${run.label}`} disabled={run.running || fetcher.state !== "idle"}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </fetcher.Form>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function HistoryTab({ index, onDuplicate }: { index: BenchmarkRunSummary[]; onDuplicate: (run: BenchmarkRunSummary) => void }) {
   if (index.length === 0) {
     return <Typography color="text.secondary" sx={{ py: 4, textAlign: "center" }}>No benchmark runs yet.</Typography>;
   }
@@ -365,41 +421,7 @@ function HistoryTab({ index, onDuplicate }: { index: BenchmarkRunSummary[]; onDu
           </TableHead>
           <TableBody>
             {[...index].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map((run) => (
-              <TableRow key={run.id} hover>
-                <TableCell>{run.label}</TableCell>
-                <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{run.baseUrl}</TableCell>
-                <TableCell>{run.schemaModel ? `${run.schemaModel} ${run.schemaVersion}` : "—"}</TableCell>
-                <TableCell>{run.idRangeStart}–{run.idRangeEnd}</TableCell>
-                <TableCell align="right">{run.repeat}</TableCell>
-                <TableCell align="right">{run.concurrency}</TableCell>
-                <TableCell>{new Date(run.createdAt).toLocaleString()}</TableCell>
-                <TableCell>
-                  {run.running
-                    ? <Chip size="small" label="Running" color="info" />
-                    : <Chip size="small" icon={<CheckCircleIcon />} label="Complete" color="success" variant="outlined" />}
-                </TableCell>
-                <TableCell align="right">{formatMs(run.stats?.median)}</TableCell>
-                <TableCell align="right">{formatMs(run.stats?.p95)}</TableCell>
-                <TableCell align="right">{run.stats ? `${Math.round(run.stats.successRate * 100)}%` : "—"}</TableCell>
-                <TableCell align="right">
-                  <Tooltip title="Duplicate into a new run">
-                    <IconButton size="small" aria-label={`Duplicate run ${run.label}`} onClick={() => onDuplicate(run)}>
-                      <ContentCopyIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <fetcher.Form method="post" style={{ display: "inline" }}>
-                    <input type="hidden" name="intent" value="delete" />
-                    <input type="hidden" name="runId" value={run.id} />
-                    <Tooltip title={run.running ? "Cannot delete a running run" : "Delete run"}>
-                      <span>
-                        <IconButton type="submit" size="small" aria-label={`Delete run ${run.label}`} disabled={run.running || fetcher.state !== "idle"}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  </fetcher.Form>
-                </TableCell>
-              </TableRow>
+              <HistoryRow key={run.id} run={run} onDuplicate={onDuplicate} />
             ))}
           </TableBody>
         </Table>

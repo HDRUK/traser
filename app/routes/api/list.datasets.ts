@@ -1,20 +1,4 @@
-/**
- * @openapi
- * /list/datasets:
- *   get:
- *     tags: [list]
- *     summary: List cached datasets
- *     description: Returns metadata for all datasets currently cached on disk.
- *     responses:
- *       '200':
- *         description: Array of dataset metadata objects.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- */
+// Internal endpoint — intentionally undocumented (omitted from the OpenAPI/Swagger spec).
 import { getDatasetIndex } from "~/lib/cache.server";
 
 export async function loader() {

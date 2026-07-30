@@ -15,8 +15,8 @@ const options: swaggerJsdoc.Options = {
       { name: "translate", description: "Translate metadata between schemas" },
       { name: "validate", description: "Validate metadata against a schema" },
       { name: "find", description: "Discover which schemas match a metadata document" },
-      { name: "list", description: "List available schemas, templates, datasets, and translation routes" },
-      { name: "get", description: "Retrieve a schema definition, translation map, dataset, or form hydration" },
+      { name: "list", description: "List available schemas, templates, and translation routes" },
+      { name: "get", description: "Retrieve a schema definition, translation map, or form hydration" },
     ],
     components: {
       schemas: {
