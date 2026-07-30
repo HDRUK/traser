@@ -1,3 +1,17 @@
+## [1.7.0](https://github.com/HDRUK/traser/compare/v1.6.1...v1.7.0) (2026-07-24)
+
+### ✨ Features
+
+* **GAT-7957:** added github authentication (#105) ([d5cbe83](https://github.com/HDRUK/traser/commit/d5cbe83e716dd3bca4f7ca7b106dacbeb14fc13c)), closes [GAT-7957](undefinedGAT-7957)
+* **GAT-7966:** updated semantic pipeline for merge back to dev (#106) ([9952ac1](https://github.com/HDRUK/traser/commit/9952ac16b4ce991f7141f01df16e2afc80a7d73f)), closes [GAT-7966](undefinedGAT-7966)
+* **GAT-8384:** added release workflow pipeline (#104) ([fbd7ca7](https://github.com/HDRUK/traser/commit/fbd7ca71fdac919f7cd1293749ab99ca5251b67c)), closes [GAT-8384](undefinedGAT-8384)
+
+### 🐛 Bug Fixes
+
+* **GAT-8812:** updated semantic pipeline (#109) ([2762e97](https://github.com/HDRUK/traser/commit/2762e97c8b886f9cbb683c53da5b01bfb9184f34)), closes [GAT-8812](undefinedGAT-8812)
+* **GAT-8812:** updated workflows to use reusable pipelines (#107) ([f20659b](https://github.com/HDRUK/traser/commit/f20659b14f714eed6b559936d06adc6c9375c9cc)), closes [GAT-8812](undefinedGAT-8812)
+* **GAT-9057:** added pipeline for automated Jira release to the registry apps (#112) ([923118d](https://github.com/HDRUK/traser/commit/923118d31ab03c541dd65c12c7175ddb8d509872)), closes [GAT-9057](undefinedGAT-9057)
+
 ## [1.6.1](https://github.com/HDRUK/traser/compare/v1.6.0...v1.6.1) (2026-01-20)
 
 ### 🐛 Bug Fixes
