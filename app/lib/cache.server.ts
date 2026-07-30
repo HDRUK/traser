@@ -1,4 +1,5 @@
 import { readFile, writeFile, rename, readdir, unlink } from "fs/promises";
+import { mkdirSync } from "fs";
 import path from "path";
 
 // DATA_DIR env var or default ./data relative to repo root (CWD when running).
@@ -6,6 +7,10 @@ const DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
   : path.resolve(process.cwd(), "./data");
 const RESULTS_FILE = path.join(DATA_DIR, "test-results.json");
+
+// Ensure the cache directory exists up front so readdir/writeFile callers
+// (here and in refresh.server.ts) never have to special-case a missing dir.
+mkdirSync(DATA_DIR, { recursive: true });
 
 export interface DatasetEntry {
   pid: string;
@@ -112,7 +117,13 @@ export function invalidateDatasetIndex(): void {
 }
 
 export async function clearAllDatasetFiles(): Promise<void> {
-  const files = await readdir(DATA_DIR);
+  let files: string[];
+  try {
+    files = await readdir(DATA_DIR);
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return;
+    throw err;
+  }
   await Promise.all(
     files
       .filter(f => f.endsWith(".json") && f !== "test-results.json" && f !== "datasets-index.json")
