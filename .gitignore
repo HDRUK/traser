@@ -134,3 +134,14 @@ dist
 \#*#
 
 application_default_credentials.json
+
+# React Router
+.react-router/
+/build/
+
+# Environment
+.env
+
+# IDE / OS
+.DS_Store
+src/env_temp

@@ -67,9 +67,16 @@ jobs:
         id: setupenv
         run: "cp env.example .env"
 
+      - name: Build
+        id: build
+        run: "npm run build"
+
       - name: Run testing
         id: unittest
-        run: "npm run test:gh"
+        run: |
+          npm start &
+          npx wait-on http://localhost:3001 --timeout 30000
+          npm test
 
       - name: Run Notification
         id: runnotificationsent
