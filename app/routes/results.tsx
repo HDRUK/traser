@@ -42,7 +42,7 @@ import WarningIcon from "@mui/icons-material/Warning";
 
 import { getDatasetIndex, readTestResults, writeTestResults, clearAllDatasetFiles } from "~/lib/cache.server";
 import { listSchemas } from "~/lib/traser.server";
-import { runAllTests, runSingleDataset, isRefreshRunning } from "~/lib/refresh.server";
+import { runAllTests, runSingleDataset, isRefreshRunning, requestCancelRefresh } from "~/lib/refresh.server";
 import { requireAdmin } from "~/lib/auth.server";
 
 import type { Route } from "./+types/results";
@@ -102,6 +102,11 @@ export async function action({ request }: Route.ActionArgs) {
     const pid = formData.get("pid");
     if (typeof pid === "string" && pid) await runSingleDataset(pid);
     return { done: true };
+  }
+
+  if (intent === "cancel") {
+    const cancelled = requestCancelRefresh();
+    return cancelled ? { cancelled: true } : { error: "No refresh is currently running." };
   }
 
   if (intent === "deep") {
@@ -589,9 +594,11 @@ function ResultsTableView({
                         }),
                       }}>
                       {isReference && (
-                        <Typography component="div" sx={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.9, color: "#FFD54F", lineHeight: 1, mb: 0.25 }}>
-                          input
-                        </Typography>
+                        <Tooltip title="Every cached dataset is fetched from the Gateway API already translated into this schema — it's the canonical form every other column is translated from, not just this one dataset's native format">
+                          <Typography component="div" sx={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.9, color: "#FFD54F", lineHeight: 1, mb: 0.25, cursor: "help" }}>
+                            input
+                          </Typography>
+                        </Tooltip>
                       )}
                       {schema}<br />{version}
                       <Tooltip title={filterActive ? "Filter active — click to edit" : "Filter this column"}>
@@ -666,6 +673,7 @@ export default function ResultsPage() {
     useLoaderData<typeof loader>();
 
   const fetcher = useFetcher();
+  const cancelFetcher = useFetcher<typeof action>();
   const { revalidate } = useRevalidator();
 
   // ── Persisted UI preferences
@@ -754,6 +762,20 @@ export default function ResultsPage() {
           <Typography variant="caption" color="text.secondary">
             {progress.completed} / {progress.total} ({progressPct}%)
           </Typography>
+        )}
+
+        {running && (
+          <cancelFetcher.Form method="post">
+            <input type="hidden" name="intent" value="cancel" />
+            <Tooltip title="Stop this refresh — it can be started again afterwards">
+              <span>
+                <Button type="submit" size="small" color="warning" variant="outlined"
+                  disabled={cancelFetcher.state !== "idle"}>
+                  Cancel
+                </Button>
+              </span>
+            </Tooltip>
+          </cancelFetcher.Form>
         )}
 
         <Button size="small" variant="contained" color="inherit" startIcon={<ViewColumnIcon />}

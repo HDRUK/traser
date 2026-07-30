@@ -201,6 +201,7 @@ export async function runSingleDataset(pid: string): Promise<void> {
 export async function runAllTests(): Promise<void> {
   if (_running) return;
   _running = true;
+  _cancelRequested = false;
 
   try {
     const cache = await readTestResults();
@@ -256,6 +257,7 @@ export async function runAllTests(): Promise<void> {
 
     const tasks = pending.map(({ pid, schema, version }) =>
       limit(async () => {
+        if (_cancelRequested) return;
         try {
           const content = await readFile(path.join(dataDir, `${pid}.json`), "utf-8");
           const data = JSON.parse(content);
@@ -303,12 +305,15 @@ export async function runAllTests(): Promise<void> {
 
     cache.log = appendLog(
       cache.log ?? [],
-      `Finished — ${succeeded} translated ok, ${failed} failed`
+      _cancelRequested
+        ? `Cancelled by user — ${completed}/${total} tested (${succeeded} ok, ${failed} failed)`
+        : `Finished — ${succeeded} translated ok, ${failed} failed`
     );
     cache.lastUpdated = new Date().toISOString();
     cache.running = false;
     await writeTestResults(cache);
   } finally {
     _running = false;
+    _cancelRequested = false;
   }
 }
