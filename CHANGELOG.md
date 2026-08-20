@@ -1,3 +1,9 @@
+## [1.7.1](https://github.com/HDRUK/traser/compare/v1.7.0...v1.7.1) (2026-08-20)
+
+### 🐛 Bug Fixes
+
+* **GAT-1234:** fix the pipelines (#116) ([2c33869](https://github.com/HDRUK/traser/commit/2c338697bd66156bb4eb0f942ed18888a867af4d))
+
 ## [1.7.0](https://github.com/HDRUK/traser/compare/v1.6.1...v1.7.0) (2026-07-24)
 
 ### ✨ Features
