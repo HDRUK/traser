@@ -7,7 +7,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",
-    "start": "PORT=${PORT:-3001} react-router-serve ./build/server/index.js",
+    "start": "PORT=${PORT:-3001} node --env-file-if-exists=.env node_modules/.bin/react-router-serve ./build/server/index.js",
     "test": "vitest run --passWithNoTests --exclude '**/node_modules/**' --exclude 'src/**'",
     "typecheck": "react-router typegen && tsc",
     "lint": "eslint .",
