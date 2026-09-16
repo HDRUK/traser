@@ -75,6 +75,10 @@ jobs:
         id: setupenv
         run: "cp env.example .env"
 
+      - name: Pin upstream revisions to the regression baseline
+        id: pinupstream
+        run: "node scripts/apply-regression-pins.mjs .env"
+
       - name: Typecheck
         id: typecheck
         run: "npm run typecheck"
@@ -86,6 +90,10 @@ jobs:
       - name: Build
         id: build
         run: "npm run build"
+
+      - name: Run unit tests
+        id: unittests
+        run: "npm run test:unit"
 
       - name: Run testing
         id: unittest

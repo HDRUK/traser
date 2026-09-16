@@ -4,6 +4,7 @@
     "path": "/get/form_hydration",
     "query": null,
     "envelope": null,
+    "contentType": "application/json",
     "bodyFrom": null,
     "inlineBody": null
   },

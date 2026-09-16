@@ -174,6 +174,7 @@ async function record(baseUrl, call, timeoutMs) {
       path: call.routePath,
       query: call.query ?? null,
       envelope: call.envelope ?? null,
+      contentType: call.contentType ?? "application/json",
       bodyFrom: call.bodyFrom ?? null,
       inlineBody: call.inlineBody ?? null,
     },

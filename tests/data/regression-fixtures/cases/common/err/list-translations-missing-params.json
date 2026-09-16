@@ -4,6 +4,7 @@
     "path": "/list/translations",
     "query": null,
     "envelope": null,
+    "contentType": "application/json",
     "bodyFrom": null,
     "inlineBody": null
   },

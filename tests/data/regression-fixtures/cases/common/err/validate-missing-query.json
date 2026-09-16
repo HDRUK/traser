@@ -4,6 +4,7 @@
     "path": "/validate",
     "query": null,
     "envelope": "inline",
+    "contentType": "application/json",
     "bodyFrom": null,
     "inlineBody": {
       "metadata": {

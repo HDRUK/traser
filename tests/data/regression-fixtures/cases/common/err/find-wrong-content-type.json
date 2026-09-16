@@ -4,6 +4,7 @@
     "path": "/find",
     "query": null,
     "envelope": "inline",
+    "contentType": "text/plain",
     "bodyFrom": null,
     "inlineBody": "not json"
   },

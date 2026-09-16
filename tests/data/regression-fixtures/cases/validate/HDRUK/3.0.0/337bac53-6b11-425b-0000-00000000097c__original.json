@@ -7,6 +7,7 @@
       "input_version": "3.0.0"
     },
     "envelope": "metadata",
+    "contentType": "application/json",
     "bodyFrom": "inputs/337bac53-6b11-425b-0000-00000000097c__original.json",
     "inlineBody": null
   },

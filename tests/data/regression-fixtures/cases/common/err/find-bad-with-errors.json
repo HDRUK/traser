@@ -6,6 +6,7 @@
       "with_errors": "7"
     },
     "envelope": "inline",
+    "contentType": "application/json",
     "bodyFrom": null,
     "inlineBody": {
       "summary": {

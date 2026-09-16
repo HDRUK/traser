@@ -7,6 +7,7 @@
       "output_version": "GoogleRecommended"
     },
     "envelope": "metadata",
+    "contentType": "application/json",
     "bodyFrom": "inputs/337bac53-6b11-425b-0000-00000000cd00__original.json",
     "inlineBody": null
   },

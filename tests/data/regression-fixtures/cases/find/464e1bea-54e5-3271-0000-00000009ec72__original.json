@@ -4,6 +4,7 @@
     "path": "/find",
     "query": null,
     "envelope": "bare",
+    "contentType": "application/json",
     "bodyFrom": "inputs/464e1bea-54e5-3271-0000-00000009ec72__original.json",
     "inlineBody": null
   },

@@ -7,6 +7,7 @@
       "output_version": "2.0"
     },
     "envelope": "inline",
+    "contentType": "application/json",
     "bodyFrom": null,
     "inlineBody": {
       "metadata": "not an object"

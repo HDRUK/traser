@@ -9,6 +9,7 @@
       "validate_output": "0"
     },
     "envelope": "metadata",
+    "contentType": "application/json",
     "bodyFrom": "inputs/bef024b9-1064-43b2-b347-1ac1b68ae575__original.json",
     "inlineBody": null
   },

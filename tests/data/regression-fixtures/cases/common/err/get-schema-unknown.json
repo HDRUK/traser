@@ -7,6 +7,7 @@
       "version": "9.9"
     },
     "envelope": null,
+    "contentType": "application/json",
     "bodyFrom": null,
     "inlineBody": null
   },
