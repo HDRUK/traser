@@ -5,10 +5,12 @@ on:
     branches:
       - dev
       - main
+      - feature/GAT-9016-migration
   pull_request:
     branches:
       - main
       - dev
+      - feature/GAT-9016-migration
   workflow_dispatch:
     inputs:
       schemata_branch:
@@ -30,6 +32,8 @@ jobs:
       ${{
          github.ref_name == 'dev' && 'dev'
       || github.base_ref == 'dev' && 'dev'
+      || github.ref_name == 'feature/GAT-9016-migration' && 'dev'
+      || github.base_ref == 'feature/GAT-9016-migration' && 'dev'
       ||                             'release'
       }}
 
@@ -67,9 +71,24 @@ jobs:
         id: setupenv
         run: "cp env.example .env"
 
+      - name: Typecheck
+        id: typecheck
+        run: "npm run typecheck"
+
+      - name: Lint
+        id: lint
+        run: "npm run lint"
+
+      - name: Build
+        id: build
+        run: "npm run build"
+
       - name: Run testing
         id: unittest
-        run: "npm run test:gh"
+        run: |
+          npm start &
+          npx wait-on http://localhost:3001 --timeout 60000
+          npm test
 
       - name: Run Notification
         id: runnotificationsent
