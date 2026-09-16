@@ -1,3 +1,16 @@
-import type { RouteConfig } from "@react-router/dev/routes";
+import { type RouteConfig, route } from "@react-router/dev/routes";
 
-export default [] satisfies RouteConfig;
+export default [
+  route("/openapi.json", "routes/api/openapi.json.ts"),
+  route("/translate", "routes/api/translate.ts"),
+  route("/validate", "routes/api/validate.ts"),
+  route("/find", "routes/api/find.ts"),
+  route("/list/schemas", "routes/api/list.schemas.ts"),
+  route("/list/templates", "routes/api/list.templates.ts"),
+  route("/list/translations", "routes/api/list.translations.ts"),
+  route("/get/schema", "routes/api/get.schema.ts"),
+  route("/get/map", "routes/api/get.map.ts"),
+  route("/get/form_hydration", "routes/api/get.form_hydration.ts"),
+  route("/list/datasets", "routes/api/list.datasets.ts"),
+  route("/get/dataset", "routes/api/get.dataset.ts"),
+] satisfies RouteConfig;
