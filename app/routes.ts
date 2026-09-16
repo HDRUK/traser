@@ -1,6 +1,7 @@
 import { type RouteConfig, route } from "@react-router/dev/routes";
 
 export default [
+  route("/status", "routes/api/status.ts"),
   route("/openapi.json", "routes/api/openapi.json.ts"),
   route("/translate", "routes/api/translate.ts"),
   route("/validate", "routes/api/validate.ts"),

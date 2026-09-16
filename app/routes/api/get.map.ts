@@ -61,6 +61,7 @@
  *               $ref: '#/components/schemas/ErrorMessage'
  */
 import { getTemplate } from "~/lib/templates.server";
+import { TranslationGraph } from "~/lib/graph.server";
 import { publishMessage } from "~/lib/audit.server";
 import {
   fieldError,
@@ -76,14 +77,14 @@ export async function loader({ request }: { request: Request }) {
   const outputVersion = url.searchParams.get("output_version");
 
   const paramErrors: FieldError[] = [];
-  if (!inputSchema)
-    paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
-  if (!inputVersion)
-    paramErrors.push(fieldError("Invalid value", "input_version", "query"));
   if (!outputSchema)
     paramErrors.push(fieldError("Invalid value", "output_schema", "query"));
   if (!outputVersion)
     paramErrors.push(fieldError("Invalid value", "output_version", "query"));
+  if (!inputSchema)
+    paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
+  if (!inputVersion)
+    paramErrors.push(fieldError("Invalid value", "input_version", "query"));
   if (paramErrors.length > 0) {
     publishMessage(
       "GET",
@@ -99,22 +100,13 @@ export async function loader({ request }: { request: Request }) {
     outputSchema!,
     outputVersion!,
   );
-  if (!template) {
-    const notImplemented = `Translation for ${inputSchema}-${inputVersion} to ${outputSchema}-${outputVersion} is not implemented`;
-    publishMessage(
-      "GET",
-      "get/map",
-      `Failed to retrieve mapping for ${inputSchema}-${inputVersion} to ${outputSchema}-${outputVersion}`,
-    ).catch(console.error);
-    return Response.json(
-      {
-        error: "Translation not found",
-        message: notImplemented,
-        details: notImplemented,
-      },
-      { status: 400 },
-    );
-  }
+
+  const { path, maps } = template
+    ? { path: null, maps: null }
+    : await resolveMultiHop(
+        `${inputSchema}:${inputVersion}`,
+        `${outputSchema}:${outputVersion}`,
+      );
 
   publishMessage(
     "GET",
@@ -126,6 +118,46 @@ export async function loader({ request }: { request: Request }) {
     input_version: inputVersion,
     output_schema: outputSchema,
     output_version: outputVersion,
-    translation_map: template,
+    translation_map: template ?? null,
+    translation_path: path,
+    translation_maps: maps,
   });
+}
+
+interface HopMap {
+  from: string;
+  to: string;
+  map: string;
+}
+
+async function resolveMultiHop(
+  from: string,
+  to: string,
+): Promise<{ path: string[] | null; maps: HopMap[] | null }> {
+  let hops: { name: string; version: string }[];
+  try {
+    const graph = await TranslationGraph.create();
+    const result = graph.getPath(from, to, graph.dijkstra(from));
+    const found = (result as { translationsToApply?: { name: string; version: string }[] })
+      .translationsToApply;
+    if (!found || found.length < 2) return { path: null, maps: null };
+    hops = found;
+  } catch {
+    return { path: null, maps: null };
+  }
+
+  const maps: HopMap[] = [];
+  for (let i = 1; i < hops.length; i++) {
+    const a = hops[i - 1];
+    const b = hops[i];
+    const hopTemplate = await getTemplate(a.name, a.version, b.name, b.version);
+    if (!hopTemplate) return { path: null, maps: null };
+    maps.push({
+      from: `${a.name}:${a.version}`,
+      to: `${b.name}:${b.version}`,
+      map: hopTemplate,
+    });
+  }
+
+  return { path: hops.map((h) => `${h.name}:${h.version}`), maps };
 }
