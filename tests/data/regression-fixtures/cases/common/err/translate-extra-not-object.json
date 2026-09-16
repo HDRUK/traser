@@ -1,0 +1,40 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "GWDM",
+      "output_version": "2.0"
+    },
+    "envelope": "inline",
+    "bodyFrom": null,
+    "inlineBody": {
+      "metadata": {
+        "summary": {
+          "title": "x"
+        }
+      },
+      "extra": "nope"
+    }
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Translation has failed.",
+      "errors": [
+        {
+          "type": "field",
+          "value": "nope",
+          "msg": "Invalid value",
+          "path": "extra",
+          "location": "body"
+        }
+      ]
+    },
+    "bodySha256": "24a9321c5dfa6eb0dc75cbe7cd07f6aa1907bda577cfab63a3a235389924d02b",
+    "rawSha256": "24a9321c5dfa6eb0dc75cbe7cd07f6aa1907bda577cfab63a3a235389924d02b",
+    "bytes": 135,
+    "attempts": 1
+  }
+}

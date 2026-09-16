@@ -1,0 +1,38 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/validate",
+    "query": {
+      "input_schema": "GWDM",
+      "input_version": "2.0"
+    },
+    "envelope": "inline",
+    "bodyFrom": null,
+    "inlineBody": {}
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Validation has failed",
+      "errors": [
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "metadata",
+          "location": "body"
+        },
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "metadata",
+          "location": "body"
+        }
+      ]
+    },
+    "bodySha256": "18f1db14b64744b9775cec0ab257940828f3366e405584a4974ec7a28494fe81",
+    "rawSha256": "18f1db14b64744b9775cec0ab257940828f3366e405584a4974ec7a28494fe81",
+    "bytes": 196,
+    "attempts": 1
+  }
+}

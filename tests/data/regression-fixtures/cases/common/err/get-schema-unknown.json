@@ -1,0 +1,24 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/get/schema",
+    "query": {
+      "name": "NOPE",
+      "version": "9.9"
+    },
+    "envelope": null,
+    "bodyFrom": null,
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "error": "Cannot read properties of undefined (reading 'schema')"
+    },
+    "bodySha256": "db1008728cd6cb5536f17c597ae84ddeeb2735a3bee999ecd96dd30300203d36",
+    "rawSha256": "db1008728cd6cb5536f17c597ae84ddeeb2735a3bee999ecd96dd30300203d36",
+    "bytes": 66,
+    "attempts": 1
+  }
+}

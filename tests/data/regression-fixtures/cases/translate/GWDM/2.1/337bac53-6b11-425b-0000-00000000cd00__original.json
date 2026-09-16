@@ -1,0 +1,53 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "GWDM",
+      "output_version": "2.1"
+    },
+    "envelope": "metadata",
+    "bodyFrom": "inputs/337bac53-6b11-425b-0000-00000000cd00__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Input metadata object matched no known schemas",
+      "details": {
+        "available_schemas": {
+          "HDRUK": [
+            "2.0.2",
+            "2.1.0",
+            "2.1.2",
+            "2.1.3",
+            "2.2.0",
+            "2.2.1",
+            "3.0.0",
+            "4.0.0"
+          ],
+          "GWDM": [
+            "1.0",
+            "1.1",
+            "1.2",
+            "2.0",
+            "2.1"
+          ],
+          "CRUK": [
+            "1.0.0"
+          ],
+          "SchemaOrg": [
+            "BioSchema",
+            "default",
+            "GoogleRecommended"
+          ]
+        }
+      }
+    },
+    "bodySha256": "3d93817163bac3afa3a5b8e2fc06a9d25eb0c0e8f7dd7ba48d462b8d2bf70f44",
+    "rawSha256": "3d93817163bac3afa3a5b8e2fc06a9d25eb0c0e8f7dd7ba48d462b8d2bf70f44",
+    "bytes": 280,
+    "attempts": 1
+  }
+}

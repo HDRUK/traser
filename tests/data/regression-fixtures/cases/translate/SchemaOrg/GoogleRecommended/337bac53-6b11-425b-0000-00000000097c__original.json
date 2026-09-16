@@ -1,0 +1,59 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "SchemaOrg",
+      "output_version": "GoogleRecommended"
+    },
+    "envelope": "metadata",
+    "bodyFrom": "inputs/337bac53-6b11-425b-0000-00000000097c__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "@context": "https://schema.org/",
+      "@id": "https://hdruk.ac.uk",
+      "@type": "Dataset",
+      "identifier": "",
+      "version": "GDMv1",
+      "url": "https://hdruk.ac.uk/337bac53-6b11-425b-0000-00000000097c",
+      "name": "Scottish Immunisation Recall System (SIRS)",
+      "alternateName": "Scottish Immunisation Recall System (SIRS)",
+      "description": "The Scottish Immunisation &amp; Recall System began in 1987 and has been used by all NHS boards since 2002 when it incorporated the GIRS (Grampian Immunisation &amp; Recall System). The primary aim of the Scottish Immunisation &amp; Recall System (SIRS) is to ensure that children under the age of six years receive the appropriate immunisation according to the UK childhood immunisation schedule. SIRS calls children when a scheduled vaccination is due and allows recording of immunisation data. The dataset also includes data on HPV (Human papillomavirus) and the teenage booster immunisations and is used conjunction with the data on the Child Health Surveillance Programme School system (CHSP School) to monitor the uptake of teenage immunisations routinely given in schools.",
+      "citation": "",
+      "creator": {
+        "@type": "Organization",
+        "legalName": "National Services Scotland",
+        "name": "National Services Scotland",
+        "email": "phs.edris@phs.scot",
+        "description": "",
+        "identifier": "",
+        "sameAs": null
+      },
+      "isAccessibleForFree": false,
+      "distribution": {
+        "@type": "DataDownload",
+        "name": "Scottish National Safe Haven / Trusted Research Environment: https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/national-safe-haven-nsh/",
+        "contentUrl": "https://somehwere.com",
+        "encodingFormat": "Unknown"
+      },
+      "keywords": "Immunisation;,;HDRUK",
+      "license": "https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/services-we-offer/",
+      "temporalCoverage": null,
+      "funder": null,
+      "isPartOf": null,
+      "hasPart": null,
+      "measurementTechnique": "",
+      "sameAs": null,
+      "spatialCoverage": "",
+      "variableMeasured": ""
+    },
+    "bodySha256": "79e833d76247bf6b2f0767102082aebe974cd4ca4fff5642257f8f43b5b65906",
+    "rawSha256": "79e833d76247bf6b2f0767102082aebe974cd4ca4fff5642257f8f43b5b65906",
+    "bytes": 2004,
+    "attempts": 1
+  }
+}

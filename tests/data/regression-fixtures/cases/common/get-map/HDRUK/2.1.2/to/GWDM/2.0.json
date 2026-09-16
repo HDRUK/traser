@@ -1,0 +1,30 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/get/map",
+    "query": {
+      "input_schema": "HDRUK",
+      "input_version": "2.1.2",
+      "output_schema": "GWDM",
+      "output_version": "2.0"
+    },
+    "envelope": null,
+    "bodyFrom": null,
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "input_schema": "HDRUK",
+      "input_version": "2.1.2",
+      "output_schema": "GWDM",
+      "output_version": "2.0",
+      "translation_map": null
+    },
+    "bodySha256": "a62d66002c086d87066c5a946acfef4dd65600d49f34927eeec6a02a2272e02d",
+    "rawSha256": "a62d66002c086d87066c5a946acfef4dd65600d49f34927eeec6a02a2272e02d",
+    "bytes": 117,
+    "attempts": 1
+  }
+}

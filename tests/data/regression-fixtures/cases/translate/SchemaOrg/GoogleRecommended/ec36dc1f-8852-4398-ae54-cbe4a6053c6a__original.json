@@ -1,0 +1,59 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "SchemaOrg",
+      "output_version": "GoogleRecommended"
+    },
+    "envelope": "metadata",
+    "bodyFrom": "inputs/ec36dc1f-8852-4398-ae54-cbe4a6053c6a__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "@context": "https://schema.org/",
+      "@id": "https://hdruk.ac.uk",
+      "@type": "Dataset",
+      "identifier": "",
+      "version": "GDMv1",
+      "url": "https://hdruk.ac.uk/null",
+      "name": "Generations Study: female UK cohort (questionnaire, imaging, samples, linkage)",
+      "alternateName": "Generations Study: female UK cohort (questionnaire, imaging, samples, linkage)",
+      "description": "The Breast Cancer Now Generations Study (BGS) is a large prospective cohort study of women's health in the UK. Between 2004 and 2011, approximately 113,000 women aged 16 and over were recruited from across the UK, with the aim of following participants for 40 years. The primary scientific focus is understanding the causes and outcomes of breast cancer, with a broader remit covering other cancers and conditions affecting women's health. Participants were recruited through supporters of Breakthrough Breast Cancer (now Breast Cancer Now), responses to publicity, and invitations of friends and family members from existing participants. Approximately 30% of participants are first-degree relatives of other cohort members; the cohort includes over 15,000 family units. Geographically, participants are predominantly from England (89%), with Scotland (7%), Wales (4%), and Northern Ireland (1%) also represented. The cohort is overrepresented by women of higher socioeconomic status and White ethnicity relative to the UK population. All participants completed a 44-page baseline questionnaire at recruitment covering demographics, reproductive and menstrual history, hormone use, lifestyle, medical history, anthropometrics, and family cancer history. Follow-up questionnaires were administered approximately 2, 6, 9, 13, and 17 years post recruitment. Participants were recruited between 2004 and 2009. The first follow-up took place between 2007 and 2012, the second between 2010 and 2015, the third between 2014 and 2019, the fourth between 2017 and 2023, and the fifth in 2025. Response rates were very high in the first and second follow-up which was on-paper (99%, 97%), and the third and fourth follow-up which were a combination of on-paper and online (96%, 83%) and the fifth follow-up which was online only (59.4%). More than 500,000 questionnaires have been completed in total. Blood samples were provided by approximately 92% of participants at baseline (27ml) and a subset of 8938 participants approximately 6 years after enrolment (18 ml). Each blood sample was processed into plasma and buffy coat aliquots; over 3.2 million 0.5 ml barcoded straws are held in a biorepository in LN2 tanks (-180°C). Urine samples were collected from a subset of 847 pre- and post-menopausal women not using hormonal contraception. Whole section H&E slides from diagnostic paraffin-embedded blocks, tumour tissue microarrays (TMAs) and loose tissue cores are available for participants who subsequently developed breast or ovarian cancer. Diagnostic biopsy H&E's from participants with benign breast disease are also being collected. Screening mammograms have been collected for a nested case-control sub-study, with ongoing expansion to serial mammograms from approximately 50,000 women of screening age in the cohort. More than 12,000 participants wore wrist-worn triaxial accelerometers continuously for 8 days at 100 Hz. Genotyping array data are available for nested case-control studies of breast and ovarian cancer, with polygenic risk scores derived for cases and controls. Whole exome sequencing of DNA samples from all eligible participants is underway. Hormone and biomarker assay data - including oestradiol, testosterone, progesterone, prolactin, SHBG, IGF-1, leptin, and AMH - are available for subsets of participants. Health outcomes are self-reported by participants, and cancers are confirmed through data linkages to national cancer registries and deaths via national death registries in England and Scotland.  Other health outcomes are available from NHS electronic medical records in England (hospital in-patient and out-patient). NHS flagging through the National Health Service Central Registers has tracked vital status from 2003, fully for England and partly for Scotland. Individually identifiable health record data have been supplied to the ICR by NHS England and National Records of Scotland under ethics committee and Health Research Authority approvals. Key scientific contributions include identification of over 300 common genetic variants associated with breast cancer risk, characterisation of hormonal and reproductive risk factors, and evidence linking physical inactivity and adolescent smoking to increased risk. More than 190 peer-reviewed publications have used Generations Study data, catalogued in a PubMed collection https://pubmed.ncbi.nlm.nih.gov/collections/64898594/. The study is jointly governed by Breast Cancer Now and The Institute of Cancer Research as legal custodians, with the ICR acting as data controller. Research applications are reviewed by the study Principal Investigators and an Access Committee on scientific merit, feasibility, consistency with participant consent, and governance requirements. Survey data, health outcomes, genomic and biomarker data, imaging-derived data, registry-linked data, and biological samples are available to researchers for not-for-profit purposes following a Data Access Agreement.",
+      "citation": "",
+      "creator": {
+        "@type": "Organization",
+        "legalName": "We thank Breast Cancer Now and The Institute of Cancer Research for support and funding of the Generations Study, and the study participants, study staff, and the doctors, nurses, and other health-care providers and health information sources who have contributed to the study. The ICR acknowledges NHS funding to the Royal Marsden/ICR NIHR Biomedical Research Centre.",
+        "name": "We thank Breast Cancer Now and The Institute of Cancer Research for support and funding of the Generations Study, and the study participants, study staff, and the doctors, nurses, and other health-care providers and health information sources who have contributed to the study. The ICR acknowledges NHS funding to the Royal Marsden/ICR NIHR Biomedical Research Centre.",
+        "email": "Generations.Scientific@icr.ac.uk",
+        "description": "",
+        "identifier": "",
+        "sameAs": null
+      },
+      "isAccessibleForFree": false,
+      "distribution": {
+        "@type": "DataDownload",
+        "name": "Data are currently available to approved researchers via secure data transfer following execution of a Data Sharing Agreement. Approved extracts are delivered as CSV and JSON formats. To initiate a request, contact Generations.Scientific@icr.ac.uk with a description of the proposed research and the data or samples required. Requests are reviewed by the study Principal Investigators and Access Committee on scientific merit, feasibility, consistency with participant consent, and data governance requirements.",
+        "contentUrl": "https://somehwere.com",
+        "encodingFormat": "Unknown"
+      },
+      "keywords": "UK;,;Female;,;Prospective cohort;,;Women's health;,;Breast cancer;,;Breast cancer risk;,;Epidemiology;,;Questionnaire;,;Blood sample;,;Biobank;,;Cancer;,;Pathology;,;Mammogram;,;Imaging;,;Accelerometer;,;Physical activity;,;Genotyping;,;Polygenic risk score;,;Hormone;,;Reproductive health;,;Data linkage",
+      "license": "https://thegenerationsstudy.co.uk/forresearchers",
+      "temporalCoverage": null,
+      "funder": null,
+      "isPartOf": null,
+      "hasPart": null,
+      "measurementTechnique": "",
+      "sameAs": null,
+      "spatialCoverage": "",
+      "variableMeasured": ""
+    },
+    "bodySha256": "22dccd510e77c5c1bd231df4b55561f9aa6dc455f1e65ff5cf1ff56af81605ba",
+    "rawSha256": "22dccd510e77c5c1bd231df4b55561f9aa6dc455f1e65ff5cf1ff56af81605ba",
+    "bytes": 7412,
+    "attempts": 1
+  }
+}
