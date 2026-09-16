@@ -111,11 +111,16 @@ export async function action({ request }: { request: Request }) {
   const paramErrors: FieldError[] = [];
   if (!inputSchema) paramErrors.push(fieldError("Invalid value", "input_schema", "query"));
   if (!inputVersion) paramErrors.push(fieldError("Invalid value", "input_version", "query"));
-  // Reject missing / non-object / array metadata; an empty object `{}` is allowed
-  // through to AJV, which reports the missing required fields.
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+  const metadataIsObject =
+    typeof metadata === "object" && metadata !== null && !Array.isArray(metadata);
+  if (!metadataIsObject)
     paramErrors.push(fieldError("Invalid value", "metadata", "body", metadata));
-  }
+  if (
+    metadata === undefined ||
+    metadata === null ||
+    (Array.isArray(metadata) ? metadata.length === 0 : String(metadata).length === 0)
+  )
+    paramErrors.push(fieldError("Invalid value", "metadata", "body", metadata));
   if (paramErrors.length > 0) {
     publishMessage("POST", "validate", "Failed to validate metadata").catch(console.error);
     return invalidParams("Validation has failed", paramErrors);
