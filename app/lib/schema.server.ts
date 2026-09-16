@@ -341,7 +341,8 @@ export async function validateMetadataSection(
   const validator = ajv.getSchema(ref);
   if (!validator) return [{ message: `Schema ${modelName}:${modelVersion}#${subsection} is not known` }];
   const section = (metadata as Record<string, unknown>)[subsection];
-  if (!section) return [{ message: `Subsection ${subsection} not found` }];
+  if (!section)
+    return [{ message: `Subsection ${subsection} not found in provided metadata.` }];
   const ok = validator(section);
   return ok ? [] : (validator.errors ?? []);
 }

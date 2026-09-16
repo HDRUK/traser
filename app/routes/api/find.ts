@@ -50,7 +50,9 @@ export async function action({ request }: { request: Request }) {
   // any other type.
   const contentType = request.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
-    errors.push(fieldError("Invalid content type. Expected JSON.", "", "body"));
+    errors.push(
+      fieldError("Invalid content type. Expected JSON.", "", "body", {}),
+    );
   }
 
   // with_errors is optional and defaults to 0, but when present must be 0 or 1.
