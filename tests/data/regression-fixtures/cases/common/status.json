@@ -1,0 +1,21 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/status",
+    "query": null,
+    "envelope": null,
+    "bodyFrom": null,
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "ok"
+    },
+    "bodySha256": "762c2749580c286a68d4528d912a4afa02a17dc2025c6c65b17b0dfab8291408",
+    "rawSha256": "762c2749580c286a68d4528d912a4afa02a17dc2025c6c65b17b0dfab8291408",
+    "bytes": 16,
+    "attempts": 1
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/find",
+    "query": null,
+    "envelope": "inline",
+    "bodyFrom": null,
+    "inlineBody": "not json"
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "errors": [
+        {
+          "type": "field",
+          "value": {},
+          "msg": "Invalid content type. Expected JSON.",
+          "path": "",
+          "location": "body"
+        }
+      ]
+    },
+    "bodySha256": "8daa18ecb13d0bf32bac380c495291fa268c8acf740341d760318d881b1810e0",
+    "rawSha256": "8daa18ecb13d0bf32bac380c495291fa268c8acf740341d760318d881b1810e0",
+    "bytes": 113,
+    "attempts": 1
+  }
+}

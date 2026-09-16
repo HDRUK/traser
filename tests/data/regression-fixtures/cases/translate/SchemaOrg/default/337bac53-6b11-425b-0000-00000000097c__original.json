@@ -1,0 +1,25 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "SchemaOrg",
+      "output_version": "default"
+    },
+    "envelope": "metadata",
+    "bodyFrom": "inputs/337bac53-6b11-425b-0000-00000000097c__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Failed to execute translation between HDRUK:2.2.1 and HDRUK:2.2.0",
+      "details": {}
+    },
+    "bodySha256": "f58d86a95cf12f924cea1cb51f05ad27db7fb537a4f3bac3634defbe019b550e",
+    "rawSha256": "f58d86a95cf12f924cea1cb51f05ad27db7fb537a4f3bac3634defbe019b550e",
+    "bytes": 92,
+    "attempts": 1
+  }
+}

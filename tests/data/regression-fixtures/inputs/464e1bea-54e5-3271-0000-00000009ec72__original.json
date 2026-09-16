@@ -1,0 +1,159 @@
+{
+  "issued": "2026-09-03T13:48:11Z",
+  "summary": {
+    "title": "London Primary Care Diagnostic Order (PCDO)",
+    "abstract": "Records ordered diagnostic tests and investigations with clinical context, priority, and follow up links. Supports research on early detection, monitoring quality, and diagnostic access.",
+    "keywords": [
+      "Primary Care Diagnostic Order",
+      "GP Diagnostic Order",
+      "Diagnostic Order",
+      "Primary Care",
+      "GP",
+      "Discover-NOW",
+      "Integrated Care",
+      "Pathway",
+      "Real World data",
+      "Linked longitudinal",
+      "HDRUK",
+      "London SDE",
+      "London Secure Data Environment",
+      "LSDE"
+    ],
+    "contactPoint": "research.onelondon@nhs.net",
+    "dataCustodian": {
+      "logo": "https://api-london.metadata.works/branding/assets/SDE-LONDON-HIGHRES.png",
+      "name": "London Secure Data Environment (SDE)",
+      "identifier": "28",
+      "description": "The London Secure Data Environment (SDE) provides secure access to data and a range of services to accelerate research and innovation leading to improved patient care. It is part of NHS England's Data for Research and Development Programme and is a member of the NHS Research Secure Data Environment Network.",
+      "contactPoint": [
+        "research.onelondon@nhs.net"
+      ]
+    },
+    "populationSize": 2221721
+  },
+  "version": "1.0.0",
+  "coverage": {
+    "pathway": "This dataset contains all Primary Care Diagnostic Oders for London patients. Each patient will be identified using an unique patient key, this can be used to link to other London SDE datasets that will help track the patient pathway.",
+    "spatial": "United Kingdom,England,London",
+    "followUp": "> 10 Years",
+    "materialType": [
+      "None/not available"
+    ],
+    "typicalAgeRangeMax": 150,
+    "typicalAgeRangeMin": 0
+  },
+  "modified": "2026-09-03T13:55:37Z",
+  "revisions": [
+    {
+      "url": "https://api-london.metadata.works/browser/dataset?id=650354",
+      "version": "1.0.0"
+    }
+  ],
+  "identifier": "464e1bea-54e5-3271-0000-00000009ec72",
+  "provenance": {
+    "origin": {
+      "source": [
+        "EPR"
+      ],
+      "purpose": [
+        "Administrative",
+        "Care",
+        "Other"
+      ],
+      "datasetType": [
+        "Health and disease",
+        "Treatments/Interventions"
+      ],
+      "imageContrast": "No",
+      "datasetSubType": [
+        "Others",
+        "Others"
+      ],
+      "collectionSource": [
+        "Primary care - Clinic"
+      ]
+    },
+    "temporal": {
+      "timeLag": "1-2 weeks",
+      "startDate": "2000-04-01",
+      "publishingFrequency": "Monthly",
+      "distributionReleaseDate": "2026-09-01"
+    }
+  },
+  "observations": [
+    {
+      "observedNode": "Persons",
+      "measuredValue": 2221721,
+      "observationDate": "2026-09-02",
+      "measuredProperty": "Count",
+      "disambiguatingDescription": "Distinct Patient Count"
+    },
+    {
+      "observedNode": "Events",
+      "measuredValue": 27167353,
+      "observationDate": "2026-09-02",
+      "measuredProperty": "Count"
+    }
+  ],
+  "accessibility": {
+    "usage": {
+      "resourceCreator": [
+        "London SDE"
+      ],
+      "dataUseLimitation": [
+        "No restriction"
+      ],
+      "dataUseRequirements": [
+        "Collaboration required",
+        "Institution-specific restrictions",
+        "Project-specific restrictions",
+        "Time limit on use",
+        "User-specific restriction"
+      ]
+    },
+    "access": {
+      "accessRights": "London Secure Data Environment Enquiry Form",
+      "accessService": "Researchers will have access to a secure  workspace via an airlocked Azure Virtual Desktop with a specific username and password, MFA (multi-factor authentication) and OAUTH (open authentication). Researchers will get specific  access to a relevant subset of the datasets that are  present in the SDE catalogue for their project and will be able to carry out their research within the safe haven. There are restrictions applied which prevent the researchers from taking data out of the safe haven. Once the research is completed the London SDE admin team will need to be contacted for any requests to egress summary analysis out of the safe haven which will not breach secure data environment disclosure control standards.",
+      "dataProcessor": "The data processor for the London Secure Data Environment (SDE) is primarily managed by OneLondon, a partnership of London's five integrated care systems (ICSs) and three health innovation networks. NHS North East London ICB hosts OneLondon and operates the London Data Service (LDS) as a data processor on behalf of those organisations, whilst Imperial College Healthcare NHS Trust hosts the London Analytics Platform (LAP), with Imperial NHS Trust acting as the data processor for data processing activities undertaken within the platform.",
+      "dataController": "Participating London health care organisations act as Joint Data Controllers within the London SDE. These organisations include for example GP Practices and Acute Providers from across London.",
+      "deliveryLeadTime": "1-2 months",
+      "accessRequestCost": "Access costs will be determined on a project-by-project basis and will depend on the specific data requirements, platform setup, and any additional services needed to deliver the project successfully.",
+      "accessServiceCategory": "TRE/SDE"
+    },
+    "formatAndStandards": {
+      "format": [
+        "Text"
+      ],
+      "language": [
+        "en"
+      ],
+      "conformsTo": [
+        "NHS DATA DICTIONARY",
+        "LOCAL"
+      ],
+      "vocabularyEncodingScheme": [
+        "NHS NATIONAL CODES",
+        "LOCAL",
+        "SNOMED CT"
+      ]
+    }
+  },
+  "documentation": {
+    "inPipeline": "Available",
+    "description": "Primary Care Diagnostic Orders represent the structured record of tests, investigations, and diagnostic procedures ordered by a GP or primary care clinician. They show what diagnostic activity was requested, why, when, and with what clinical context. This dataset is essential for understanding diagnostic pathways, early detection, and monitoring quality in primary care.\n\nPrimary Care Diagnostic Orders provide a crucial view of how diagnostic activity is initiated, which is essential for improving early detection, monitoring, safety, and equity in primary care.\n\nThe data set includes:\n\n1. Diagnostic tests and investigations requested\n- Laboratory tests (HbA1c, renal function, lipids, thyroid, full blood count)\n- Imaging (X ray, ultrasound, CT, MRI)\n- Cardiac diagnostics (ECG, ambulatory BP, Holter monitoring)\n- Respiratory diagnostics (spirometry, FeNO)\n- Screening tests (e.g., cervical cytology)\n- Community Diagnostic Centre requests (Supported by national diagnostic activity categories )\n\n2. Clinical context\n- Reason for request (coded or free text)\n- Linked diagnosis or problem\n- Relevant observations (symptoms, vital signs, previous results)\n- Priority (routine, urgent, 2WW cancer pathway)\n\n3. Metadata including Request date/time, Ordering clinician + SDS role, Practice identifiers, Status (requested, completed, cancelled), Whether generated via template or protocol.\n\n4. Workflow and follow up\n- Expected review date\n- Flags for monitoring (e.g., repeat blood tests for chronic disease)\n\nWhat Diagnostic Orders exclude:\n- They do not confirm that the test/procedure was completed\n- They do not include hospital initiated diagnostics unless manually entered\n- They do not include medication orders or prescriptions\n- They do not include dispensing information\n\nResearchers would find the below most important or relevant when using Primary Care Diagnostic Orders:\n1. Diagnostic pathways and early detection\nDiagnostic orders reveal:\n- How quickly tests are ordered after symptoms appear\n- Delays in diagnostic pathways\n- Variation in investigation patterns between clinicians or practices\n\n2. Monitoring of long term conditions\nOrders show:\n- Frequency of monitoring (e.g., HbA1c for diabetes)\n- Missed or delayed monitoring\n- Variation in adherence to clinical guidelines\n\n3. Safety and quality of care\nResearchers can identify:\n- High risk patients missing essential tests\n- Incomplete follow up after abnormal results\n- Over  or under use of investigations\n\n4. Inequalities in access to diagnostics\nLinked demographics allow analysis of:\n- Variation in test ordering by ethnicity, age, deprivation\n- Differences in access to imaging or specialist diagnostics\n- Disparities in chronic disease monitoring\n\n5. Workforce and workflow optimisation\n-Diagnostic orders help researchers understand:\n- Which clinicians order which tests\n- How multidisciplinary teams influence diagnostic activity\n- Bottlenecks in test ordering and follow up\n\n6. Linking across datasets\nDiagnostic orders can be linked to Observations (results), Appointments (encounter context), Medication Orders (treatment decisions), Hospital datasets (SUS).\n\nThis enables full pathway research from symptom → diagnostic order → result → treatment → outcome.\n\nUsing Diagnostic Orders, researchers can:\n- Improve early diagnosis by analysing delays and variation in test ordering\n- Strengthen chronic disease management through monitoring patterns\n- Reduce inequalities by identifying gaps in access to diagnostics\n- Enhance patient safety by detecting missed follow ups\n- Support personalised care with detailed diagnostic histories",
+    "associatedMedia": [
+      "https://digital.nhs.uk/data-and-information/research-powered-by-data/find-health-data-for-your-research/london-secure-data-environment",
+      "https://onelondon.online/information-for-research-teams/"
+    ]
+  },
+  "enrichmentAndLinkage": {
+    "investigations": [
+      "https://onelondon.online/information-for-research-teams/"
+    ],
+    "linkableDatasets": [
+      {
+        "title": "Each patient will be identified by an unique patient key that can be used to link to all other datasets available within London SDE Platform"
+      }
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/list/schemas",
+    "query": null,
+    "envelope": null,
+    "bodyFrom": null,
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "HDRUK": [
+        "2.0.2",
+        "2.1.0",
+        "2.1.2",
+        "2.1.3",
+        "2.2.0",
+        "2.2.1",
+        "3.0.0",
+        "4.0.0"
+      ],
+      "GWDM": [
+        "1.0",
+        "1.1",
+        "1.2",
+        "2.0",
+        "2.1"
+      ],
+      "CRUK": [
+        "1.0.0"
+      ],
+      "SchemaOrg": [
+        "BioSchema",
+        "default",
+        "GoogleRecommended"
+      ]
+    },
+    "bodySha256": "dd8335f39f64618dfc9ea8a2d99079b3c6a5dc1be701a2df20ff487f4fd2a7e3",
+    "rawSha256": "dd8335f39f64618dfc9ea8a2d99079b3c6a5dc1be701a2df20ff487f4fd2a7e3",
+    "bytes": 187,
+    "attempts": 1
+  }
+}

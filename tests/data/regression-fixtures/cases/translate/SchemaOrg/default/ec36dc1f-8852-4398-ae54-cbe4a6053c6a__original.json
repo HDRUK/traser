@@ -1,0 +1,25 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "SchemaOrg",
+      "output_version": "default"
+    },
+    "envelope": "metadata",
+    "bodyFrom": "inputs/ec36dc1f-8852-4398-ae54-cbe4a6053c6a__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Failed to execute translation between GWDM:1.2 and GWDM:1.1",
+      "details": {}
+    },
+    "bodySha256": "ba2065e2d3e8afbf0c854bb08c30a5cd70bde438dcac4b01705f95dcd0d65db8",
+    "rawSha256": "ba2065e2d3e8afbf0c854bb08c30a5cd70bde438dcac4b01705f95dcd0d65db8",
+    "bytes": 86,
+    "attempts": 1
+  }
+}

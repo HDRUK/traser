@@ -1,0 +1,35 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "GWDM",
+      "output_version": "2.1"
+    },
+    "envelope": "metadata",
+    "bodyFrom": "inputs/ec36dc1f-8852-4398-ae54-cbe4a6053c6a__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Output metadata validation failed",
+      "details": [
+        {
+          "instancePath": "/required/gatewayId",
+          "schemaPath": "#/properties/gatewayId/minLength",
+          "keyword": "minLength",
+          "params": {
+            "limit": 1
+          },
+          "message": "must NOT have fewer than 1 characters"
+        }
+      ]
+    },
+    "bodySha256": "45cd4d94d82d12ec4a76dab25cfb10437725c5e9e634b08a102741188d9c167b",
+    "rawSha256": "45cd4d94d82d12ec4a76dab25cfb10437725c5e9e634b08a102741188d9c167b",
+    "bytes": 239,
+    "attempts": 1
+  }
+}

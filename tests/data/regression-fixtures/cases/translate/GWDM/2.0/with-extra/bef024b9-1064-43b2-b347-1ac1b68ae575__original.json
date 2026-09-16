@@ -1,0 +1,168 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "GWDM",
+      "output_version": "2.0"
+    },
+    "envelope": "metadata+extra",
+    "bodyFrom": "inputs/bef024b9-1064-43b2-b347-1ac1b68ae575__original.json",
+    "inlineBody": {
+      "extra": {
+        "version": "0.0.1",
+        "publisher": {
+          "contactPoint": "contact@example.com"
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "required": {
+        "gatewayId": "bef024b9-1064-43b2-b347-1ac1b68ae575",
+        "gatewayPid": "bef024b9-1064-43b2-b347-1ac1b68ae575",
+        "issued": "2026-09-14T15:03:54.000Z",
+        "modified": "2026-09-14T15:03:54.000Z",
+        "version": "1.0.0",
+        "revisions": [
+          {
+            "version": "1.0.0",
+            "url": "https://healthdatagateway.org/dataset/1905?version=1.0.0"
+          }
+        ]
+      },
+      "summary": {
+        "abstract": "This is a curated version of the Medicines dispensed in Primary Care NHS Business Services Authority data product from NHS-E, linked to English patients from CPRD Aurum.",
+        "contactPoint": "enquiries@cprd.com",
+        "keywords": "CPRD Aurum;,;Primary care;,;CPRD Gold",
+        "controlledKeywords": null,
+        "datasetType": "Health and disease",
+        "datasetSubType": null,
+        "populationSize": 39846807,
+        "description": "This is a curated version of the Medicines dispensed in Primary Care NHS Business Services Authority data product from NHS-E, linked to English patients from CPRD Aurum.",
+        "doiName": "10.48329/emg4-tj10",
+        "shortTitle": "CPRD Aurum BSA Dispensing Data",
+        "title": "CPRD Aurum BSA Dispensing Data",
+        "datasetAliases": null,
+        "publisher": {
+          "name": "CPRD",
+          "gatewayId": "35",
+          "rorId": null
+        },
+        "inPipeline": "Available"
+      },
+      "coverage": {
+        "pathway": "Primary care",
+        "spatial": "England",
+        "followUp": "1 - 10 Years",
+        "typicalAgeRange": "0-115",
+        "datasetCompleteness": null
+      },
+      "provenance": {
+        "origin": {
+          "purpose": "Care",
+          "source": "EPR",
+          "collectionSituation": "Primary care - Clinic",
+          "imageContrast": "Not stated"
+        },
+        "temporal": {
+          "endDate": "2025-05-01T00:00:00.000Z",
+          "startDate": "2018-03-31T23:00:00.000Z",
+          "timeLag": "More than 6 months",
+          "accrualPeriodicity": "Quarterly",
+          "distributionReleaseDate": "2026-08-30T23:00:00.000Z"
+        }
+      },
+      "accessibility": {
+        "access": {
+          "deliveryLeadTime": "Variable",
+          "jurisdiction": "GB-GBN",
+          "dataController": "Clinical Practice Research Datalink",
+          "dataProcessor": "CPRD",
+          "accessRights": "HTTPS://CPRD.COM/DATA-ACCESS",
+          "accessService": "Access to CPRD data, including UK Primary Care Data, and linked data such as Hospital Episode Statistics, is subject to protocol approval via CPRD&amp;rsquo;s Research Data Governance (RDG) Process. Independent scientific and patient advice is provided by Expert Review Committees (ERCs) and the Central Advisory Committee (CAC): https://www.cprd.com/research-applications",
+          "accessRequestCost": "https://www.cprd.com/pricing",
+          "accessServiceCategory": "Varies based on project"
+        },
+        "usage": {
+          "dataUseLimitation": "General research use;,;No linkage;,;Research-specific restrictions;,;Research use only;,;No general methods research",
+          "dataUseRequirement": "Geographical restrictions;,;Institution-specific restrictions;,;Project-specific restrictions;,;Time limit on use;,;User-specific restriction",
+          "resourceCreator": {
+            "name": "CPRD",
+            "gatewayId": null,
+            "rorId": null
+          }
+        },
+        "formatAndStandards": {
+          "vocabularyEncodingSchemes": "SNOMED CT",
+          "conformsTo": "LOCAL",
+          "languages": "en",
+          "formats": "Tab delimited text"
+        }
+      },
+      "linkage": {
+        "isGeneratedUsing": null,
+        "associatedMedia": "https://www.cprd.com/linked-data",
+        "dataUses": null,
+        "isReferenceIn": null,
+        "tools": null,
+        "datasetLinkage": {
+          "isDerivedFrom": null,
+          "isPartOf": null,
+          "isMemberOf": null,
+          "linkedDatasets": null
+        },
+        "investigations": null,
+        "syntheticDataWebLink": null,
+        "publicationAboutDataset": [],
+        "publicationUsingDataset": []
+      },
+      "observations": [
+        {
+          "observedNode": "Persons",
+          "measuredValue": 54070003,
+          "observationDate": "2026-08-01T01:01:15.000Z",
+          "measuredProperty": "Count",
+          "disambiguatingDescription": "Total number of patients eligible for this linkage"
+        },
+        {
+          "observedNode": "Persons",
+          "measuredValue": 39846807,
+          "observationDate": "2026-08-31T00:00:00.000Z",
+          "measuredProperty": "Count",
+          "disambiguatingDescription": "Total number of available patients with at least one dispensing record"
+        },
+        {
+          "observedNode": "Persons",
+          "measuredValue": 1852,
+          "observationDate": "2026-08-31T00:00:00.000Z",
+          "measuredProperty": "Count",
+          "disambiguatingDescription": "Total number of included CPRD Aurum practices"
+        }
+      ],
+      "structuralMetadata": [],
+      "tissuesSampleCollection": [
+        {
+          "materialType": "None/not available",
+          "id": null,
+          "dataCategories": null,
+          "accessConditions": null,
+          "collectionType": null,
+          "disease": null,
+          "storageTemperature": null,
+          "sampleAgeRange": null,
+          "tissueSampleMetadata": null
+        }
+      ],
+      "demographicFrequency": null,
+      "omics": null
+    },
+    "bodySha256": "85960007975b9a4a6735c692a0ab2edea834a1756b9482317af5728a404183ed",
+    "rawSha256": "85960007975b9a4a6735c692a0ab2edea834a1756b9482317af5728a404183ed",
+    "bytes": 4079,
+    "attempts": 1
+  }
+}

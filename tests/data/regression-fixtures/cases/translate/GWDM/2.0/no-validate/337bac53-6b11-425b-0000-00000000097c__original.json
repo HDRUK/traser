@@ -1,0 +1,117 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "GWDM",
+      "output_version": "2.0",
+      "validate_input": "0",
+      "validate_output": "0"
+    },
+    "envelope": "metadata",
+    "bodyFrom": "inputs/337bac53-6b11-425b-0000-00000000097c__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "required": {
+        "gatewayId": "337bac53-6b11-425b-0000-00000000097c",
+        "gatewayPid": "337bac53-6b11-425b-0000-00000000097c",
+        "issued": "2026-03-30T08:35:59.155000Z",
+        "modified": "2026-04-16T12:47:56.635000Z",
+        "version": "8.0.1",
+        "revisions": [
+          {
+            "version": "8.0.1",
+            "url": "https://rds-api.metadata.works/browser/dataset?id=10648"
+          }
+        ]
+      },
+      "summary": {
+        "abstract": "The primary aim of the Scottish Immunisation & Recall System (SIRS) is to ensure that children under the age of six years receive the appropriate immunisation according to the UK childhood immunisation schedule.",
+        "contactPoint": "phs.edris@phs.scot",
+        "keywords": "Immunisation;,;HDRUK",
+        "datasetType": "Health and disease",
+        "datasetSubType": "Not applicable",
+        "populationSize": 53000,
+        "description": "The Scottish Immunisation &amp; Recall System began in 1987 and has been used by all NHS boards since 2002 when it incorporated the GIRS (Grampian Immunisation &amp; Recall System). The primary aim of the Scottish Immunisation &amp; Recall System (SIRS) is to ensure that children under the age of six years receive the appropriate immunisation according to the UK childhood immunisation schedule. SIRS calls children when a scheduled vaccination is due and allows recording of immunisation data. The dataset also includes data on HPV (Human papillomavirus) and the teenage booster immunisations and is used conjunction with the data on the Child Health Surveillance Programme School system (CHSP School) to monitor the uptake of teenage immunisations routinely given in schools.",
+        "shortTitle": "Scottish Immunisation Recall System (SIRS)",
+        "title": "Scottish Immunisation Recall System (SIRS)",
+        "publisher": {
+          "name": "Public Health Scotland",
+          "gatewayId": "https://ror.org/023wh8b50"
+        },
+        "inPipeline": "Available"
+      },
+      "coverage": {
+        "spatial": "United Kingdom,Scotland",
+        "followUp": "Unknown",
+        "typicalAgeRange": "0-14"
+      },
+      "provenance": {
+        "origin": {
+          "purpose": "Administrative",
+          "imageContrast": "Not stated"
+        },
+        "temporal": {
+          "startDate": "2002-01-01",
+          "timeLag": "Other",
+          "accrualPeriodicity": "Continuous"
+        }
+      },
+      "accessibility": {
+        "access": {
+          "deliveryLeadTime": "Variable",
+          "dataController": "Public Health Scotland",
+          "dataProcessor": "National Services Scotland",
+          "accessRights": "https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/services-we-offer/",
+          "accessService": "Scottish National Safe Haven / Trusted Research Environment: https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/national-safe-haven-nsh/",
+          "accessRequestCost": "https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/cost-of-services/",
+          "accessServiceCategory": "TRE/SDE"
+        },
+        "usage": {
+          "dataUseLimitation": "General research use",
+          "dataUseRequirement": "Institution-specific restrictions;,;Not for profit use",
+          "resourceCreator": {
+            "name": "National Services Scotland"
+          }
+        },
+        "formatAndStandards": {
+          "vocabularyEncodingSchemes": "OTHER",
+          "conformsTo": "OTHER",
+          "languages": "en",
+          "formats": "text;,;csv"
+        }
+      },
+      "linkage": {
+        "isGeneratedUsing": null,
+        "associatedMedia": "https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/overview,https://publichealthscotland.scot/resources-and-tools/health-intelligence-and-data-management/national-data-catalogue/national-datasets/search-the-datasets/scottish-immunisation-recall-system-sirs/",
+        "dataUses": null,
+        "isReferenceIn": null,
+        "datasetLinkage": null
+      },
+      "observations": [
+        {
+          "observedNode": "Persons",
+          "measuredValue": 53000,
+          "observationDate": "2021-02-12",
+          "measuredProperty": "Count",
+          "disambiguatingDescription": "Approximate number of children added per year"
+        }
+      ],
+      "tissuesSampleCollection": [
+        {
+          "materialType": "None/not available"
+        }
+      ],
+      "demographicFrequency": null,
+      "omics": null
+    },
+    "bodySha256": "1e6317119042238a055fb8f98ac158ca4fe25e43768ac912efe43da7ce73242e",
+    "rawSha256": "1e6317119042238a055fb8f98ac158ca4fe25e43768ac912efe43da7ce73242e",
+    "bytes": 3833,
+    "attempts": 1
+  }
+}

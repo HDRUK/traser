@@ -1,0 +1,35 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/list/translations",
+    "query": null,
+    "envelope": null,
+    "bodyFrom": null,
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Translation has failed.",
+      "errors": [
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "schema",
+          "location": "query"
+        },
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "version",
+          "location": "query"
+        }
+      ]
+    },
+    "bodySha256": "98d02f86856e4513c0036cad135d45634cad04262f44c6e175afa4e6c93002ba",
+    "rawSha256": "98d02f86856e4513c0036cad135d45634cad04262f44c6e175afa4e6c93002ba",
+    "bytes": 197,
+    "attempts": 1
+  }
+}
