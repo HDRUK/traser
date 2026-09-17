@@ -86,7 +86,6 @@ function parseArgs(argv) {
   for (const { pid, reason } of opts.exclusions) {
     if (!reason) fail(`--exclude-pid ${pid}= needs a non-empty reason`);
   }
-  // --out is fed straight into a recursive delete below.
   const resolved = path.resolve(opts.out);
   if (resolved === path.parse(resolved).root || resolved === process.env.HOME) {
     fail(`--out ${resolved} is too broad to wipe safely`);
@@ -104,9 +103,6 @@ function limiter(max) {
     if (active >= max || queue.length === 0) return;
     active++;
     const { fn, resolve, reject } = queue.shift();
-    // Promise.resolve().then(fn) rather than fn(): a synchronous throw inside
-    // fn would otherwise escape before .finally() attaches, leaving `active`
-    // permanently incremented and the queue deadlocked.
     Promise.resolve().then(fn).then(resolve, reject).finally(() => {
       active--;
       next();
@@ -145,11 +141,6 @@ async function request(url, init, timeoutMs, attempt = 1) {
   }
 }
 
-// `body` is the parsed JSON so fixtures stay readable and diffable, and
-// `bodySha256` is taken over the stored body re-serialised the same way — so
-// it is recomputable from the committed file and does detect tampering.
-// `rawSha256` is over production's exact bytes: not recomputable from this
-// file, useful only for comparing against a fresh re-harvest.
 async function record(baseUrl, call, timeoutMs) {
   const qs = call.query ? `?${new URLSearchParams(call.query)}` : "";
   const url = `${baseUrl}${call.routePath}${qs}`;
@@ -190,9 +181,6 @@ async function record(baseUrl, call, timeoutMs) {
   };
 }
 
-// Mirrors dedupeByPid() in app/lib/refresh.server.ts: the Gateway reuses one
-// pid across many ids (revisions of the same dataset), so keep the highest id
-// per pid as a proxy for the most recent revision.
 function dedupeByPid(records) {
   const byPid = new Map();
   for (const rec of records) {
@@ -232,11 +220,6 @@ async function fetchPool(gatewayUrl, poolSize, wantedPid, log) {
   return dedupeByPid(rows);
 }
 
-// Two candidate inputs per dataset. `canonical` is what extractMetadata()
-// reads for an ACTIVE record (GWDM, uniformly 2.0 across prod today);
-// `original` is the user-supplied form, which is where the input-schema
-// variety actually lives — prod holds HDRUK of several shapes plus
-// SchemaOrg-shaped records that match no schema at all.
 function candidatesFrom(row) {
   const container = row?.latest_metadata?.metadata;
   if (!container) return [];
@@ -246,20 +229,10 @@ function candidatesFrom(row) {
   return out;
 }
 
-// Cheap local stand-in for schema detection: the sorted top-level key set.
-// Used only to spread the sample across input shapes before any TRASER call is
-// made, so stratification costs no extra production requests. It is NOT
-// schema-version aware — two HDRUK versions sharing a key set land in one
-// bucket.
 function shapeKey(metadata) {
   return Object.keys(metadata).sort().join(",");
 }
 
-// Round-robin across shape buckets, alternating the rarest bucket with the most
-// common one, so that even a handful of datasets spans both the dominant
-// production shape and the unusual ones. Ordering rarest-first alone starves
-// the common shapes out of a small sample; ordering largest-first alone loses
-// the odd shapes that actually break translation.
 function stratify(candidates, limit) {
   const buckets = new Map();
   for (const candidate of candidates) {
@@ -287,14 +260,6 @@ function stratify(candidates, limit) {
   return { picked, shapeCount: buckets.size };
 }
 
-// Output targets chosen against the live translation graph so the set spans
-// direct hops, working multi-hops, and the known-failing paths:
-//   GWDM 2.0                    direct from the canonical form, one hop from HDRUK
-//   GWDM 2.1                    multi-hop from HDRUK (via GWDM 2.0)
-//   SchemaOrg GoogleRecommended multi-hop from HDRUK, one hop from GWDM 2.0
-//   SchemaOrg default           routes via the GWDM 1.2 -> 1.1 edge, which 500s on prod
-//   HDRUK 2.1.2                 the deep downgrade, which also 500s on prod
-//   CRUK 1.0.0                  multi-hop; prod rejects every input on output validation
 const TRANSLATE_TARGETS = [
   { outputSchema: "GWDM", outputVersion: "2.0" },
   { outputSchema: "GWDM", outputVersion: "2.1" },
@@ -304,21 +269,11 @@ const TRANSLATE_TARGETS = [
   { outputSchema: "CRUK", outputVersion: "1.0.0" },
 ];
 
-// Shape taken from tests/data/extra_gdmv1.json on the POC branch. Templates
-// bind `extra.*` alongside `input.*`, so a baseline that never sends `extra`
-// leaves the load-bearing half of that binding unevidenced.
 const EXTRA_FIXTURE = {
   version: "0.0.1",
   publisher: { contactPoint: "contact@example.com" },
 };
 
-// Dataset-independent calls, recorded once.
-//
-// The first seven are the happy-path list/get surface. The rest are deliberate
-// request-shape failures against express-validator, which is the highest
-// drift risk in the whole rewrite: the new code replaces express-validator
-// with hand-rolled shaping in app/lib/errors.server.ts, so the error envelope
-// is reproduced from scratch. Each one below names the validator it trips.
 const COMMON_CALLS = [
   { name: "status", outPath: "common/status.json", method: "GET", routePath: "/status" },
   { name: "list_schemas", outPath: "common/list-schemas.json", method: "GET", routePath: "/list/schemas" },
@@ -328,38 +283,21 @@ const COMMON_CALLS = [
   { name: "get_schema", outPath: "common/get-schema/GWDM/2.0.json", method: "GET", routePath: "/get/schema", query: { name: "GWDM", version: "2.0" } },
   { name: "get_form_hydration", outPath: "common/get-form-hydration/HDRUK/2.2.1.json", method: "GET", routePath: "/get/form_hydration", query: { name: "HDRUK", version: "2.2.1" } },
 
-  // get.js:166 query("name").notEmpty() — resolves, then leaks an internal error
   { name: "err__get_schema__unknown", outPath: "common/err/get-schema-unknown.json", method: "GET", routePath: "/get/schema", query: { name: "NOPE", version: "9.9" } },
-  // get.js:166 query("name").notEmpty()
   { name: "err__get_schema__missing_name", outPath: "common/err/get-schema-missing-name.json", method: "GET", routePath: "/get/schema" },
-  // get.js:258 query("name").notEmpty()
   { name: "err__get_form_hydration__missing_name", outPath: "common/err/get-form-hydration-missing-name.json", method: "GET", routePath: "/get/form_hydration" },
-  // get.js:55-58 query("output_schema"/"output_version"/"input_schema"/"input_version").notEmpty().bail()
   { name: "err__get_map__missing_params", outPath: "common/err/get-map-missing-params.json", method: "GET", routePath: "/get/map" },
-  // list.js:141 query("schema").notEmpty(), query("version").notEmpty()
   { name: "err__list_translations__missing_params", outPath: "common/err/list-translations-missing-params.json", method: "GET", routePath: "/list/translations" },
-  // translate.js:111 body("metadata").isObject().notEmpty().bail()
   { name: "err__translate__empty_body", outPath: "common/err/translate-empty-body.json", method: "POST", routePath: "/translate", query: { output_schema: "GWDM", output_version: "2.0" }, body: {}, envelope: "inline", inlineBody: {} },
-  // translate.js:111 — metadata present but not an object
   { name: "err__translate__metadata_not_object", outPath: "common/err/translate-metadata-not-object.json", method: "POST", routePath: "/translate", query: { output_schema: "GWDM", output_version: "2.0" }, body: { metadata: "not an object" }, envelope: "inline", inlineBody: { metadata: "not an object" } },
-  // translate.js:113-115 query(["validate_input","validate_output"]).isIn(["0","1"])
   { name: "err__translate__bad_validate_flag", outPath: "common/err/translate-bad-validate-flag.json", method: "POST", routePath: "/translate", query: { output_schema: "GWDM", output_version: "2.0", validate_input: "2" }, body: { metadata: { summary: { title: "x" } } }, envelope: "inline", inlineBody: { metadata: { summary: { title: "x" } } } },
-  // translate.js:112 body("extra").optional().isObject()
   { name: "err__translate__extra_not_object", outPath: "common/err/translate-extra-not-object.json", method: "POST", routePath: "/translate", query: { output_schema: "GWDM", output_version: "2.0" }, body: { metadata: { summary: { title: "x" } }, extra: "nope" }, envelope: "inline", inlineBody: { metadata: { summary: { title: "x" } }, extra: "nope" } },
-  // validate.js:81-82 query("input_schema"/"input_version").exists()
   { name: "err__validate__missing_query", outPath: "common/err/validate-missing-query.json", method: "POST", routePath: "/validate", body: { metadata: { summary: { title: "x" } } }, envelope: "inline", inlineBody: { metadata: { summary: { title: "x" } } } },
-  // validate.js:80 body("metadata").isObject().notEmpty().bail()
   { name: "err__validate__empty_body", outPath: "common/err/validate-empty-body.json", method: "POST", routePath: "/validate", query: { input_schema: "GWDM", input_version: "2.0" }, body: {}, envelope: "inline", inlineBody: {} },
-  // find.js:68 custom validator rejecting a non-JSON content type
   { name: "err__find__wrong_content_type", outPath: "common/err/find-wrong-content-type.json", method: "POST", routePath: "/find", body: "not json", contentType: "text/plain", envelope: "inline", inlineBody: "not json" },
-  // find.js:74 query("with_errors").isInt({min:0,max:1})
   { name: "err__find__bad_with_errors", outPath: "common/err/find-bad-with-errors.json", method: "POST", routePath: "/find", query: { with_errors: "7" }, body: { summary: { title: "x" } }, envelope: "inline", inlineBody: { summary: { title: "x" } } },
 ];
 
-// /find takes the bare metadata object; /translate and /validate take a
-// { metadata } envelope (src/routes/translate.js:111, src/routes/validate.js:80).
-// Sending the bare object to either is a 400 on express-validator, not a
-// translation result. Each case records which form it used in request.envelope.
 function casesFor(candidate, detected) {
   const bodyFrom = `inputs/${slug(candidate.pid)}__${candidate.source}.json`;
   const bare = { envelope: "bare", bodyFrom, body: candidate.metadata };
@@ -386,10 +324,6 @@ function casesFor(candidate, detected) {
     query: { output_schema: "GWDM", output_version: "2.0", validate_input: "0", validate_output: "0" },
     ...wrapped,
   });
-  // select_first_matching=false is a documented divergence: the old query
-  // string was never coerced to a boolean, so this branch was dead in
-  // production. Recording what prod actually does makes the divergence
-  // evidence rather than assertion.
   cases.push({
     name: "translate__HDRUK_2.1.2__no_first_matching",
     outDir: "translate/HDRUK/2.1.2/no-select-first-matching",
@@ -417,8 +351,6 @@ function casesFor(candidate, detected) {
     body: { metadata: candidate.metadata, extra: EXTRA_FIXTURE },
     inlineBody: { extra: EXTRA_FIXTURE },
   });
-  // No detected schema means the input matches nothing, so validating it
-  // against a real schema is the interesting case: it must 400.
   const validateTarget = detected ?? { name: "HDRUK", version: "2.1.2" };
   cases.push({
     name: `validate__${validateTarget.name}_${validateTarget.version}`,
@@ -474,8 +406,6 @@ async function main() {
   const inputsDir = path.join(outDir, "inputs");
   const casesDir = path.join(outDir, "cases");
 
-  // Pool first, wipe second: a Gateway outage must not leave the committed
-  // corpus deleted and unreplaced.
   const pool = await fetchPool(gatewayUrl, opts.pool, opts.pid, log);
   if (pool.length === 0) fail("gateway returned no ACTIVE datasets — leaving the existing fixtures untouched");
 
@@ -603,8 +533,6 @@ async function main() {
     traserBaseUrl: traserUrl,
     gatewayApiUrl: gatewayUrl,
     harvesterNodeVersion: process.version,
-    // The exact invocation, so the corpus can be reproduced rather than
-    // approximated.
     argv: process.argv.slice(2),
     options: {
       limit: opts.limit,
