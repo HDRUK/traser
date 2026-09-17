@@ -1,0 +1,61 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "SchemaOrg",
+      "output_version": "GoogleRecommended"
+    },
+    "envelope": "metadata",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/464e1bea-54e5-3271-0000-00000009ec72__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Output metadata validation failed",
+      "details": [
+        {
+          "instancePath": "/license",
+          "schemaPath": "#/type",
+          "keyword": "type",
+          "params": {
+            "type": "object"
+          },
+          "message": "must be object"
+        },
+        {
+          "instancePath": "/license",
+          "schemaPath": "#/properties/license/anyOf/1/format",
+          "keyword": "format",
+          "params": {
+            "format": "uri"
+          },
+          "message": "must match format \"uri\""
+        },
+        {
+          "instancePath": "/license",
+          "schemaPath": "#/properties/license/anyOf/2/type",
+          "keyword": "type",
+          "params": {
+            "type": "null"
+          },
+          "message": "must be null"
+        },
+        {
+          "instancePath": "/license",
+          "schemaPath": "#/properties/license/anyOf",
+          "keyword": "anyOf",
+          "params": {},
+          "message": "must match a schema in anyOf"
+        }
+      ]
+    },
+    "bodySha256": "057dabb6a1a9a5d764d098bff5882c9ec80a52a761ca9c613dabd5840125922e",
+    "rawSha256": "057dabb6a1a9a5d764d098bff5882c9ec80a52a761ca9c613dabd5840125922e",
+    "bytes": 627,
+    "attempts": 1
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "issued": "2026-03-30T08:35:59.155000Z",
+  "summary": {
+    "title": "Scottish Immunisation Recall System (SIRS)",
+    "abstract": "The primary aim of the Scottish Immunisation & Recall System (SIRS) is to ensure that children under the age of six years receive the appropriate immunisation according to the UK childhood immunisation schedule.",
+    "keywords": [
+      "Immunisation",
+      "HDRUK"
+    ],
+    "contactPoint": "phs.edris@phs.scot",
+    "dataCustodian": {
+      "logo": "https://publichealthscotland.scot/images/phs-logo.png",
+      "name": "Public Health Scotland",
+      "identifier": "https://ror.org/023wh8b50",
+      "description": "Public Health Scotland is an NHS Board.\r\n\r\nWe are uniquely sponsored by the Scottish Government and the Convention of Scottish Local Authorities (COSLA) on behalf of local government.",
+      "contactPoint": [
+        "phs.edris@phs.scot"
+      ]
+    },
+    "populationSize": 53000
+  },
+  "version": "8.0.1",
+  "coverage": {
+    "spatial": "United Kingdom,Scotland",
+    "followUp": "Unknown",
+    "materialType": [
+      "None/not available"
+    ],
+    "typicalAgeRangeMax": 14,
+    "typicalAgeRangeMin": 0
+  },
+  "modified": "2026-04-16T12:47:56.635000Z",
+  "revisions": [
+    {
+      "url": "https://rds-api.metadata.works/browser/dataset?id=10648",
+      "version": "8.0.1"
+    }
+  ],
+  "identifier": "337bac53-6b11-425b-0000-00000000097c",
+  "provenance": {
+    "origin": {
+      "purpose": [
+        "Administrative"
+      ],
+      "datasetType": [
+        "Health and disease"
+      ],
+      "imageContrast": "Not stated",
+      "datasetSubType": [
+        "Not applicable"
+      ]
+    },
+    "temporal": {
+      "timeLag": "Other",
+      "startDate": "2002-01-01",
+      "publishingFrequency": "Continuous"
+    }
+  },
+  "observations": [
+    {
+      "observedNode": "Persons",
+      "measuredValue": 53000,
+      "observationDate": "2021-02-12",
+      "measuredProperty": "Count",
+      "disambiguatingDescription": "Approximate number of children added per year"
+    }
+  ],
+  "accessibility": {
+    "usage": {
+      "resourceCreator": [
+        "National Services Scotland"
+      ],
+      "dataUseLimitation": [
+        "General research use"
+      ],
+      "dataUseRequirements": [
+        "Institution-specific restrictions",
+        "Not for profit use"
+      ]
+    },
+    "access": {
+      "accessRights": "https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/services-we-offer/",
+      "accessService": "Scottish National Safe Haven / Trusted Research Environment: https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/national-safe-haven-nsh/",
+      "dataProcessor": "National Services Scotland",
+      "dataController": "Public Health Scotland",
+      "deliveryLeadTime": "Variable",
+      "accessRequestCost": "https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/cost-of-services/",
+      "accessServiceCategory": "TRE/SDE"
+    },
+    "formatAndStandards": {
+      "format": [
+        "text",
+        "csv"
+      ],
+      "language": [
+        "en"
+      ],
+      "conformsTo": [
+        "OTHER"
+      ],
+      "vocabularyEncodingScheme": [
+        "OTHER"
+      ]
+    }
+  },
+  "documentation": {
+    "inPipeline": "Available",
+    "description": "The Scottish Immunisation &amp; Recall System began in 1987 and has been used by all NHS boards since 2002 when it incorporated the GIRS (Grampian Immunisation &amp; Recall System). The primary aim of the Scottish Immunisation &amp; Recall System (SIRS) is to ensure that children under the age of six years receive the appropriate immunisation according to the UK childhood immunisation schedule. SIRS calls children when a scheduled vaccination is due and allows recording of immunisation data. The dataset also includes data on HPV (Human papillomavirus) and the teenage booster immunisations and is used conjunction with the data on the Child Health Surveillance Programme School system (CHSP School) to monitor the uptake of teenage immunisations routinely given in schools.",
+    "associatedMedia": [
+      "https://publichealthscotland.scot/services/data-research-and-innovation-services/electronic-data-research-and-innovation-service-edris/overview",
+      "https://publichealthscotland.scot/resources-and-tools/health-intelligence-and-data-management/national-data-catalogue/national-datasets/search-the-datasets/scottish-immunisation-recall-system-sirs/"
+    ]
+  }
+}

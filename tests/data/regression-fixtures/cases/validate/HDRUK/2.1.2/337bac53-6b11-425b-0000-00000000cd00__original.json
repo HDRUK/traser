@@ -1,0 +1,53 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/validate",
+    "query": {
+      "input_schema": "HDRUK",
+      "input_version": "2.1.2"
+    },
+    "envelope": "metadata",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/337bac53-6b11-425b-0000-00000000cd00__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "error": "metadata validation failed",
+      "details": [
+        {
+          "instancePath": "",
+          "schemaPath": "#/required",
+          "keyword": "required",
+          "params": {
+            "missingProperty": "identifier"
+          },
+          "message": "must have required property 'identifier'"
+        }
+      ],
+      "data": {
+        "name": "Outpatient Appointments and Attendances - Scottish Morbidity Record (SMR00)",
+        "self": "https://rds-api.metadata.works/api/federation/dataset/52480",
+        "type": "dataset",
+        "issued": "2026-08-24T10:59:33+00:00",
+        "source": "",
+        "@schema": "https://raw.githubusercontent.com/HDRUK/schemata/master/hdr_schemata/models/HDRUK/3.0.0/schema.json",
+        "version": "1.0.3",
+        "modified": "2026-09-11T08:35:08+00:00",
+        "description": "The Outpatients (SMR00) dataset collects episode level data from patients on new and follow up appointments at outpatient clinics in all specialities (except A&E and Genito-Urinary Medicine).",
+        "persistentId": "337bac53-6b11-425b-0000-00000000cd00",
+        "documentation": null,
+        "coverage": null,
+        "provenance": null,
+        "enrichmentAndLinkage": null,
+        "structuralMetadata": null
+      }
+    },
+    "bodySha256": "174015a00b47a0ad18b8a166c0a7379cc69cac346833e0169b5a7a1657f0acca",
+    "rawSha256": "174015a00b47a0ad18b8a166c0a7379cc69cac346833e0169b5a7a1657f0acca",
+    "bytes": 981,
+    "attempts": 1
+  }
+}

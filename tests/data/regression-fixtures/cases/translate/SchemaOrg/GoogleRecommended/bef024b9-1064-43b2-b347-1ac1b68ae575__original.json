@@ -1,0 +1,60 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "SchemaOrg",
+      "output_version": "GoogleRecommended"
+    },
+    "envelope": "metadata",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/bef024b9-1064-43b2-b347-1ac1b68ae575__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "@context": "https://schema.org/",
+      "@id": "https://hdruk.ac.uk",
+      "@type": "Dataset",
+      "identifier": "10.48329/emg4-tj10",
+      "version": "GDMv1",
+      "url": "https://hdruk.ac.uk/bef024b9-1064-43b2-b347-1ac1b68ae575",
+      "name": "CPRD Aurum BSA Dispensing Data",
+      "alternateName": "CPRD Aurum BSA Dispensing Data",
+      "description": "This is a curated version of the Medicines dispensed in Primary Care NHS Business Services Authority data product from NHS-E, linked to English patients from CPRD Aurum.",
+      "citation": "10.48329/emg4-tj10",
+      "creator": {
+        "@type": "Organization",
+        "legalName": "CPRD",
+        "name": "CPRD",
+        "email": "enquiries@cprd.com",
+        "description": "",
+        "identifier": "",
+        "sameAs": null
+      },
+      "isAccessibleForFree": false,
+      "distribution": {
+        "@type": "DataDownload",
+        "name": "Access to CPRD data, including UK Primary Care Data, and linked data such as Hospital Episode Statistics, is subject to protocol approval via CPRD&amp;rsquo;s Research Data Governance (RDG) Process. Independent scientific and patient advice is provided by Expert Review Committees (ERCs) and the Central Advisory Committee (CAC): https://www.cprd.com/research-applications",
+        "contentUrl": "https://somehwere.com",
+        "encodingFormat": "Unknown"
+      },
+      "keywords": "CPRD Aurum;,;Primary care;,;CPRD Gold",
+      "license": "HTTPS://CPRD.COM/DATA-ACCESS",
+      "temporalCoverage": null,
+      "funder": null,
+      "isPartOf": null,
+      "hasPart": null,
+      "measurementTechnique": "",
+      "sameAs": null,
+      "spatialCoverage": "",
+      "variableMeasured": ""
+    },
+    "bodySha256": "9fee28273583b4a80edb9f6c18271e46c0f56450942bcc91d1effb80f9349fde",
+    "rawSha256": "9fee28273583b4a80edb9f6c18271e46c0f56450942bcc91d1effb80f9349fde",
+    "bytes": 1406,
+    "attempts": 1
+  }
+}

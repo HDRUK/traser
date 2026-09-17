@@ -1,0 +1,106 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/find",
+    "query": null,
+    "envelope": "bare",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/464e1bea-54e5-3271-0000-00000009ec72__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": [
+      {
+        "name": "HDRUK",
+        "version": "2.0.2",
+        "matches": false
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.1.0",
+        "matches": false
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.1.2",
+        "matches": false
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.1.3",
+        "matches": false
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.2.0",
+        "matches": false
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.2.1",
+        "matches": false
+      },
+      {
+        "name": "HDRUK",
+        "version": "3.0.0",
+        "matches": true
+      },
+      {
+        "name": "HDRUK",
+        "version": "4.0.0",
+        "matches": false
+      },
+      {
+        "name": "GWDM",
+        "version": "1.0",
+        "matches": false
+      },
+      {
+        "name": "GWDM",
+        "version": "1.1",
+        "matches": false
+      },
+      {
+        "name": "GWDM",
+        "version": "1.2",
+        "matches": false
+      },
+      {
+        "name": "GWDM",
+        "version": "2.0",
+        "matches": false
+      },
+      {
+        "name": "GWDM",
+        "version": "2.1",
+        "matches": false
+      },
+      {
+        "name": "CRUK",
+        "version": "1.0.0",
+        "matches": false
+      },
+      {
+        "name": "SchemaOrg",
+        "version": "BioSchema",
+        "matches": false
+      },
+      {
+        "name": "SchemaOrg",
+        "version": "default",
+        "matches": false
+      },
+      {
+        "name": "SchemaOrg",
+        "version": "GoogleRecommended",
+        "matches": false
+      }
+    ],
+    "bodySha256": "30172f5425d92a4d346509d620d593b149322ff48b501596a149191108e03f84",
+    "rawSha256": "30172f5425d92a4d346509d620d593b149322ff48b501596a149191108e03f84",
+    "bytes": 881,
+    "attempts": 1
+  }
+}

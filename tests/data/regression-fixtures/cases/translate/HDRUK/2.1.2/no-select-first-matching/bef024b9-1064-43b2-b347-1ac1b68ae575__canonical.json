@@ -1,0 +1,27 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "HDRUK",
+      "output_version": "2.1.2",
+      "select_first_matching": "false"
+    },
+    "envelope": "metadata",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/bef024b9-1064-43b2-b347-1ac1b68ae575__canonical.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Failed to execute translation between GWDM:1.2 and GWDM:1.1",
+      "details": {}
+    },
+    "bodySha256": "ba2065e2d3e8afbf0c854bb08c30a5cd70bde438dcac4b01705f95dcd0d65db8",
+    "rawSha256": "ba2065e2d3e8afbf0c854bb08c30a5cd70bde438dcac4b01705f95dcd0d65db8",
+    "bytes": 86,
+    "attempts": 1
+  }
+}

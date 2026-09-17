@@ -1,0 +1,36 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/find",
+    "query": {
+      "with_errors": "7"
+    },
+    "envelope": "inline",
+    "contentType": "application/json",
+    "bodyFrom": null,
+    "inlineBody": {
+      "summary": {
+        "title": "x"
+      }
+    }
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "errors": [
+        {
+          "type": "field",
+          "value": "7",
+          "msg": "Invalid value",
+          "path": "with_errors",
+          "location": "query"
+        }
+      ]
+    },
+    "bodySha256": "5104966288be941c7936ed06ad19581a15a66322499384389cd94174a2a5faf8",
+    "rawSha256": "5104966288be941c7936ed06ad19581a15a66322499384389cd94174a2a5faf8",
+    "bytes": 103,
+    "attempts": 1
+  }
+}
