@@ -118,7 +118,39 @@ import {
 } from "~/lib/translation.server";
 import { TranslationGraph } from "~/lib/graph.server";
 import { publishMessage } from "~/lib/audit.server";
-import { forwardKnownError, errorResponse } from "~/lib/errors.server";
+import {
+  fieldError,
+  forwardKnownError,
+  errorResponse,
+  invalidParams,
+  type FieldError,
+} from "~/lib/errors.server";
+
+const TRANSLATE_FAILED = "Translation has failed.";
+
+function isPlainObject(value: unknown): boolean {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isEmptyish(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  if (Array.isArray(value)) return value.length === 0;
+  return String(value).length === 0;
+}
+
+function parseBooleanFlag(
+  raw: string | null,
+  name: string,
+  errors: FieldError[],
+): boolean {
+  if (raw === null || raw === "") return true;
+  if (raw === "1" || raw === "true") return true;
+  if (raw === "0" || raw === "false") return false;
+  errors.push(
+    fieldError("Needs to be boolean (either 1 or 0)", name, "query", raw),
+  );
+  return true;
+}
 
 export async function action({ request }: { request: Request }) {
   await ensureLoaded();
@@ -128,8 +160,17 @@ export async function action({ request }: { request: Request }) {
   let inputVersion = url.searchParams.get("input_version") ?? undefined;
   let outputSchema = url.searchParams.get("output_schema") ?? undefined;
   let outputVersion = url.searchParams.get("output_version") ?? undefined;
-  const validateInput = url.searchParams.get("validate_input") !== "0";
-  const validateOutput = url.searchParams.get("validate_output") !== "0";
+  const flagErrors: FieldError[] = [];
+  const validateInput = parseBooleanFlag(
+    url.searchParams.get("validate_input"),
+    "validate_input",
+    flagErrors,
+  );
+  const validateOutput = parseBooleanFlag(
+    url.searchParams.get("validate_output"),
+    "validate_output",
+    flagErrors,
+  );
   const subsection = url.searchParams.get("subsection") ?? undefined;
   const selectFirstMatching =
     url.searchParams.get("select_first_matching") !== "false";
@@ -142,11 +183,23 @@ export async function action({ request }: { request: Request }) {
   }
 
   const { metadata, extra } = body;
-  if (!metadata || typeof metadata !== "object") {
-    return Response.json(
-      { message: "metadata must be a non-empty object" },
-      { status: 400 },
-    );
+
+  const paramErrors: FieldError[] = [];
+  if (!isPlainObject(metadata))
+    paramErrors.push(fieldError("Invalid value", "metadata", "body", metadata));
+  if (isEmptyish(metadata))
+    paramErrors.push(fieldError("Invalid value", "metadata", "body", metadata));
+  if (extra !== undefined && !isPlainObject(extra))
+    paramErrors.push(fieldError("Invalid value", "extra", "body", extra));
+  paramErrors.push(...flagErrors);
+
+  if (paramErrors.length > 0) {
+    publishMessage(
+      "POST",
+      "translate",
+      "Failed to translate due to invalid inputs",
+    ).catch(console.error);
+    return invalidParams(TRANSLATE_FAILED, paramErrors);
   }
 
   try {
