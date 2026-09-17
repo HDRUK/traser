@@ -331,7 +331,17 @@ export async function action({ request }: { request: Request }) {
           "translate",
           `Translation step ${inM.name}:${inM.version} → ${outM.name}:${outM.version} failed`,
         ).catch(console.error);
-        return forwardKnownError(result.error);
+        console.error(
+          `[translate] ${inM.name}:${inM.version} → ${outM.name}:${outM.version}`,
+          result.error,
+        );
+        return Response.json(
+          {
+            message: `Failed to execute translation between ${inM.name}:${inM.version} and ${outM.name}:${outM.version}`,
+            details: {},
+          },
+          { status: 500 },
+        );
       }
       current = result.translatedMetadata ?? result.outputMetadata;
     }
@@ -358,7 +368,6 @@ export async function action({ request }: { request: Request }) {
           {
             message: "Output metadata validation failed",
             details: errors,
-            data: outputMetadata,
           },
           { status: 400 },
         );
