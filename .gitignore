@@ -134,3 +134,9 @@ dist
 \#*#
 
 application_default_credentials.json
+# Runtime dataset cache (DATA_DIR) — rebuilt from GATEWAY_API_URL on cold start
+/data/
+
+# React Router build output and generated types
+/build/
+/.react-router/
