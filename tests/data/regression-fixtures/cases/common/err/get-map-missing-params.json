@@ -1,0 +1,48 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/get/map",
+    "query": null,
+    "envelope": null,
+    "contentType": "application/json",
+    "bodyFrom": null,
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Invalid query parameters.",
+      "errors": [
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "output_schema",
+          "location": "query"
+        },
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "output_version",
+          "location": "query"
+        },
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "input_schema",
+          "location": "query"
+        },
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "input_version",
+          "location": "query"
+        }
+      ]
+    },
+    "bodySha256": "d5539aecd80c244a1b6da1ffe04cc1b9819fefd3d459a983f0825ffeaa481262",
+    "rawSha256": "d5539aecd80c244a1b6da1ffe04cc1b9819fefd3d459a983f0825ffeaa481262",
+    "bytes": 374,
+    "attempts": 1
+  }
+}

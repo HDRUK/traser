@@ -1,0 +1,39 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/list/translations",
+    "query": {
+      "schema": "HDRUK",
+      "version": "2.1.2"
+    },
+    "envelope": null,
+    "contentType": "application/json",
+    "bodyFrom": null,
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": [
+      "HDRUK:2.1.2",
+      "HDRUK:2.1.2 -> HDRUK:2.1.3",
+      "HDRUK:2.1.2 -> HDRUK:2.2.0",
+      "HDRUK:2.1.2 -> HDRUK:2.2.0 -> HDRUK:2.2.1",
+      "HDRUK:2.1.2 -> HDRUK:2.2.0 -> HDRUK:2.2.1 -> HDRUK:3.0.0",
+      "HDRUK:2.1.2 -> HDRUK:2.2.0 -> HDRUK:2.2.1 -> HDRUK:3.0.0 -> HDRUK:4.0.0",
+      "HDRUK:2.1.2 -> GWDM:1.0",
+      "HDRUK:2.1.2 -> GWDM:1.1",
+      "HDRUK:2.1.2 -> GWDM:1.1 -> GWDM:1.2",
+      "HDRUK:2.1.2 -> GWDM:1.1 -> GWDM:1.2 -> GWDM:2.0",
+      "HDRUK:2.1.2 -> GWDM:1.1 -> GWDM:1.2 -> GWDM:2.0 -> GWDM:2.1",
+      "HDRUK:2.1.2 -> GWDM:1.1 -> GWDM:1.2 -> GWDM:2.0 -> CRUK:1.0.0",
+      "HDRUK:2.1.2 -> GWDM:1.0 -> SchemaOrg:BioSchema",
+      "HDRUK:2.1.2 -> SchemaOrg:default",
+      "HDRUK:2.1.2 -> SchemaOrg:GoogleRecommended"
+    ],
+    "bodySha256": "956ceab8c8610ad426fbf0e0493cf110c0512550e8382acf6a496f0c1d18fe2d",
+    "rawSha256": "956ceab8c8610ad426fbf0e0493cf110c0512550e8382acf6a496f0c1d18fe2d",
+    "bytes": 645,
+    "attempts": 1
+  }
+}

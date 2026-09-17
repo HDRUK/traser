@@ -1,0 +1,42 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/validate",
+    "query": null,
+    "envelope": "inline",
+    "contentType": "application/json",
+    "bodyFrom": null,
+    "inlineBody": {
+      "metadata": {
+        "summary": {
+          "title": "x"
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Validation has failed",
+      "errors": [
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "input_schema",
+          "location": "query"
+        },
+        {
+          "type": "field",
+          "msg": "Invalid value",
+          "path": "input_version",
+          "location": "query"
+        }
+      ]
+    },
+    "bodySha256": "10bde26404b3adbfd7d57b0e9f3ed46f37813876b028989409a0f3b90c5c5f21",
+    "rawSha256": "10bde26404b3adbfd7d57b0e9f3ed46f37813876b028989409a0f3b90c5c5f21",
+    "bytes": 207,
+    "attempts": 1
+  }
+}

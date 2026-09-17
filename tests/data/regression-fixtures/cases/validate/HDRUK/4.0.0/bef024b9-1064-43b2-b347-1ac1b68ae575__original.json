@@ -1,0 +1,25 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/validate",
+    "query": {
+      "input_schema": "HDRUK",
+      "input_version": "4.0.0"
+    },
+    "envelope": "metadata",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/bef024b9-1064-43b2-b347-1ac1b68ae575__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "details": "all ok"
+    },
+    "bodySha256": "b048e9d65efd3be96e5c8d20240589a76d9b11a6be1d4b1ba6c705a8b4f2f62c",
+    "rawSha256": "b048e9d65efd3be96e5c8d20240589a76d9b11a6be1d4b1ba6c705a8b4f2f62c",
+    "bytes": 20,
+    "attempts": 1
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "issued": "2026-09-14T15:03:54.000Z",
+  "summary": {
+    "title": "CPRD Aurum BSA Dispensing Data",
+    "doiName": "10.48329/emg4-tj10",
+    "abstract": "This is a curated version of the Medicines dispensed in Primary Care NHS Business Services Authority data product from NHS-E, linked to English patients from CPRD Aurum.",
+    "keywords": [
+      "CPRD Aurum",
+      "Primary care",
+      "CPRD Gold"
+    ],
+    "contactPoint": "enquiries@cprd.com",
+    "dataCustodian": {
+      "logo": "https://media.prod.hdruk.cloud/teams/cprd.jpg",
+      "name": "CPRD",
+      "memberOf": null,
+      "identifier": "35",
+      "description": "CPRD",
+      "contactPoint": "enquiries@cprd.com"
+    },
+    "datasetAliases": null,
+    "populationSize": 39846807
+  },
+  "version": "1.0.0",
+  "coverage": {
+    "pathway": "Primary care",
+    "spatial": "England",
+    "followUp": "1 - 10 Years",
+    "materialType": [
+      "None/not available"
+    ],
+    "typicalAgeRangeMax": 115,
+    "typicalAgeRangeMin": 0,
+    "datasetCompleteness": null
+  },
+  "modified": "2026-09-14T15:03:54.000Z",
+  "revisions": [
+    {
+      "url": "https://healthdatagateway.org/dataset/1905?version=1.0.0",
+      "version": "1.0.0"
+    }
+  ],
+  "identifier": "bef024b9-1064-43b2-b347-1ac1b68ae575",
+  "provenance": {
+    "origin": {
+      "source": [
+        "EPR"
+      ],
+      "purpose": [
+        "Care"
+      ],
+      "datasetType": [
+        {
+          "name": "Health and disease",
+          "subTypes": []
+        }
+      ],
+      "imageContrast": "Not stated",
+      "collectionSource": [
+        "Primary care - Clinic"
+      ]
+    },
+    "temporal": {
+      "endDate": "2025-05-01T00:00:00.000Z",
+      "timeLag": "More than 6 months",
+      "startDate": "2018-03-31T23:00:00.000Z",
+      "publishingFrequency": "Quarterly",
+      "distributionReleaseDate": "2026-08-30T23:00:00.000Z"
+    }
+  },
+  "observations": [
+    {
+      "observedNode": "Persons",
+      "measuredValue": 54070003,
+      "observationDate": "2026-08-01T01:01:15.000Z",
+      "measuredProperty": "Count",
+      "disambiguatingDescription": "Total number of patients eligible for this linkage"
+    },
+    {
+      "observedNode": "Persons",
+      "measuredValue": 39846807,
+      "observationDate": "2026-08-31T00:00:00.000Z",
+      "measuredProperty": "Count",
+      "disambiguatingDescription": "Total number of available patients with at least one dispensing record"
+    },
+    {
+      "observedNode": "Persons",
+      "measuredValue": 1852,
+      "observationDate": "2026-08-31T00:00:00.000Z",
+      "measuredProperty": "Count",
+      "disambiguatingDescription": "Total number of included CPRD Aurum practices"
+    }
+  ],
+  "accessibility": {
+    "usage": {
+      "resourceCreator": "CPRD",
+      "dataUseLimitation": [
+        "General research use",
+        "No linkage",
+        "Research-specific restrictions",
+        "Research use only",
+        "No general methods research"
+      ],
+      "dataUseRequirements": [
+        "Geographical restrictions",
+        "Institution-specific restrictions",
+        "Project-specific restrictions",
+        "Time limit on use",
+        "User-specific restriction"
+      ]
+    },
+    "access": {
+      "accessRights": "HTTPS://CPRD.COM/DATA-ACCESS",
+      "jurisdiction": [
+        "GB-GBN"
+      ],
+      "accessService": "Access to CPRD data, including UK Primary Care Data, and linked data such as Hospital Episode Statistics, is subject to protocol approval via CPRD&amp;rsquo;s Research Data Governance (RDG) Process. Independent scientific and patient advice is provided by Expert Review Committees (ERCs) and the Central Advisory Committee (CAC): https://www.cprd.com/research-applications",
+      "dataProcessor": "CPRD",
+      "dataController": "Clinical Practice Research Datalink",
+      "deliveryLeadTime": "Variable",
+      "accessRequestCost": "https://www.cprd.com/pricing",
+      "accessServiceCategory": "Varies based on project"
+    },
+    "formatAndStandards": {
+      "format": [
+        "Tab delimited text"
+      ],
+      "language": [
+        "en"
+      ],
+      "conformsTo": [
+        "LOCAL"
+      ],
+      "vocabularyEncodingScheme": [
+        "SNOMED CT"
+      ]
+    }
+  },
+  "documentation": {
+    "inPipeline": "Available",
+    "description": "This is a curated version of the Medicines dispensed in Primary Care NHS Business Services Authority data product from NHS-E, linked to English patients from CPRD Aurum.",
+    "associatedMedia": "https://www.cprd.com/linked-data"
+  },
+  "structuralMetadata": {
+    "tables": [],
+    "syntheticDataWebLink": []
+  },
+  "enrichmentAndLinkage": {
+    "tools": [],
+    "investigations": [],
+    "publicationAboutDataset": [],
+    "publicationUsingDataset": []
+  }
+}

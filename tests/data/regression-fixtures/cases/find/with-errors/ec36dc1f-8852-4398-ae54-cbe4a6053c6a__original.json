@@ -1,0 +1,285 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/find",
+    "query": {
+      "with_errors": "1"
+    },
+    "envelope": "bare",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/ec36dc1f-8852-4398-ae54-cbe4a6053c6a__original.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": [
+      {
+        "name": "HDRUK",
+        "version": "2.0.2",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/additionalProperties",
+            "keyword": "additionalProperties",
+            "params": {
+              "additionalProperty": "omics"
+            },
+            "message": "must NOT have additional properties"
+          }
+        ]
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.1.0",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/additionalProperties",
+            "keyword": "additionalProperties",
+            "params": {
+              "additionalProperty": "omics"
+            },
+            "message": "must NOT have additional properties"
+          }
+        ]
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.1.2",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/additionalProperties",
+            "keyword": "additionalProperties",
+            "params": {
+              "additionalProperty": "omics"
+            },
+            "message": "must NOT have additional properties"
+          }
+        ]
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.1.3",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/additionalProperties",
+            "keyword": "additionalProperties",
+            "params": {
+              "additionalProperty": "omics"
+            },
+            "message": "must NOT have additional properties"
+          }
+        ]
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.2.0",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/additionalProperties",
+            "keyword": "additionalProperties",
+            "params": {
+              "additionalProperty": "omics"
+            },
+            "message": "must NOT have additional properties"
+          }
+        ]
+      },
+      {
+        "name": "HDRUK",
+        "version": "2.2.1",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/additionalProperties",
+            "keyword": "additionalProperties",
+            "params": {
+              "additionalProperty": "omics"
+            },
+            "message": "must NOT have additional properties"
+          }
+        ]
+      },
+      {
+        "name": "HDRUK",
+        "version": "3.0.0",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "/summary",
+            "schemaPath": "#/additionalProperties",
+            "keyword": "additionalProperties",
+            "params": {
+              "additionalProperty": "datasetAliases"
+            },
+            "message": "must NOT have additional properties"
+          }
+        ]
+      },
+      {
+        "name": "HDRUK",
+        "version": "4.0.0",
+        "matches": true,
+        "errors": null
+      },
+      {
+        "name": "GWDM",
+        "version": "1.0",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "required"
+            },
+            "message": "must have required property 'required'"
+          }
+        ]
+      },
+      {
+        "name": "GWDM",
+        "version": "1.1",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "required"
+            },
+            "message": "must have required property 'required'"
+          }
+        ]
+      },
+      {
+        "name": "GWDM",
+        "version": "1.2",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "required"
+            },
+            "message": "must have required property 'required'"
+          }
+        ]
+      },
+      {
+        "name": "GWDM",
+        "version": "2.0",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "required"
+            },
+            "message": "must have required property 'required'"
+          }
+        ]
+      },
+      {
+        "name": "GWDM",
+        "version": "2.1",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "required"
+            },
+            "message": "must have required property 'required'"
+          }
+        ]
+      },
+      {
+        "name": "CRUK",
+        "version": "1.0.0",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "/summary/leadResearcher",
+            "schemaPath": "#/$defs/OneHundredFiftyCharacters/minLength",
+            "keyword": "minLength",
+            "params": {
+              "limit": 2
+            },
+            "message": "must NOT have fewer than 2 characters"
+          }
+        ]
+      },
+      {
+        "name": "SchemaOrg",
+        "version": "BioSchema",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "name"
+            },
+            "message": "must have required property 'name'"
+          }
+        ]
+      },
+      {
+        "name": "SchemaOrg",
+        "version": "default",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "name"
+            },
+            "message": "must have required property 'name'"
+          }
+        ]
+      },
+      {
+        "name": "SchemaOrg",
+        "version": "GoogleRecommended",
+        "matches": false,
+        "errors": [
+          {
+            "instancePath": "",
+            "schemaPath": "#/required",
+            "keyword": "required",
+            "params": {
+              "missingProperty": "name"
+            },
+            "message": "must have required property 'name'"
+          }
+        ]
+      }
+    ],
+    "bodySha256": "63a3437404f52233f3d49f56bb1acc50d277269d38edb562281e54d13713dc00",
+    "rawSha256": "63a3437404f52233f3d49f56bb1acc50d277269d38edb562281e54d13713dc00",
+    "bytes": 3776,
+    "attempts": 1
+  }
+}

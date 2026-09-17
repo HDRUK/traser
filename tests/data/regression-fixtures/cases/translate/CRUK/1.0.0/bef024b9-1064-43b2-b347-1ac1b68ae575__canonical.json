@@ -1,0 +1,36 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/translate",
+    "query": {
+      "output_schema": "CRUK",
+      "output_version": "1.0.0"
+    },
+    "envelope": "metadata",
+    "contentType": "application/json",
+    "bodyFrom": "inputs/bef024b9-1064-43b2-b347-1ac1b68ae575__canonical.json",
+    "inlineBody": null
+  },
+  "response": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "message": "Output metadata validation failed",
+      "details": [
+        {
+          "instancePath": "",
+          "schemaPath": "#/required",
+          "keyword": "required",
+          "params": {
+            "missingProperty": "identifier"
+          },
+          "message": "must have required property 'identifier'"
+        }
+      ]
+    },
+    "bodySha256": "d8d91c8b5ae2078654fad818f576d38a5f400976d36561e20eb355482a6c3b11",
+    "rawSha256": "d8d91c8b5ae2078654fad818f576d38a5f400976d36561e20eb355482a6c3b11",
+    "bytes": 221,
+    "attempts": 1
+  }
+}
