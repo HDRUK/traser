@@ -178,29 +178,31 @@ files are for.
 
 ## Strict-match exclusions
 
-The rewrite deliberately diverges from production on the five points below.
+> **Superseded by `tests/regression/allowlist.ts`.** That file is what the
+> harness actually enforces and is authoritative; this section is the
+> prediction PR01 wrote before the harness existed. Two entries below did not
+> survive contact with it — see the notes.
+
+The rewrite deliberately diverges from production on the points below.
 PR05's harness must exclude them from strict matching rather than paper over
-them. Each is recorded in
-`diagrams/traser-rewrite-behavioural-risk-map.md`, which is authoritative.
+them.
 
-1. **AJV in-place mutation.** The Express service runs AJV with
-   `coerceTypes: true` and `useDefaults: true` directly on the request
-   metadata, so validation rewrites the caller's object before translation
-   sees it — coercing `"5"` to `5` and filling schema defaults. The rewrite
-   `structuredClone`s first, so translation sees the *unmutated* input.
-
-   Mechanically: for any field where the fixture and the rewrite differ, the
-   divergence is accepted **iff** applying the input schema's `default` for
-   that path, or coercing the rewrite's value to the fixture's JSON type,
-   makes them equal. Anything else is a real regression. PR05 should implement
-   this as a per-field predicate, not a whole-response allowance.
+1. ~~**AJV in-place mutation.**~~ **Withdrawn — this divergence does not
+   exist.** PR03 established that nothing in the rewrite clones before
+   validating: `structuredClone` appears once, inside `findMatchingSchemas`,
+   and `validateMetadata` mutates the caller's object exactly as Express did.
+   The per-field coercion/default predicate this entry called for would have
+   *widened* the comparison and masked genuine regressions of that shape, so
+   it was never implemented. See
+   `upgrade-plans/05-ajv-mutation-divergence-unimplemented.md`.
 
 2. **`select_first_matching=false`.** In production the query string was never
    coerced to a boolean, so the reject-on-ambiguous branch was dead. Verified
    across this corpus: all 6 `translate/HDRUK/2.1.2/no-select-first-matching/`
    responses hash identically to their default-parameter siblings. The rewrite
    genuinely rejects ambiguous input-schema matches, so those cases will
-   differ, by design.
+   differ, by design. Fires on 1 of the 6 under the baseline pins —
+   `RULE_SELECT_FIRST_MATCHING_FALSE`.
 
 3. **`/get/schema` for an unknown schema.** Production leaks an internal
    error — `cases/common/err/get-schema-unknown.json` records
@@ -212,7 +214,9 @@ them. Each is recorded in
 
 4. **AJV `allErrors: true`.** The rewrite reports every validation error;
    production stops early. Recorded `errors` arrays are a *subset* of what the
-   rewrite produces. Assert containment, not equality.
+   rewrite produces. Assert containment, not equality —
+   `RULE_AJV_ALL_ERRORS` does, and fails if an entry production reported has
+   disappeared.
 
 5. **`GET /`.** Production returns JSON `{"message": "Hello from TRASER"}`.
    The rewrite serves the frontend landing page as HTML. Accepted outright —
@@ -220,6 +224,13 @@ them. Each is recorded in
    `GET /status` **is** recorded (`cases/common/status.json`) and is not
    excluded: it is the likely liveness-probe target, and its shape must not
    drift.
+
+6. **Upstream revision drift.** Not a rewrite divergence and not foreseen here:
+   production's `schemata-2` / `traser-mapping-files` revisions cannot be read
+   from outside the cluster, so five CRUK cases carry a validation error the
+   pinned revisions no longer produce. `RULE_UPSTREAM_REVISION_DRIFT` names
+   them individually; `tests/regression/README.md` records how that was
+   separated from a real regression.
 
 ## The error envelope is the highest-drift-risk surface
 

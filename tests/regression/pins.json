@@ -1,0 +1,9 @@
+{
+  "why": "The fixtures record production TRASER. Replaying them only measures the rewrite if the schemas and translation maps are the ones production was serving; against a moving dev tip every schema change reads as a parity failure. These two revisions were selected by binary search until GET /list/schemas, GET /list/templates and GET /list/translations replay byte-identically to the recorded production responses.",
+  "locations": {
+    "SCHEMA_LOCATION": "https://raw.githubusercontent.com/HDRUK/schemata-2/ffb986c",
+    "TEMPLATES_LOCATION": "https://raw.githubusercontent.com/HDRUK/traser-mapping-files/0b0e1a0"
+  },
+  "verifiedAgainst": "tests/data/regression-fixtures/index.json harvested 2026-09-16",
+  "retireWhen": "WS1 PR12 removes src/ and the Express baseline stops being the thing under comparison"
+}
