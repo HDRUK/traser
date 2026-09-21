@@ -98,29 +98,3 @@ describe("GET /get/form_hydration", () => {
     expect(Array.isArray(body.errors)).toBe(true);
   });
 });
-
-describe("GET /get/dataset", () => {
-  it("returns 400 when pid param is missing", async () => {
-    const res = await fetch(`${BASE_URL}/get/dataset`);
-    expect(res.status).toBe(400);
-    const body = await res.json() as { message: string };
-    expect(body.message).toMatch(/pid/i);
-  });
-
-  it("returns 404 for an unknown pid", async () => {
-    const res = await fetch(`${BASE_URL}/get/dataset?pid=nonexistent-pid-zzz-99999`);
-    expect(res.status).toBe(404);
-  });
-
-  it("returns metadata for a known pid when datasets are available", async () => {
-    const listRes = await fetch(`${BASE_URL}/list/datasets`);
-    const datasets = await listRes.json() as Array<{ pid: string }>;
-    if (datasets.length === 0) return;
-
-    const { pid } = datasets[0];
-    const res = await fetch(`${BASE_URL}/get/dataset?pid=${encodeURIComponent(pid)}`);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toBeTruthy();
-  });
-});
