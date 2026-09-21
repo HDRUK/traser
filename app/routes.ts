@@ -11,6 +11,4 @@ export default [
   route("/get/schema", "routes/api/get.schema.ts"),
   route("/get/map", "routes/api/get.map.ts"),
   route("/get/form_hydration", "routes/api/get.form_hydration.ts"),
-  route("/list/datasets", "routes/api/list.datasets.ts"),
-  route("/get/dataset", "routes/api/get.dataset.ts"),
 ] satisfies RouteConfig;
