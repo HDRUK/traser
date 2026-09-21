@@ -84,3 +84,22 @@ describe("/find request validation", () => {
     expect(body.errors[0].path).toBe("with_errors");
   });
 });
+
+describe("security headers", () => {
+  it("sets security headers on API responses", async () => {
+    const res = await fetch(`${BASE_URL}/list/schemas`);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(res.headers.get("strict-transport-security")).toBe(
+      "max-age=15552000; includeSubDomains",
+    );
+    expect(res.headers.get("x-dns-prefetch-control")).toBe("off");
+  });
+
+  it("sets security headers on HTML responses too", async () => {
+    const res = await fetch(`${BASE_URL}/`);
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("SAMEORIGIN");
+  });
+});
