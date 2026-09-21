@@ -87,6 +87,10 @@ jobs:
         id: build
         run: "npm run build"
 
+      - name: Run unit tests
+        id: unittests
+        run: "npm run test:unit"
+
       - name: Run testing
         id: unittest
         run: |

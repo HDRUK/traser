@@ -1,0 +1,229 @@
+{
+                        "required": {
+                            "gatewayId": "1065",
+                            "gatewayPid": "912d6997-7609-46ba-9bd9-5a41ebb9e444",
+                            "issued": "2025-02-10T13:32:06.097764Z",
+                            "modified": "2025-02-10T13:32:06.097775Z",
+                            "revisions": [
+                                {
+                                    "url": "https://web.dev.hdruk.cloud/dataset/1065?version=1.0.0",
+                                    "version": "1.0.0"
+                                }
+                            ],
+                            "version": "7.0.0"
+                        },
+                        "summary": {
+                            "abstract": "Linkable health datasets in respective TREs in England, Scotland and Wales, accessible to approved researchers who are members of the BHF Data Science Centre's CVD-COVID-UK consortium, and for COVID-IMPACT / National Core Studies projects (England only)..",
+                            "contactPoint": "woohoo@hdruk.ac.uk",
+                            "keywords": "BHF;,;CVD-COVID-UK;,;BHF DSC;,;BHF Data Science Centre;,;TRE;,;Trusted Research Environment;,;CVD;,;COVID;,;COVID-19;,;Coronavirus;,;Linked;,;LINKABLE;,;Cardiovascular;,;England;,;Scotland;,;Wales;,;GDPPR;,;HES;,;SUS;,;Dataset;,;SGSS;,;SSNAP;,;Death register;,;EHR;,;CHESS;,;NHSD;,;NHS Digital;,;SAIL;,;Safe Haven;,;ICNARC;,;Heart;,;Heart disease;,;Myocardial;,;Stroke;,;Vascular;,;venous;,;Dispensing;,;Prescribing;,;Primary Care;,;Secondary Care;,;SARS-CoV-2;,;SICSAG;,;SICSAG;,;SMR00;,;SMR01;,;ECOSS;,;APC;,;Outpatients;,;MINAP;,;PCI;,;NICOR;,;PEDW;,;ADBE;,;ADDD;,;ADDE;,;CCDS;,;CENW;,;CTTP;,;CARE;,;CDDS;,;CVSP;,;CVVD;,;EDDD;,;EDDS;,;GPCD;,;HQIP;,;ICCD;,;ICNC;,;MIDS;,;NICO;,;NVR;,;NHFA;,;NACSA;,;NACRM;,;NCHDA;,;OPDW;,;OPRD;,;PATD;,;RTTD;,;SDEC;,;TAVI;,;WASD;,;WDDS;,;WDSD;,;WLGP;,;WRRS;,;LIMS;,;NIMS;,;PILLAR 1;,;PILLAR 2;,;PILLAR 3;,;VACCINATION;,;Vaccination;,;Vaccine;,;vaccine;,;A&E;,;Admitted Patient Care;,;COVID-19 Hospitalisation in England Surveillance System;,;Hospital episode statistics;,;ELECTRONIC HEALTH RECORDS;,;Cardiac;,;Cardiovascular Disease;,;co-morbidities;,;multi-morbidity;,;multimorbidity;,;Research;,;arterial;,;Ischaemia;,;Ischemic heart disease;,;COVID-IMPACT;,;National Core Study;,;NCS",
+                            "controlledKeywords": null,
+                            "datasetType": "Health and disease;,;Registry",
+                            "datasetSubType": "Cardiovascular;,;Mental health;,;Maternity and neonatology;,;Vaccines;,;Births and deaths",
+                            "populationSize": 65000000,
+                            "description": "CVD-COVID-UK, co-ordinated by the British Heart Foundation (BHF) Data Science Centre, is one of the NIHR-BHF Cardiovascular Partnership’s National Flagship Projects.\n\nIt aims to understand the relationship between COVID-19 and cardiovascular diseases through analyses of de-identified, pseudonymised, linked, nationally collated health datasets across the four nations of the UK.\n\nThe consortium has over 400 members across more than 50 institutions including data custodians, data scientists and clinicians, all of whom have signed up to an agreed set of principles with an inclusive, open and transparent ethos.\n\nApproved researchers access data within secure trusted/secure research environments (TREs/SDEs) provided by NHS England (England), the National Safe Haven (Scotland), the SAIL Databank (Wales) and the Honest Broker Service (Northern Ireland).\n\nLinkable datasets include those from primary and secondary care, COVID lab tests and vaccinations, deaths, critical care, prescribing/dispensing, cardiovascular and stroke audits, maternity services and mental health.\n\nThe centre has gained approval to broaden the scope of the programme to all COVID-related research (in NHS England’s SDE for England only). This is known as COVID-IMPACT and it will help to support research projects from the wider community, including for the National Core Studies.\n\nA dashboard of datasets available in each nation’s TRE can be found here: https://bhfdatasciencecentre.org/areas/cvd-covid-uk-covid-impact/\n\nNote:\n- The demographic information/counts are approximate and rounded. Figures should not be used for anything other than a rough indication of size of the grouping.\n- Counts for people between 5-24 years have been approximated into these bins based on the age bins in the COALESCE study. https://www.hdruk.ac.uk/projects/coalesce/\n- All count of people above the age of 85 years are included in the age bin 85-90 years.",
+                            "doiName": null,
+                            "shortTitle": "Large test dataset",
+                            "title": "Large test dataset",
+                            "publisher": {
+                                "name": "BHF Data Science Centre",
+                                "gatewayId": "34",
+                                "rorId": null
+                            },
+                            "inPipeline": "Not available"
+                        },
+                        "coverage": {
+                            "pathway": "Primary care, secondary care, COVID testing and vaccinations, deaths, ITU/HDU admissions, prescribing/dispensing, cardiovascular audits (NICOR), stroke audits (SSNAP), maternity services, mental health.",
+                            "spatial": "United Kingdom",
+                            "followUp": "Other",
+                            "typicalAgeRange": "0-150",
+                            "datasetCompleteness": "https://bhfdatasciencecentre.org/dashboard/"
+                        },
+                        "provenance": {
+                            "origin": {
+                                "purpose": "Study",
+                                "source": null,
+                                "collectionSituation": "Clinic;,;Primary care - Clinic;,;Secondary care - Accident and Emergency;,;Secondary care - Outpatients;,;Secondary care - In-patients;,;Community;,;Prescribing - Community pharmacy",
+                                "imageContrast": "Not stated"
+                            },
+                            "temporal": {
+                                "endDate": null,
+                                "startDate": "1990-01-01T00:00:00.000Z",
+                                "timeLag": "Variable",
+                                "accrualPeriodicity": "Monthly",
+                                "distributionReleaseDate": null
+                            }
+                        },
+                        "accessibility": {
+                            "access": {
+                                "deliveryLeadTime": "1-2 months",
+                                "jurisdiction": "GB-ENG;,;GB-SCT;,;GB-WLS",
+                                "dataController": "NHS England, Public Health Scotland/National Records Scotland, SAIL Databank",
+                                "dataProcessor": "NHS England, Public Health Scotland, SAIL Databank",
+                                "accessRights": "https://bhfdatasciencecentre.org/areas/cvd-covid-uk-covid-impact/",
+                                "accessService": "Data is accessed within the respective TREs under the arrangements in place with the BHF Data Science Centre for CVD-COVID-UK / COVID-IMPACT",
+                                "accessRequestCost": null,
+                                "accessServiceCategory": "TRE/SDE"
+                            },
+                            "usage": {
+                                "dataUseLimitation": "Research-specific restrictions",
+                                "dataUseRequirement": "Collaboration required;,;Institution-specific restrictions;,;Project-specific restrictions;,;Publication required;,;Time limit on use;,;User-specific restriction",
+                                "resourceCreator": {
+                                    "name": "NHS England, SAIL Databank, Scottish National Safe Haven",
+                                    "gatewayId": null,
+                                    "rorId": null
+                                }
+                            },
+                            "formatAndStandards": {
+                                "vocabularyEncodingSchemes": "OPCS4;,;READ;,;SNOMED CT;,;DM+D;,;ICD10;,;OTHER;,;NHS NATIONAL CODES;,;NHS WALES NATIONAL CODES;,;LOCAL;,;ICD9;,;NHS SCOTLAND NATIONAL CODES;,;ODS",
+                                "conformsTo": null,
+                                "languages": "en",
+                                "formats": "SQL database table"
+                            }
+                        },
+                        "linkage": {
+                            "isGeneratedUsing": null,
+                            "associatedMedia": "https://bhfdatasciencecentre.org/areas/cvd-covid-uk-covid-impact/",
+                            "dataUses": null,
+                            "isReferenceIn": null,
+                            "tools": null,
+                            "datasetLinkage": {
+                                "isDerivedFrom": [
+                                    {
+                                        "pid": null,
+                                        "title": "National Records of Scotland (NRS) - Deaths Data",
+                                        "url": "https://web.prod.hdruk.cloud/en/dataset/64"
+                                    }
+                                ],
+                                "isPartOf": null,
+                                "isMemberOf": null,
+                                "linkedDatasets": null
+                            },
+                            "investigations": null,
+                            "syntheticDataWebLink": null,
+                            "publicationAboutDataset": [],
+                            "publicationUsingDataset": []
+                        },
+                        "observations": [
+                            {
+                                "observedNode": "Persons",
+                                "measuredValue": 65000000,
+                                "observationDate": "1990-01-01T00:00:00.000Z",
+                                "measuredProperty": "Count",
+                                "disambiguatingDescription": "Multiple datasets in each nation's TRE with a population size of up to 57M in England (NHSE), 5.5M in Scotland (Safe Haven) and 3.2M in Wales (SAIL).  Some datasets measure events and will have a significantly larger number of records."
+                            }
+                        ],
+                        "structuralMetadata": null,
+                        "tissuesSampleCollection": [
+                            {
+                                "materialType": "None/not available",
+                                "id": null,
+                                "dataCategories": null,
+                                "accessConditions": null,
+                                "collectionType": null,
+                                "disease": null,
+                                "storageTemperature": null,
+                                "sampleAgeRange": null,
+                                "tissueSampleMetadata": null
+                            }
+                        ],
+                        "demographicFrequency": {
+                            "ethnicity": [
+                                {
+                                    "bin": "White - Any other White background",
+                                    "count": 19675548
+                                },
+                                {
+                                    "bin": "Mixed - Any other mixed background",
+                                    "count": 927846
+                                },
+                                {
+                                    "bin": "Asian or Asian British - Any other Asian background",
+                                    "count": 3433152
+                                },
+                                {
+                                    "bin": "Black or Black British - Any other Black background",
+                                    "count": 1863827
+                                },
+                                {
+                                    "bin": "Not known",
+                                    "count": 2032017
+                                },
+                                {
+                                    "bin": "Other Ethnic Groups - Any other ethnic group",
+                                    "count": 1536826
+                                }
+                            ],
+                            "age": [
+                                {
+                                    "bin": "5-9 years",
+                                    "count": 3742392
+                                },
+                                {
+                                    "bin": "10-14 years",
+                                    "count": 3244883
+                                },
+                                {
+                                    "bin": "15-19 years",
+                                    "count": 3056661
+                                },
+                                {
+                                    "bin": "20-24 years",
+                                    "count": 2612359
+                                },
+                                {
+                                    "bin": "25-29 years",
+                                    "count": 3032010
+                                },
+                                {
+                                    "bin": "30-34 years",
+                                    "count": 3048630
+                                },
+                                {
+                                    "bin": "35-39 years",
+                                    "count": 2647188
+                                },
+                                {
+                                    "bin": "40-44 years",
+                                    "count": 2095406
+                                },
+                                {
+                                    "bin": "45-49 years",
+                                    "count": 1527419
+                                },
+                                {
+                                    "bin": "50-54 years",
+                                    "count": 1235066
+                                },
+                                {
+                                    "bin": "55-59 years",
+                                    "count": 966353
+                                },
+                                {
+                                    "bin": "60-64 years",
+                                    "count": 685730
+                                },
+                                {
+                                    "bin": "65-69 years",
+                                    "count": 429504
+                                },
+                                {
+                                    "bin": "70-74 years",
+                                    "count": 289051
+                                },
+                                {
+                                    "bin": "75-79 years",
+                                    "count": 898507
+                                },
+                                {
+                                    "bin": "80-84 years",
+                                    "count": 409989
+                                },
+                                {
+                                    "bin": "85-89 years",
+                                    "count": 474012
+                                }
+                            ],
+                            "disease": null
+                        },
+                        "omics": null
+                    }
