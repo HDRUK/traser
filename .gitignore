@@ -137,6 +137,11 @@ application_default_credentials.json
 # Runtime dataset cache (DATA_DIR) — rebuilt from GATEWAY_API_URL on cold start
 /data/
 
+# Production regression suite — harvested fixtures, replay harness and the
+# old-vs-new differences writeup. Kept out of the repo: the corpus is ~1MB of
+# captured production responses and is not needed to build or test the service.
+/regression-suite/
+
 # React Router build output and generated types
 /build/
 /.react-router/
