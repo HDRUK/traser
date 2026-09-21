@@ -72,7 +72,7 @@ module.exports = {
 
         {
 
-          prepareCmd: "node updateVersions.js ${nextRelease.version} && git add chart/traser/Chart.yaml package.json"
+          prepareCmd: "node updateVersions.cjs ${nextRelease.version} && git add chart/traser/Chart.yaml package.json"
 
         }
 
