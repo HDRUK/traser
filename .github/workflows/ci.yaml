@@ -5,13 +5,10 @@ on:
     branches:
       - dev
       - main
-      - feature/GAT-9016-migration
-      - feat/GAT-*
   pull_request:
     branches:
       - main
       - dev
-      - feature/GAT-9016-migration
       - feat/GAT-*
   workflow_dispatch:
     inputs:
@@ -34,8 +31,6 @@ jobs:
       ${{
          github.ref_name == 'dev' && 'dev'
       || github.base_ref == 'dev' && 'dev'
-      || github.ref_name == 'feature/GAT-9016-migration' && 'dev'
-      || github.base_ref == 'feature/GAT-9016-migration' && 'dev'
       || startsWith(github.ref_name, 'feat/GAT-') && 'dev'
       || startsWith(github.base_ref, 'feat/GAT-') && 'dev'
       ||                             'release'
