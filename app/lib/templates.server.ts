@@ -4,10 +4,6 @@ import { createFetchCache } from "./ttlCache.server";
 const TEMPLATES_LOCATION = process.env.TEMPLATES_LOCATION ?? "";
 const CACHE_TTL = parseInt(process.env.CACHE_REFRESH_STDTLL ?? "3600") * 1000;
 
-// ─── I/O ──────────────────────────────────────────────────────────────────
-
-// Loader throws on failure (rather than returning null) so the cache never
-// stores a failed fetch — fetchOrReadText below is what converts that to null.
 const fetchText = createFetchCache(async (url: string): Promise<string> => {
   if (url.startsWith("http")) {
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
@@ -31,8 +27,6 @@ async function fetchOrReadJson(url: string): Promise<unknown> {
   return JSON.parse(text);
 }
 
-// ─── Paths ────────────────────────────────────────────────────────────────
-
 function templatePath(inModel: string, inVer: string, outModel: string, outVer: string): string {
   return `${TEMPLATES_LOCATION}/maps/${outModel}/${outVer}/${inModel}/${inVer}/translation.jsonata`;
 }
@@ -45,16 +39,12 @@ function availablePath(): string {
   return `${TEMPLATES_LOCATION}/available.json`;
 }
 
-// ─── Types ────────────────────────────────────────────────────────────────
-
 export interface TemplateEntry {
   input_model: string;
   input_version: string;
   output_model: string;
   output_version: string;
 }
-
-// ─── Public API ───────────────────────────────────────────────────────────
 
 export async function getAvailableTemplates(): Promise<TemplateEntry[]> {
   return fetchOrReadJson(availablePath()) as Promise<TemplateEntry[]>;

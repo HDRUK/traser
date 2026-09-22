@@ -6,8 +6,6 @@ import { createFetchCache } from "./ttlCache.server";
 const SCHEMA_LOCATION = process.env.SCHEMA_LOCATION ?? "";
 const CACHE_TTL = parseInt(process.env.CACHE_REFRESH_STDTLL ?? "3600") * 1000;
 
-// ─── I/O ──────────────────────────────────────────────────────────────────
-
 const fetchOrReadJson = createFetchCache(async (url: string): Promise<unknown> => {
   if (url.startsWith("http")) {
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
@@ -16,8 +14,6 @@ const fetchOrReadJson = createFetchCache(async (url: string): Promise<unknown> =
   }
   return JSON.parse(await readFile(url, "utf-8"));
 }, { ttlMs: CACHE_TTL });
-
-// ─── AJV ──────────────────────────────────────────────────────────────────
 
 function createAjv(): Ajv {
   const instance = new Ajv({
@@ -32,19 +28,9 @@ function createAjv(): Ajv {
   return instance;
 }
 
-// The compiled-validator store. These are `let`, not `const`, so a background
-// reload (see startSchemaReloader) can build a fresh instance + fresh caches
-// and swap all three references atomically — readers never see a half-populated
-// store the way per-key removeSchema/addSchema would expose.
 let ajv = createAjv();
 
-// ─── Property index ───────────────────────────────────────────────────────
-
 let _propertyIndexCache = new Map<string, Map<string, string[]>>();
-
-// ─── Name-discriminator map ───────────────────────────────────────────────
-// Maps a discriminator name literal (e.g. "Health and disease") to the allowed
-// enum values for its subTypes property. Used to correct anyOf branch errors.
 
 let _nameDiscriminatorCache = new Map<string, Map<string, unknown[]>>();
 
@@ -64,12 +50,10 @@ export function buildNameDiscriminatorMap(schema: object): Map<string, unknown[]
     const subTypesProp = props["subTypes"] as Record<string, unknown> | undefined;
     if (!nameProp || !subTypesProp) continue;
 
-    // Detect the Literal: true discriminator pattern used in schemata-2
     if (!nameProp["Literal"]) continue;
     const nameDefault = nameProp["default"] as string | undefined;
     if (!nameDefault) continue;
 
-    // Find the enum for subTypes → anyOf[0].items.$ref
     const subTypesAnyOf = (subTypesProp["anyOf"] as unknown[]) ?? [];
     for (const branch of subTypesAnyOf) {
       const b = branch as Record<string, unknown>;
@@ -92,11 +76,6 @@ export function getNameDiscriminatorMap(name: string, version: string): Map<stri
   return _nameDiscriminatorCache.get(`${name}:${version}`) ?? new Map();
 }
 
-/**
- * Walks a JSON Schema's $defs (or definitions), following $ref links, and
- * produces a map from property name → all dot-paths where that property
- * appears (e.g. "typicalAgeRangeMin" → ["coverage.typicalAgeRangeMin"]).
- */
 export function buildPropertyIndex(schema: object): Map<string, string[]> {
   const index = new Map<string, string[]>();
   const defs: Record<string, object> =
@@ -105,7 +84,7 @@ export function buildPropertyIndex(schema: object): Map<string, string[]> {
     {};
 
   function resolveRef(ref: string): object | undefined {
-    // refs look like "#/$defs/SomeName" or "#/definitions/SomeName"
+
     const parts = ref.replace(/^#\//, "").split("/");
     let node: unknown = schema;
     for (const p of parts) {
@@ -119,7 +98,6 @@ export function buildPropertyIndex(schema: object): Map<string, string[]> {
     if (node == null || typeof node !== "object") return;
     const obj = node as Record<string, unknown>;
 
-    // If this node is a $ref, resolve and walk the target instead
     if (typeof obj["$ref"] === "string") {
       const target = resolveRef(obj["$ref"]);
       if (target) walk(target, path);
@@ -130,19 +108,18 @@ export function buildPropertyIndex(schema: object): Map<string, string[]> {
     if (props) {
       for (const [propName, propSchema] of Object.entries(props)) {
         const childPath = path ? `${path}.${propName}` : propName;
-        // Record this property name → path
+
         const existing = index.get(propName);
         if (existing) {
           existing.push(childPath);
         } else {
           index.set(propName, [childPath]);
         }
-        // Recurse into the property schema
+
         walk(propSchema, childPath);
       }
     }
 
-    // Walk allOf / anyOf / oneOf / if / then / else
     for (const keyword of ["allOf", "anyOf", "oneOf"] as const) {
       const arr = obj[keyword] as unknown[] | undefined;
       if (Array.isArray(arr)) {
@@ -154,10 +131,8 @@ export function buildPropertyIndex(schema: object): Map<string, string[]> {
     }
   }
 
-  // Walk the root schema properties first
   walk(schema, "");
 
-  // Then walk every $def so nested types are also indexed
   for (const defSchema of Object.values(defs)) {
     walk(defSchema, "");
   }
@@ -168,8 +143,6 @@ export function buildPropertyIndex(schema: object): Map<string, string[]> {
 export function getPropertyIndex(name: string, version: string): Map<string, string[]> {
   return _propertyIndexCache.get(`${name}:${version}`) ?? new Map();
 }
-
-// ─── Paths ────────────────────────────────────────────────────────────────
 
 const loadFromLocal = !SCHEMA_LOCATION.startsWith("http");
 
@@ -187,8 +160,6 @@ function availablePath(): string {
     : `${SCHEMA_LOCATION}/available.json`;
 }
 
-// ─── Lazy init ────────────────────────────────────────────────────────────
-
 let _initPromise: Promise<void> | null = null;
 
 export function ensureLoaded(): Promise<void> {
@@ -196,19 +167,15 @@ export function ensureLoaded(): Promise<void> {
     console.log("[schema] ensureLoaded() — first call, starting schema load");
     _initPromise = loadSchemas().catch((err) => {
       console.error("[schema] loadSchemas() threw unexpectedly:", err);
-      _initPromise = null; // allow retry on next request
+      _initPromise = null;
     });
   }
   return _initPromise;
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────
-
 export async function getAvailableSchemas(): Promise<Record<string, string[]>> {
   return fetchOrReadJson(availablePath()) as Promise<Record<string, string[]>>;
 }
-
-// ─── Load status (partial-load visibility) ────────────────────────────────
 
 export interface SchemaLoadStatus {
   loaded: number;
@@ -231,9 +198,6 @@ export function getSchemaLoadStatus(): SchemaLoadStatus {
 export async function loadSchemas(): Promise<void> {
   console.log(`[schema] loadSchemas() starting — SCHEMA_LOCATION=${SCHEMA_LOCATION || "(not set)"}`);
 
-  // Build into FRESH structures so an in-flight reload never exposes a
-  // half-populated store to concurrent readers; swap references only once
-  // everything is compiled.
   const nextAjv = createAjv();
   const nextPropertyIndex = new Map<string, Map<string, string[]>>();
   const nextNameDiscriminator = new Map<string, Map<string, unknown[]>>();
@@ -262,9 +226,6 @@ export async function loadSchemas(): Promise<void> {
     }
   }
 
-  // If EVERY schema failed, keep the previous (working) store rather than
-  // swapping in an empty one — a transient outage of SCHEMA_LOCATION shouldn't
-  // wipe validation until the next reload.
   if (loaded === 0 && ajv && _loadStatus.lastLoadedAt) {
     console.error(
       `[schema] loadSchemas() loaded 0 of ${loaded + failed} — keeping previous store`
@@ -273,7 +234,6 @@ export async function loadSchemas(): Promise<void> {
     return;
   }
 
-  // Atomic swap.
   ajv = nextAjv;
   _propertyIndexCache = nextPropertyIndex;
   _nameDiscriminatorCache = nextNameDiscriminator;
@@ -288,13 +248,6 @@ export async function loadSchemas(): Promise<void> {
   }
 }
 
-// ─── Background periodic reload ────────────────────────────────────────────
-//
-// ensureLoaded() memoises the first load for the process lifetime, so without a
-// reloader the compiled validators would stay frozen until a restart even after
-// the raw-fetch TTL cache (CACHE_TTL) served fresher JSON. This re-runs
-// loadSchemas() every CACHE_TTL so upstream schema changes are picked up live.
-
 let _reloaderStarted = false;
 
 export function startSchemaReloader(): void {
@@ -307,7 +260,7 @@ export function startSchemaReloader(): void {
   const timer = setInterval(() => {
     loadSchemas().catch((err) => console.error("[schema] periodic reload failed:", err));
   }, CACHE_TTL);
-  timer.unref?.(); // don't keep the process alive solely for this timer
+  timer.unref?.();
 }
 
 export function getSchema(name: string, version: string) {
@@ -359,7 +312,7 @@ export async function findMatchingSchemas(
       try {
         const validator = getSchema(schema, version);
         if (!validator) continue;
-        // Clone to prevent AJV mutation side-effects (coerceTypes / useDefaults)
+
         const clone = structuredClone(metadata);
         const ok = Boolean(validator({ ...(clone as object) }));
         const entry: { name: string; version: string; matches: boolean; errors?: unknown } = { name: schema, version, matches: ok };

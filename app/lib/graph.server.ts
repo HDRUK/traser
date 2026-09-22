@@ -27,7 +27,6 @@ export class TranslationGraph {
 
   private constructor() {}
 
-  /** Factory — use instead of `new TranslationGraph()` since init is async. */
   static async create(): Promise<TranslationGraph> {
     const g = new TranslationGraph();
     const templates = await getAvailableTemplates();

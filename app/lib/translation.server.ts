@@ -76,7 +76,7 @@ export async function translate(
   outputMetadata?: unknown;
   error?: { status: number; message: string; details?: unknown };
 }> {
-  // Identity — no translation needed
+
   if (inputModelName === outputModelName && inputModelVersion === outputModelVersion) {
     return { outputMetadata: metadata };
   }
@@ -109,7 +109,6 @@ export async function translate(
     };
   }
 
-  // The source object shape expected by JSONata templates: { input, extra }
   const source = { input: metadata, extra };
 
   let expression: ReturnType<typeof jsonata>;
@@ -141,17 +140,9 @@ export async function translate(
   return { translatedMetadata };
 }
 
-// Canonical hub schema that refresh.server.ts caches every dataset as
-// (fetched from the Gateway API via ?schema_model=/&schema_version=) so that
-// the assumption below — every cached {pid}.json is already shaped like this
-// schema — actually holds.
 export const REFERENCE_SCHEMA = "GWDM";
 export const REFERENCE_VERSION = "2.0";
 
-/**
- * Full pipeline: multi-hop translation from GWDM:2.0 → targetSchema:targetVersion
- * followed by validation. Used by refresh.server.ts for batch testing.
- */
 export async function translateAndValidate(
   metadata: unknown,
   targetSchema: string,
@@ -181,7 +172,6 @@ export async function translateAndValidate(
     return { translated: false, valid: false, reason: pathError?.message };
   }
 
-  // Apply chained translations
   let current: unknown = metadata;
   for (let i = 1; i < translationsToApply.length; i++) {
     const inM = translationsToApply[i - 1];
@@ -198,7 +188,6 @@ export async function translateAndValidate(
     current = result.translatedMetadata ?? result.outputMetadata;
   }
 
-  // Validate
   const errors = await validateMetadata(current, targetSchema, targetVersion);
   if (errors.length > 0) {
     const reason = (errors as Array<{ instancePath?: string; message?: string }>)
