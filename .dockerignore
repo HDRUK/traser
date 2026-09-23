@@ -1,0 +1,16 @@
+.git
+.github
+node_modules
+build
+.react-router
+data
+regression-suite
+diagrams
+upgrade-plans
+tests
+.env
+.env.*
+!env.example
+*.log
+.DS_Store
+application_default_credentials.json
