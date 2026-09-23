@@ -1,4 +1,3 @@
-import { useMemo, useState } from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -10,25 +9,26 @@ import {
   useNavigation,
 } from "react-router";
 import AppBar from "@mui/material/AppBar";
+import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Container from "@mui/material/Container";
 import CssBaseline from "@mui/material/CssBaseline";
 import LinearProgress from "@mui/material/LinearProgress";
-import Switch from "@mui/material/Switch";
 import Toolbar from "@mui/material/Toolbar";
-import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { ThemeProvider } from "@mui/material/styles";
+import { createHdrukTheme } from "@hdruk/ui/theme";
 
 import type { Route } from "./+types/root";
-import "./app.css";
 
 const NAV_LINKS = [
   { to: "/", label: "Home" },
   { to: "/docs", label: "API Docs" },
 ];
+
+const theme = createHdrukTheme();
 // ── Global request middleware ──
 // Runs for every route (UI pages and JSON API resource routes). Sets baseline
 // security headers and enforces a request body-size limit.
@@ -113,27 +113,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const navigation = useNavigation();
   const isNavigating = navigation.state === "loading";
-  const [mode, setMode] = useState<"dark" | "light">("light");
-
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode,
-          primary: { main: "#475DA7" },
-          secondary: { main: "#3DB28C" },
-          error: { main: "#DC3645" },
-          background:
-            mode === "dark"
-              ? { default: "#1e1e1e", paper: "#2d2d2d" }
-              : { default: "#F6F7F8", paper: "#ffffff" },
-        },
-        typography: {
-          fontFamily: '"Source Sans 3", sans-serif',
-        },
-      }),
-    [mode],
-  );
 
   return (
     <ThemeProvider theme={theme}>
@@ -185,40 +164,6 @@ export default function App() {
           ))}
 
           <Box sx={{ flex: 1 }} />
-
-          {/* Dark / light mode toggle */}
-          <Tooltip
-            title={
-              mode === "dark" ? "Switch to light mode" : "Switch to dark mode"
-            }
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <LightModeIcon
-                sx={{
-                  fontSize: 16,
-                  color: mode === "light" ? "#fff" : "rgba(255,255,255,0.45)",
-                }}
-              />
-              <Switch
-                size="small"
-                checked={mode === "dark"}
-                onChange={(_, checked) => setMode(checked ? "dark" : "light")}
-                sx={{
-                  "& .MuiSwitch-thumb": { bgcolor: "#fff" },
-                  "& .MuiSwitch-track": {
-                    bgcolor: "rgba(255,255,255,0.35) !important",
-                    opacity: "1 !important",
-                  },
-                }}
-              />
-              <DarkModeIcon
-                sx={{
-                  fontSize: 16,
-                  color: mode === "dark" ? "#fff" : "rgba(255,255,255,0.45)",
-                }}
-              />
-            </Box>
-          </Tooltip>
         </Toolbar>
 
         {isNavigating && (
@@ -270,14 +215,27 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   }
 
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
-    </main>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Container component="main" maxWidth="md" sx={{ py: 6 }}>
+        <Alert severity="error" variant="outlined">
+          <AlertTitle>{message}</AlertTitle>
+          {details}
+          {stack && (
+            <Box
+              component="pre"
+              sx={{
+                mt: 1,
+                fontSize: "0.72rem",
+                overflow: "auto",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {stack}
+            </Box>
+          )}
+        </Alert>
+      </Container>
+    </ThemeProvider>
   );
 }
