@@ -168,6 +168,10 @@ docker build -f Dockerfile.dev -t traser-dev .
 docker run --rm -p 3001:3001 --env-file .env traser-dev
 ```
 
+Leave values in `.env` unquoted. `dotenv` and Node's `--env-file` strip wrapping
+quotes; `docker run --env-file` does not, so under that form a quoted value
+reaches the service with its quotes attached.
+
 ## Run via Tilt
 
 Enable TRASER in the `gateway-api-2` `tiltconf.json`:
