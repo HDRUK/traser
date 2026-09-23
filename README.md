@@ -1,693 +1,248 @@
-
 # HDR metadata TRAnslation SERvice (TRASER)
 
-A microservice for converting between different schemas of metadata.
+A microservice for converting health dataset metadata between schema formats —
+HDRUK, GWDM, SchemaOrg and CRUK. It exposes a JSON API plus a Swagger UI, and
+runs as a single [React Router v7](https://reactrouter.com/) Node process on
+port `3001`.
 
-## Setup
+## Quick start
 
-### Install the package
-
-```
+```bash
 git clone -b dev https://github.com/HDRUK/traser.git
 cd traser
-```
-
-### Setup env varialbes
-```
 cp env.example .env
-```
-
-### Run the API (Dev)
-
-Via docker 
-```
-docker-compose up --build 
-```
-
-Or just:
-```
 npm install
 npm run dev
 ```
 
-### Run via tilt 
+The dev server listens on `http://localhost:3001` (override with `PORT`).
+Swagger UI is at [http://localhost:3001/docs](http://localhost:3001/docs).
 
-In the gateway-api main `tiltconf.json` you need to make sure that TRASER is enabled:
-```
-{
-    ...
-    "traserServiceRoot": "<path to source code>",
-    "traserEnabled": true,
-    ...
-}
-```
-When `tilt up` is run, TRASER will be running on port `8002`, otherwise you can port-forward by getting the service pod name via `kubectl get pods` and running:
-```
-kubectl port-forward <traser pod name>  <port to forward to>:3001
+For a production build:
+
+```bash
+npm run build
+npm start
 ```
 
+## Environment
 
+`npm run dev` reads `.env` via `dotenv`; `npm start` reads it via Node's
+`--env-file-if-exists`. Neither is read inside the container image, so in
+Kubernetes every variable below must come from the pod environment.
 
-## Swagger Documentation
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3001` | Listen port |
+| `SCHEMA_LOCATION` | — | URL or local path to the `schemata-2` root. Anything not starting with `http` is read from disk (e.g. `../schemata-2`) |
+| `TEMPLATES_LOCATION` | — | URL or local path to the `traser-mapping-files` root |
+| `CACHE_REFRESH_STDTLL` | `3600` | Schema/template cache TTL in seconds, and the schema-reload interval |
+| `HYDRATION_MAP_VERSION` | — | Default version for `/get/form_hydration` when `version` is omitted |
+| `MAX_BODY_MB` | `10` | Request bodies above this are rejected with `413` |
+| `AUDIT_LOG_ENABLED` | `0` | Set to `1` to publish audit events to GCP Pub/Sub |
+| `PUBSUB_PROJECT_ID`, `PUBSUB_TOPIC_NAME` | — | Pub/Sub target, used only when auditing is enabled |
 
-[http://localhost:3001/docs/](http://localhost:3001/docs/)
+Without `SCHEMA_LOCATION` the schema loader has nothing to compile and every
+schema-backed endpoint returns `500`.
 
-## Endpoints Overview
+## Endpoints
 
-### Translate (POST)
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/status` | Liveness probe. Returns `{"message":"ok"}` without touching schemas |
+| `POST` | `/translate` | Translate a metadata document to another schema |
+| `POST` | `/validate` | Validate a metadata document against a schema |
+| `POST` | `/find` | List which schemas a metadata document matches |
+| `GET` | `/list/schemas` | Available schemas and versions |
+| `GET` | `/list/templates` | Available translation templates |
+| `GET` | `/list/translations` | Translation routes reachable from a given schema |
+| `GET` | `/get/schema` | A schema definition |
+| `GET` | `/get/map` | A JSONata translation map |
+| `GET` | `/get/form_hydration` | A hydrated form schema |
+| `GET` | `/openapi.json` | The OpenAPI 3 spec |
+| `GET` | `/docs` | Swagger UI |
+| `GET` | `/` | Landing page |
 
-
-Posting `{'metadata':<hdruk 2.1.2 metadata>}`
-Full:
-```
-/translate?output_schema=GWDM&output_version=1.0&input_schema=HDRUK&input_version=2.1.2
-```
-Will return 200 and `{<GWDM 1.0 metadata>}` if successfull.
-
-
-No input specified:
-```
-/translate?output_schema=GWDM&output_version=1.0
-```
-The service will attempt to detect the input metadata schema and version and find a translation map based on this.
-
-No queries specified:
-```
-/translate
-```
-The service will assume the output is the latest version of the GWDM (1.0), attempt to detect the input metadata schema and version and find a translation map based on this. 
-
-
-Posting `{'metadata':<GWDM 1.0 metadata>}` 
-```
-/translate
-```
-The service will assume the output is the latest version of the GWDM (1.0), the service will detect that the input is already the GWDM, the service will not try any translation and will return a 200 with the original metadata in the returned payload.
-
-
-### Find (POST)
-
-
-Posting `{'metadata':<hdruk 2.1.2 metadata>}` to 
-```
-/find
-```
-
-Will return:
-```
-[
-    {
-        "name": "HDRUK",
-        "version": "2.1.2",
-        "matches": false
-    },
-    {
-        "name": "GWDM",
-        "version": "1.0",
-        "matches": true
-    },
-    {
-        "name": "SchemaOrg",
-        "version": "default",
-        "matches": false
-    },
-    {
-        "name": "SchemaOrg",
-        "version": "BioSchema",
-        "matches": false
-    },
-    {
-        "name": "SchemaOrg",
-        "version": "GoogleRecommended",
-        "matches": false
-    }
-]
-```
-
-### Get (GET)
-
-```
-/get/schema?name=GWDM&version=1.0'
-```
-Returns the json-schema for GWDM version 1.0 
-
-```
-/get/map?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=1.0
-```
-Returns a translation map file
-
-### Validate (POST)
-
-`{'metadata':<GWDM 1.0 metadata>}` to 
-```
-/validate?input_schema=GWDM&input_version=1.0
-```
-Will return a 200 and:
-```
-{
-    "details": "all ok"
-}
-```
-
-## Examples
+Full request and response schemas are in Swagger UI; the examples below are a
+starting point. `tests/data/` holds a sample metadata document per schema —
+each file is a bare document, so `/translate` and `/validate`, which expect a
+`{"metadata": ...}` wrapper, need it wrapped.
 
 ### Translate
 
-#### HDRUK 2.1.2 to GWDM 1.0
-
-```
-curl --location 'http://localhost:3001/translate?output_schema=GWDM&output_version=1.0&input_schema=HDRUK&input_version=2.1.2' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "extra": {
-        "id": "1234",
-        "pid": "5124f2",
-        "controlledKeyWords": [
-            "Papers",
-            "COVID-19",
-            "controlledWord"
-        ],
-        "pathwayDescription": "Not APPLICABLE for blah reason",
-        "datasetType": "list of papers",
-        "isGeneratedUsing": "something",
-        "dataUses": "dunno",
-        "isMemberOf": "blah"
-    },
-    "metadata": {
-        "identifier": "https://web.www.healthdatagateway.org/dataset/a7ddefbd-31d9-4703-a738-256e4689f76a",
-        "version": "2.0.0",
-        "summary": {
-            "title": "HDR UK Papers & Preprints",
-            "doiName": "10.1093/ije/dyx196",
-            "abstract": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
-            "publisher": {
-                "name": "HEALTH DATA RESEARCH UK",
-                "memberOf": "OTHER",
-                "contactPoint": "susheel.varma@hdruk.ac.uk"
-            },
-            "contactPoint": "susheel.varma@hdruk.ac.uk",
-            "keywords": [
-                "Preprints",
-                "Papers",
-                "HDR UK"
-            ]
-        },
-        "documentation": {
-            "description": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations\n\nThis will include:\n- Papers\n- COVID-19 Papers\n- COVID-19 Preprint",
-            "associatedMedia": [
-                "https://github.com/HDRUK/papers"
-            ],
-            "isPartOf": "NOT APPLICABLE"
-        },
-        "revisions": [
-            {
-                "version": "1.0.0",
-                "url": "https://d5faf9c6-6c34-46d7-93c4-7706a5436ed9"
-            },
-            {
-                "version": "2.0.0",
-                "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
-            },
-            {
-                "version": "0.0.1",
-                "url": "https://9e798632-442a-427b-8d0e-456f754d28dc"
-            },
-            {
-                "version": "2.1.1",
-                "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
-            }
-        ],
-        "modified": "2021-01-28T14:15:46Z",
-        "issued": "2020-08-05T14:35:59Z",
-        "accessibility": {
-            "formatAndStandards": {
-                "language": "en",
-                "vocabularyEncodingScheme": "OTHER",
-                "format": [
-                    "CSV",
-                    "JSON"
-                ],
-                "conformsTo": "OTHER"
-            },
-            "usage": {
-                "dataUseLimitation": "GENERAL RESEARCH USE",
-                "resourceCreator": "HDR UK Science Team",
-                "dataUseRequirements": "RETURN TO DATABASE OR RESOURCE",
-                "isReferencedBy": [
-                    "10.5281/zenodo.326615"
-                ],
-                "investigations": [
-                    "https://github.com/HDRUK/papers"
-                ]
-            },
-            "access": {
-                "dataController": "HDR UK",
-                "jurisdiction": "GB-ENG",
-                "dataProcessor": "HDR UK",
-                "accessService": "https://github.com/HDRUK/papers",
-                "accessRights": [
-                    "https://raw.githubusercontent.com/HDRUK/papers/master/LICENSE"
-                ],
-                "accessRequestCost": "Free",
-                "deliveryLeadTime": "OTHER"
-            }
-        },
-        "observations": [
-            {
-                "observedNode": "FINDINGS",
-                "measuredValue": 575,
-                "disambiguatingDescription": "Number of papers with affiliation and/or acknowledgement to HDR UK",
-                "observationDate": "2020-11-27",
-                "measuredProperty": "Count"
-            }
-        ],
-        "provenance": {
-            "temporal": {
-                "endDate": "2022-04-30",
-                "timeLag": "NOT APPLICABLE",
-                "distributionReleaseDate": "2020-11-27",
-                "accrualPeriodicity": "DAILY",
-                "startDate": "2020-03-31"
-            },
-            "origin": {
-                "purpose": "OTHER",
-                "source": "MACHINE GENERATED",
-                "collectionSituation": [
-                    "OTHER"
-                ]
-            }
-        },
-        "coverage": {
-            "followup": "UNKNOWN",
-            "spatial": "https://www.geonames.org/countries/GB/united-kingdom.html",
-            "physicalSampleAvailability": [
-                "NOT AVAILABLE"
-            ],
-            "pathway": "NOT APPLICABLE",
-            "typicalAgeRange": "0-0"
-        },
-        "enrichmentAndLinkage": {
-            "tools": [
-                "https://github.com/HDRUK/papers"
-            ],
-            "qualifiedRelation": [
-                "https://web.www.healthdatagateway.org/dataset/fd8d0743-344a-4758-bb97-f8ad84a37357"
-            ],
-            "derivation": [
-                "https://web.www.healthdatagateway.org/dataset/fd8d0743-344a-4758-bb97-f8ad84a37357"
-            ]
-        },
-        "structuralMetadata": [
-            {
-                "name": "table1",
-                "description": "this is table 1",
-                "elements": [
-                    {
-                        "name": "column1",
-                        "description": "this is column1",
-                        "dataType": "String",
-                        "sensitive": false
-                    }
-                ]
-            }
-        ]
-    }
-}'
+```bash
+curl -X POST 'http://localhost:3001/translate?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=1.0' \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -s '{metadata: .[0], extra: .[1]}' tests/data/hdrukv211.json tests/data/extra_hdrukv211.json)"
 ```
 
-#### GWDM 1.0 to Schema.Org
+`extra` carries values the target schema requires but the source document does
+not hold — `gatewayId` and `gatewayPid`, for example. Translating the HDRUK
+fixture without it fails output validation.
 
-```
-curl --location 'http://localhost:3001/translate?output_schema=SchemaOrg&output_version=default&input_schema=GWDM&input_version=1.0' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "metadata": {
-        "required": {
-            "gatewayId": "1234",
-            "gatewayPid": "5124f2",
-            "issued": "2020-08-05T14:35:59Z",
-            "modified": "2021-01-28T14:15:46Z",
-            "revisions": [
-                {
-                    "version": "1.0.0",
-                    "url": "https://d5faf9c6-6c34-46d7-93c4-7706a5436ed9"
-                },
-                {
-                    "version": "2.0.0",
-                    "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
-                },
-                {
-                    "version": "0.0.1",
-                    "url": "https://9e798632-442a-427b-8d0e-456f754d28dc"
-                },
-                {
-                    "version": "2.1.1",
-                    "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
-                }
-            ]
-        },
-        "summary": {
-            "abstract": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
-            "contactPoint": "susheel.varma@hdruk.ac.uk",
-            "keywords": "Preprints,Papers,HDR UK",
-            "controlledKeywords": "",
-            "datasetType": "list of papers",
-            "description": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations\n\nThis will include:\n- Papers\n- COVID-19 Papers\n- COVID-19 Preprint",
-            "doiName": "10.1093/ije/dyx196",
-            "shortTitle": "HDR UK Papers & Preprints",
-            "title": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
-            "publisher": {
-                "publisherName": "HEALTH DATA RESEARCH UK"
-            }
-        },
-        "coverage": {
-            "pathway": "NOT APPLICABLE",
-            "physicalSampleAvailability": "NOT AVAILABLE",
-            "spatial": "https://www.geonames.org/countries/GB/united-kingdom.html",
-            "followup": "UNKNOWN",
-            "typicalAgeRange": "0-0"
-        },
-        "provenance": {
-            "origin": {
-                "purpose": "OTHER",
-                "source": "MACHINE GENERATED",
-                "collectionSituation": "OTHER"
-            },
-            "temporal": {
-                "endDate": "2022-04-30",
-                "startDate": "2020-03-31",
-                "timeLag": "NOT APPLICABLE",
-                "accrualPeriodicity": "DAILY",
-                "distributionReleaseDate": "2020-11-27"
-            }
-        },
-        "accessibility": {
-            "access": {
-                "deliveryLeadTime": "OTHER",
-                "jurisdiction": "GB-ENG",
-                "dataController": "HDR UK",
-                "dataProcessor": "HDR UK",
-                "accessRights": "https://raw.githubusercontent.com/HDRUK/papers/master/LICENSE",
-                "accessService": "https://github.com/HDRUK/papers",
-                "accessRequestCost": "Free"
-            },
-            "usage": {
-                "dataUseLimitation": "GENERAL RESEARCH USE",
-                "dataUseRequirement": "RETURN TO DATABASE OR RESOURCE",
-                "resourceCreator": "HDR UK Science Team"
-            },
-            "formatAndStandards": {
-                "vocabularyEncodingSchemes": "OTHER",
-                "conformsTo": "OTHER",
-                "languages": "en",
-                "formats": "CSV,JSON"
-            }
-        },
-        "linkage": {
-            "isGeneratedUsing": "something",
-            "dataUses": "dunno",
-            "isReferenceIn": "10.5281/zenodo.326615",
-            "tools": "https://github.com/HDRUK/papers",
-            "datasetLinkage": {
-                "isDerivedFrom": "https://web.www.healthdatagateway.org/dataset/fd8d0743-344a-4758-bb97-f8ad84a37357",
-                "isPartOf": "NOT APPLICABLE",
-                "isMemberOf": "blah",
-                "linkedDatasets": "https://web.www.healthdatagateway.org/dataset/fd8d0743-344a-4758-bb97-f8ad84a37357"
-            },
-            "investigations": "https://github.com/HDRUK/papers"
-        },
-        "observations": [
-            {
-                "observedNode": "FINDINGS",
-                "measuredValue": 575,
-                "observationDate": "2020-11-27",
-                "measuredProperty": "Count",
-                "disambiguatingDescription": "Number of papers with affiliation and/or acknowledgement to HDR UK"
-            }
-        ],
-        "structuralMetadata": [
-            {
-                "name": "table1",
-                "description": "this is table 1",
-                "columns": [
-                    {
-                        "name": "column1",
-                        "description": "this is column1",
-                        "dataType": "String",
-                        "sensitive": false
-                    }
-                ]
-            }
-        ]
-    }
-}'
+Query parameters are all optional:
+
+| Parameter | Default | Effect |
+|---|---|---|
+| `input_schema`, `input_version` | auto-detected | Source schema. Detected from the document when omitted |
+| `output_schema`, `output_version` | server default | Target schema |
+| `validate_input`, `validate_output` | `1` | Set to `0` to skip that validation step |
+| `subsection` | — | Translate and validate only a named subsection |
+| `select_first_matching` | `true` | Set to `false` to error rather than pick the first match when auto-detection is ambiguous |
+
+Translation is skipped and the document returned unchanged when the input and
+output schema and version are identical.
+
+Multi-hop routes are resolved automatically by running Dijkstra's algorithm
+over the available templates, so a request only needs the endpoints of the
+chain. There is no HDRUK 2.1.2 → GWDM 2.0 template, for instance, and the
+request below is served by chaining three:
+
+```bash
+curl -X POST 'http://localhost:3001/translate?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=2.0' \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -s '{metadata: .[0], extra: .[1]}' tests/data/hdrukv211.json tests/data/extra_hdrukv211.json)"
 ```
 
+`/list/translations` shows what is reachable from a given schema — note that it
+names its parameters `schema` and `version`, not `input_schema`/`input_version`:
 
-#### Unspecified Input Metadata (Schema.org) 
-
-```
-curl --location 'http://localhost:3001/translate?output_schema=GWDM&output_version=1.0' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "metadata": {
-        "@context": "https://schema.org/",
-        "@id": "https://hdruk.ac.uk",
-        "@type": "Dataset",
-        "identifier": "10.1093/ije/dyx196",
-        "version": "GDMv1",
-        "url": "https://hdruk.ac.uk/1234",
-        "name": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
-        "alternateName": "HDR UK Papers & Preprints",
-        "description": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations\n\nThis will include:\n- Papers\n- COVID-19 Papers\n- COVID-19 Preprint",
-        "abstract": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
-        "citation": "10.1093/ije/dyx196",
-        "funder": {
-            "@type": "Organization",
-            "legalName": "HDR UK Science Team",
-            "name": "HDR UK Science Team",
-            "identifier": "",
-            "sameAs": null,
-            "email": null
-        },
-        "usageInfo": {
-            "@type": "CreativeWork",
-            "name": "usage",
-            "accessibilitySummary": "GENERAL RESEARCH USE",
-            "abstract": "",
-            "accessMode": "",
-            "identifier": "",
-            "creator": null,
-            "publisher": null
-        },
-        "creator": {
-            "@type": "Organization",
-            "legalName": "HDR UK Science Team",
-            "name": "HDR UK Science Team",
-            "email": "susheel.varma@hdruk.ac.uk",
-            "identifier": "",
-            "sameAs": null
-        },
-        "maintainer": {
-            "@type": "Organization",
-            "legalName": "HDR UK",
-            "name": "HDR UK",
-            "email": "susheel.varma@hdruk.ac.uk",
-            "identifier": "",
-            "sameAs": null
-        },
-        "publisher": {
-            "@type": "Organization",
-            "legalName": "HEALTH DATA RESEARCH UK",
-            "name": "HEALTH DATA RESEARCH UK",
-            "identifier": "",
-            "sameAs": null,
-            "email": null
-        },
-        "spatialCoverage": "MACHINE GENERATED",
-        "temporalCoverage": "2020-03-31/2022-04-30",
-        "isAccessibleForFree": true,
-        "dateCreated": "2020-08-05T14:35:59Z",
-        "distribution": {
-            "@type": "DataDownload",
-            "name": "https://github.com/HDRUK/papers",
-            "contentUrl": "https://somehwere.com",
-            "encodingFormat": "Unknown"
-        },
-        "keywords": "Preprints,Papers,HDR UK",
-        "license": "https://raw.githubusercontent.com/HDRUK/papers/master/LICENSE",
-        "accessMode": "",
-        "accessibilitySummary": "",
-        "includedInDataCatalog": null,
-        "isBasedOn": null,
-        "isPartOf": null,
-        "hasPart": null,
-        "measurementTechnique": "",
-        "sameAs": null,
-        "variableMeasured": "",
-        "dateModified": null,
-        "datePublished": null
-    }
-}'
+```bash
+curl 'http://localhost:3001/list/translations?schema=HDRUK&version=2.1.2'
 ```
 
+```json
+["HDRUK:2.1.2 -> GWDM:1.1 -> GWDM:1.2 -> GWDM:2.0", "..."]
+```
+
+`400` is returned when no route exists.
 
 ### Find
 
-#### Finding the metadata model/version
+`/find` is the exception: it takes the metadata document on its own, with no
+wrapper.
 
-```
-curl --location 'http://localhost:3001/find' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "required": {
-        "gatewayId": "a7ddefbd-31d9-4703-a738-256e4689f76a",
-        "gatewayPid": "5124f2",
-        "issued": "2020-08-05T14:35:59Z",
-        "modified": "2021-01-28T14:15:46Z",
-        "revisions": [
-            {
-                "version": "1.0.0",
-                "url": "https://d5faf9c6-6c34-46d7-93c4-7706a5436ed9"
-            },
-            {
-                "version": "2.0.0",
-                "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
-            },
-            {
-                "version": "0.0.1",
-                "url": "https://9e798632-442a-427b-8d0e-456f754d28dc"
-            },
-            {
-                "version": "2.1.1",
-                "url": "https://a7ddefbd-31d9-4703-a738-256e4689f76a"
-            }
-        ]
-    },
-    "summary": {
-        "abstract": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
-        "contactPoint": "susheel.varma@hdruk.ac.uk",
-        "keywords": "Preprints,Papers,HDR UK",
-        "controlledKeywords": "",
-        "datasetType": "list of papers",
-        "description": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations\n\nThis will include:\n- Papers\n- COVID-19 Papers\n- COVID-19 Preprint",
-        "doiName": "10.1093/ije/dyx196",
-        "shortTitle": "HDR UK Papers & Preprints",
-        "title": "Publications that mention HDR-UK (or any variant thereof) in Acknowledgements or Author Affiliations",
-        "publisher": {
-            "publisherName": "HEALTH DATA RESEARCH UK"
-        }
-    },
-    "coverage": {
-        "pathway": "NOT APPLICABLE",
-        "physicalSampleAvailability": "NOT AVAILABLE",
-        "spatial": "https://www.geonames.org/countries/GB/united-kingdom.html",
-        "followup": "UNKNOWN",
-        "typicalAgeRange": "0-0"
-    },
-    "provenance": {
-        "origin": {
-            "purpose": "OTHER",
-            "source": "MACHINE GENERATED",
-            "collectionSituation": "OTHER"
-        },
-        "temporal": {
-            "endDate": "2022-04-30",
-            "startDate": "2020-03-31",
-            "timeLag": "NOT APPLICABLE",
-            "accrualPeriodicity": "DAILY",
-            "distributionReleaseDate": "2020-11-27"
-        }
-    },
-    "accessibility": {
-        "access": {
-            "deliveryLeadTime": "OTHER",
-            "jurisdiction": "GB-ENG",
-            "dataController": "HDR UK",
-            "dataProcessor": "HDR UK",
-            "accessRights": "https://raw.githubusercontent.com/HDRUK/papers/master/LICENSE",
-            "accessService": "https://github.com/HDRUK/papers",
-            "accessRequestCost": "Free"
-        },
-        "usage": {
-            "dataUseLimitation": "GENERAL RESEARCH USE",
-            "dataUseRequirement": "RETURN TO DATABASE OR RESOURCE",
-            "resourceCreator": "HDR UK Science Team"
-        },
-        "formatAndStandards": {
-            "vocabularyEncodingSchemes": "OTHER",
-            "conformsTo": "OTHER",
-            "languages": "en",
-            "formats": "CSV,JSON"
-        }
-    },
-    "linkage": {
-        "isGeneratedUsing": "something",
-        "dataUses": "dunno",
-        "isReferenceIn": "10.5281/zenodo.326615",
-        "tools": "https://github.com/HDRUK/papers",
-        "datasetLinkage": {
-            "isDerivedFrom": "https://web.www.healthdatagateway.org/dataset/fd8d0743-344a-4758-bb97-f8ad84a37357",
-            "isPartOf": "NOT APPLICABLE",
-            "isMemberOf": "blah",
-            "linkedDatasets": "https://web.www.healthdatagateway.org/dataset/fd8d0743-344a-4758-bb97-f8ad84a37357"
-        },
-        "investigations": "https://github.com/HDRUK/papers"
-    },
-    "observations": [
-        {
-            "observedNode": "FINDINGS",
-            "measuredValue": 575,
-            "observationDate": "2020-11-27",
-            "measuredProperty": "Count",
-            "disambiguatingDescription": "Number of papers with affiliation and/or acknowledgement to HDR UK"
-        }
-    ],
-    "structuralMetadata": [
-        {
-            "name": "table1",
-            "description": "this is table 1",
-            "columns": [
-                {
-                    "name": "column1",
-                    "description": "this is column1",
-                    "dataType": "String",
-                    "sensitive": false
-                }
-            ]
-        }
-    ]
-}'
+```bash
+curl -X POST http://localhost:3001/find \
+  -H 'Content-Type: application/json' \
+  -d @tests/data/gdmv1.json
 ```
 
-Output:
-```
+Returns every known schema with a `matches` boolean:
+
+```json
 [
-    {
-        "name": "HDRUK",
-        "version": "2.1.2",
-        "matches": false
-    },
-    {
-        "name": "GWDM",
-        "version": "1.0",
-        "matches": true
-    },
-    {
-        "name": "SchemaOrg",
-        "version": "default",
-        "matches": false
-    },
-    {
-        "name": "SchemaOrg",
-        "version": "BioSchema",
-        "matches": false
-    },
-    {
-        "name": "SchemaOrg",
-        "version": "GoogleRecommended",
-        "matches": false
-    }
+  { "name": "HDRUK", "version": "2.1.2", "matches": false },
+  { "name": "GWDM", "version": "1.0", "matches": true }
 ]
 ```
 
+### Validate
+
+```bash
+curl -X POST 'http://localhost:3001/validate?input_schema=GWDM&input_version=1.0' \
+  -H 'Content-Type: application/json' \
+  -d "$(jq '{metadata: .}' tests/data/gdmv1.json)"
+```
+
+Returns `200` with `{"details": "all ok"}`, or `400` with the full AJV error
+array.
+
+### Get
+
+```bash
+curl 'http://localhost:3001/get/schema?name=GWDM&version=1.0'
+curl 'http://localhost:3001/get/map?input_schema=HDRUK&input_version=2.1.2&output_schema=GWDM&output_version=1.0'
+curl 'http://localhost:3001/get/form_hydration?name=HDRUK&version=2.2.1'
+```
+
+## Docker
+
+```bash
+# production image (multi-stage build, serves build/ on 3001)
+docker build -t traser .
+docker run --rm -p 3001:3001 --env-file .env traser
+
+# development image (runs npm run dev)
+docker build -f Dockerfile.dev -t traser-dev .
+docker run --rm -p 3001:3001 --env-file .env traser-dev
+```
+
+## Run via Tilt
+
+Enable TRASER in the `gateway-api-2` `tiltconf.json`:
+
+```json
+{
+    "traserServiceRoot": "<path to this checkout>",
+    "traserEnabled": true
+}
+```
+
+`tilt up` exposes TRASER on port `8002`. To reach it directly instead:
+
+```bash
+kubectl port-forward <traser pod name> 3001:3001
+```
+
+## Tests
+
+Integration tests run over HTTP against a server you start yourself, so run
+them in a second terminal:
+
+```bash
+npm run dev     # terminal 1
+npm test        # terminal 2
+```
+
+They target `TEST_BASE_URL`, which defaults to `http://localhost:3001`. Unit
+tests need no server:
+
+```bash
+npm run test:unit
+```
+
+## Scripts
+
+| Script | Does |
+|---|---|
+| `npm run dev` | React Router dev server with hot reload |
+| `npm run build` | Production build into `build/`, then generates `build/openapi.json` |
+| `npm start` | Serves the production build |
+| `npm test` | Integration tests (needs a running server) |
+| `npm run test:unit` | Unit tests |
+| `npm run typecheck` | Route typegen + `tsc` |
+| `npm run lint` | ESLint |
+
+## Layout
+
+```
+app/
+  root.tsx              # Layout, theme, and the middleware enforcing security
+                        #   headers and MAX_BODY_MB
+  routes.ts             # Route table
+  routes/               # home.tsx, docs.tsx
+    api/                # One file per JSON endpoint (loader/action only)
+  lib/                  # Server-only modules; *.server.ts never reach the client
+    schema.server.ts        # AJV compilation, schema matching, periodic reload
+    templates.server.ts     # JSONata template loading and the template index
+    translation.server.ts   # translate(), schema detection, translate + validate
+    graph.server.ts         # Translation graph and Dijkstra routing
+    errors.server.ts        # Shared error shaping
+    audit.server.ts         # Pub/Sub audit publisher
+    ttlCache.server.ts      # TTL cache used by the schema and template loaders
+tests/                  # Integration tests; unit/ holds the server-free suite
+chart/traser/           # Helm chart (service 8002 → container 3001)
+```
+
+Schemas are fetched from `SCHEMA_LOCATION` and compiled by AJV under the cache
+key `{name}:{version}`. AJV runs with `coerceTypes` and `useDefaults`, so it
+mutates the document it validates — callers clone first. Translation templates
+are JSONata strings fetched from
+`TEMPLATES_LOCATION/maps/{OutputModel}/{outputVersion}/{InputModel}/{inputVersion}/translation.jsonata`
+and evaluated against `{ input: metadata, extra: extra }`.
+
+The Pydantic sources for every schema live in
+[HDRUK/schemata-2](https://github.com/HDRUK/schemata-2); the JSONata templates
+live in
+[HDRUK/traser-mapping-files](https://github.com/HDRUK/traser-mapping-files).
