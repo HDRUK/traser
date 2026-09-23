@@ -10,7 +10,6 @@ export default [
       ".react-router/",
       "data/",
       "coverage/",
-      "src/",
       "*.config.js",
       "updateVersions.js",
     ],
