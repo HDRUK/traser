@@ -1,0 +1,14 @@
+{
+    "id": "1234",
+    "pid": "b77e1523-26f7-4289-a70b-4b6aab5d23f5",
+    "controlledKeyWords": [
+        "Papers",
+        "COVID-19",
+        "controlledWord"
+    ],
+    "pathwayDescription": "Not APPLICABLE for blah reason",
+    "datasetType": "list of papers",
+    "IsGeneratedUsing": "something",
+    "dataUses": "dunno",
+    "isMemberOf": "blah"
+}
