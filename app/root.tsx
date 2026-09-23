@@ -1,13 +1,76 @@
+import { useMemo, useState } from "react";
 import {
   isRouteErrorResponse,
   Links,
   Meta,
+  NavLink,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigation,
 } from "react-router";
+import AppBar from "@mui/material/AppBar";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import LinearProgress from "@mui/material/LinearProgress";
+import Switch from "@mui/material/Switch";
+import Toolbar from "@mui/material/Toolbar";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 
+import type { Route } from "./+types/root";
 import "./app.css";
+
+const NAV_LINKS = [
+  { to: "/", label: "Home" },
+  { to: "/docs", label: "API Docs" },
+];
+// ── Global request middleware ──
+// Runs for every route (UI pages and JSON API resource routes). Sets baseline
+// security headers and enforces a request body-size limit.
+
+const MAX_BODY_MB = parseInt(process.env.MAX_BODY_MB ?? "10", 10);
+
+const SECURITY_HEADERS: Record<string, string> = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "no-referrer",
+  "Strict-Transport-Security": "max-age=15552000; includeSubDomains",
+  "X-DNS-Prefetch-Control": "off",
+};
+
+export const middleware: Route.MiddlewareFunction[] = [
+  async ({ request }, next) => {
+    // Reject over-limit bodies up front (declared Content-Length).
+    if (MAX_BODY_MB > 0) {
+      const len = request.headers.get("content-length");
+      if (len && Number(len) > MAX_BODY_MB * 1024 * 1024) {
+        return Response.json(
+          { message: `Request body too large (limit ${MAX_BODY_MB}mb)` },
+          { status: 413 }
+        );
+      }
+    }
+
+    const response = await next();
+    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+      if (!response.headers.has(key)) response.headers.set(key, value);
+    }
+    return response;
+  },
+];
+
+export async function loader() {
+  // Kick off the once-per-server background job. It is an idempotent
+  // lazy-singleton, so calling it on every request is free after the first.
+  const { startSchemaReloader } = await import("./lib/schema.server");
+  startSchemaReloader();
+  return null;
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +78,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link
+          rel="icon"
+          href="/favicon-light.png"
+          media="(prefers-color-scheme: light)"
+        />
+        <link
+          rel="icon"
+          href="/favicon-dark.png"
+          media="(prefers-color-scheme: dark)"
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
         <Meta />
         <Links />
       </head>
@@ -28,21 +111,160 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const navigation = useNavigation();
+  const isNavigating = navigation.state === "loading";
+  const [mode, setMode] = useState<"dark" | "light">("light");
+
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode,
+          primary: { main: "#475DA7" },
+          secondary: { main: "#3DB28C" },
+          error: { main: "#DC3645" },
+          background:
+            mode === "dark"
+              ? { default: "#1e1e1e", paper: "#2d2d2d" }
+              : { default: "#F6F7F8", paper: "#ffffff" },
+        },
+        typography: {
+          fontFamily: '"Source Sans 3", sans-serif',
+        },
+      }),
+    [mode],
+  );
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppBar position="sticky" elevation={2} sx={{ bgcolor: "#475DA7" }}>
+        <Toolbar variant="dense" sx={{ gap: 0.5 }}>
+          {/* Gateway logo */}
+          <Box
+            component="img"
+            src="/gateway-white-logo.svg"
+            alt="Gateway"
+            sx={{ height: 22, mr: 1, flexShrink: 0 }}
+          />
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              color: "#fff",
+              mr: 2,
+              letterSpacing: "0.04em",
+            }}
+          >
+            TRASER
+          </Typography>
+
+          {/* Nav links */}
+          {NAV_LINKS.map(({ to, label }) => (
+            <NavLink key={to} to={to} end={to === "/"}>
+              {({ isActive }) => (
+                <Button
+                  size="small"
+                  sx={{
+                    color: isActive ? "#fff" : "rgba(255,255,255,0.72)",
+                    bgcolor: isActive
+                      ? "rgba(255,255,255,0.18)"
+                      : "transparent",
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+                    textTransform: "none",
+                    fontWeight: isActive ? 700 : 400,
+                    borderRadius: 1,
+                    px: 1.5,
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  {label}
+                </Button>
+              )}
+            </NavLink>
+          ))}
+
+          <Box sx={{ flex: 1 }} />
+
+          {/* Dark / light mode toggle */}
+          <Tooltip
+            title={
+              mode === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <LightModeIcon
+                sx={{
+                  fontSize: 16,
+                  color: mode === "light" ? "#fff" : "rgba(255,255,255,0.45)",
+                }}
+              />
+              <Switch
+                size="small"
+                checked={mode === "dark"}
+                onChange={(_, checked) => setMode(checked ? "dark" : "light")}
+                sx={{
+                  "& .MuiSwitch-thumb": { bgcolor: "#fff" },
+                  "& .MuiSwitch-track": {
+                    bgcolor: "rgba(255,255,255,0.35) !important",
+                    opacity: "1 !important",
+                  },
+                }}
+              />
+              <DarkModeIcon
+                sx={{
+                  fontSize: 16,
+                  color: mode === "dark" ? "#fff" : "rgba(255,255,255,0.45)",
+                }}
+              />
+            </Box>
+          </Tooltip>
+        </Toolbar>
+
+        {isNavigating && (
+          <LinearProgress
+            sx={{
+              height: 2,
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+            }}
+          />
+        )}
+      </AppBar>
+
+      <Box
+        component="main"
+        sx={{
+          transition: "opacity 0.15s ease",
+          opacity: isNavigating ? 0.4 : 1,
+          pointerEvents: isNavigating ? "none" : "auto",
+        }}
+      >
+        <Outlet />
+      </Box>
+    </ThemeProvider>
+  );
 }
 
-export function ErrorBoundary({ error }: { error: unknown }) {
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (import.meta.env.DEV && error instanceof Error) {
+    if (error.status === 403) {
+      message = "403 Forbidden";
+      details = "You must be a Gateway admin to access this page.";
+    } else if (error.status === 404) {
+      message = "404";
+      details = "The requested page could not be found.";
+    } else {
+      message = "Error";
+      details = error.statusText || details;
+    }
+  } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;
   }
@@ -51,11 +273,11 @@ export function ErrorBoundary({ error }: { error: unknown }) {
     <main className="pt-16 p-4 container mx-auto">
       <h1>{message}</h1>
       <p>{details}</p>
-      {stack ? (
+      {stack && (
         <pre className="w-full p-4 overflow-x-auto">
           <code>{stack}</code>
         </pre>
-      ) : null}
+      )}
     </main>
   );
 }
