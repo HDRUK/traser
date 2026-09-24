@@ -72,8 +72,12 @@ export function buildNameDiscriminatorMap(schema: object): Map<string, unknown[]
   return map;
 }
 
+export function schemaKey(name: string, version: string): string {
+  return `${name}/${version}`;
+}
+
 export function getNameDiscriminatorMap(name: string, version: string): Map<string, unknown[]> {
-  return _nameDiscriminatorCache.get(`${name}:${version}`) ?? new Map();
+  return _nameDiscriminatorCache.get(schemaKey(name, version)) ?? new Map();
 }
 
 export function buildPropertyIndex(schema: object): Map<string, string[]> {
@@ -141,7 +145,7 @@ export function buildPropertyIndex(schema: object): Map<string, string[]> {
 }
 
 export function getPropertyIndex(name: string, version: string): Map<string, string[]> {
-  return _propertyIndexCache.get(`${name}:${version}`) ?? new Map();
+  return _propertyIndexCache.get(schemaKey(name, version)) ?? new Map();
 }
 
 const loadFromLocal = !SCHEMA_LOCATION.startsWith("http");
@@ -210,18 +214,19 @@ export async function loadSchemas(): Promise<void> {
   console.log("[schema] available schemas:", JSON.stringify(schemas));
   for (const [name, versions] of Object.entries(schemas)) {
     for (const version of versions) {
-      const key = `${name}:${version}`;
+      const key = schemaKey(name, version);
+      const label = `${name}:${version}`;
       try {
         const schema = await fetchOrReadJson(schemaPath(name, version));
         nextAjv.addSchema(schema as object, key);
         nextPropertyIndex.set(key, buildPropertyIndex(schema as object));
         nextNameDiscriminator.set(key, buildNameDiscriminatorMap(schema as object));
-        console.log(`[schema] loaded ${key}`);
+        console.log(`[schema] loaded ${label}`);
         loaded++;
       } catch (err) {
-        console.error(`[schema] FAILED to load ${key} from ${schemaPath(name, version)}:`, err);
+        console.error(`[schema] FAILED to load ${label} from ${schemaPath(name, version)}:`, err);
         failed++;
-        failedKeys.push(key);
+        failedKeys.push(label);
       }
     }
   }
@@ -264,7 +269,7 @@ export function startSchemaReloader(): void {
 }
 
 export function getSchema(name: string, version: string) {
-  return ajv.getSchema(`${name}:${version}`);
+  return ajv.getSchema(schemaKey(name, version));
 }
 
 export async function validateMetadata(
@@ -290,7 +295,7 @@ export async function validateMetadataSection(
   subsection: string
 ): Promise<unknown[]> {
   await ensureLoaded();
-  const ref = `${modelName}:${modelVersion}#/properties/${subsection}`;
+  const ref = `${schemaKey(modelName, modelVersion)}#/properties/${subsection}`;
   const validator = ajv.getSchema(ref);
   if (!validator) return [{ message: `Schema ${modelName}:${modelVersion}#${subsection} is not known` }];
   const section = (metadata as Record<string, unknown>)[subsection];
