@@ -1,32 +1,39 @@
+import { forwardRef } from "react";
 import {
   isRouteErrorResponse,
+  Link,
   Links,
   Meta,
-  NavLink,
   Outlet,
   Scripts,
   ScrollRestoration,
   useNavigation,
+  type LinkProps,
 } from "react-router";
-import AppBar from "@mui/material/AppBar";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import CssBaseline from "@mui/material/CssBaseline";
 import LinearProgress from "@mui/material/LinearProgress";
-import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { ThemeProvider } from "@mui/material/styles";
+import { Header } from "@hdruk/ui";
 import { createHdrukTheme } from "@hdruk/ui/theme";
 
 import type { Route } from "./+types/root";
 
 const NAV_LINKS = [
-  { to: "/", label: "Home" },
-  { to: "/docs", label: "API Docs" },
+  { label: "Home", href: "/" },
+  { label: "API Docs", href: "/docs" },
 ];
+
+// Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
+const HeaderLink = forwardRef<
+  HTMLAnchorElement,
+  Omit<LinkProps, "to"> & { href?: string }
+>(({ href, ...props }, ref) => <Link ref={ref} to={href ?? "#"} {...props} />);
+HeaderLink.displayName = "HeaderLink";
 
 const theme = createHdrukTheme();
 // ── Global request middleware ──
@@ -98,6 +105,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap"
           rel="stylesheet"
         />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+          rel="stylesheet"
+        />
         <Meta />
         <Links />
       </head>
@@ -117,54 +128,34 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="sticky" elevation={2} sx={{ bgcolor: "#475DA7" }}>
-        <Toolbar variant="dense" sx={{ gap: 0.5 }}>
-          {/* Gateway logo */}
-          <Box
-            component="img"
-            src="/gateway-white-logo.svg"
-            alt="Gateway"
-            sx={{ height: 22, mr: 1, flexShrink: 0 }}
-          />
-          <Typography
-            variant="subtitle1"
-            sx={{
-              fontWeight: 700,
-              color: "#fff",
-              mr: 2,
-              letterSpacing: "0.04em",
-            }}
-          >
-            TRASER
-          </Typography>
-
-          {/* Nav links */}
-          {NAV_LINKS.map(({ to, label }) => (
-            <NavLink key={to} to={to} end={to === "/"}>
-              {({ isActive }) => (
-                <Button
-                  size="small"
-                  sx={{
-                    color: isActive ? "#fff" : "rgba(255,255,255,0.72)",
-                    bgcolor: isActive
-                      ? "rgba(255,255,255,0.18)"
-                      : "transparent",
-                    "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
-                    textTransform: "none",
-                    fontWeight: isActive ? 700 : 400,
-                    borderRadius: 1,
-                    px: 1.5,
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {label}
-                </Button>
-              )}
-            </NavLink>
-          ))}
-
-          <Box sx={{ flex: 1 }} />
-        </Toolbar>
+      <Box sx={{ position: "sticky", top: 0, zIndex: (t) => t.zIndex.appBar }}>
+        <Header
+          logoImage={
+            <Box
+              component="img"
+              src="/gateway-white-logo.svg"
+              alt="Gateway"
+              sx={{ height: 22, display: "block" }}
+            />
+          }
+          logoHref="/"
+          brandingLogoImage={
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 700,
+                color: "primary.contrastText",
+                letterSpacing: "0.04em",
+              }}
+            >
+              TRASER
+            </Typography>
+          }
+          navItems={NAV_LINKS}
+          linkComponent={HeaderLink}
+          isLoggedIn={false}
+          accountLoading={false}
+        />
 
         {isNavigating && (
           <LinearProgress
@@ -177,7 +168,7 @@ export default function App() {
             }}
           />
         )}
-      </AppBar>
+      </Box>
 
       <Box
         component="main"
