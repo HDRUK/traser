@@ -56,3 +56,21 @@ describe("GET /list/translations", () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe("GET /list/datasets", () => {
+  it("returns 200 with an array", async () => {
+    const res = await fetch(BASE_URL + "/list/datasets");
+    expect(res.status).toBe(200);
+    const body = await res.json() as unknown[];
+    expect(Array.isArray(body)).toBe(true);
+  });
+
+  it("each dataset entry has a pid and title", async () => {
+    const res = await fetch(BASE_URL + "/list/datasets");
+    const body = await res.json() as Array<{ pid: string; title: string }>;
+    for (const entry of body) {
+      expect(typeof entry.pid).toBe("string");
+      expect(typeof entry.title).toBe("string");
+    }
+  });
+});
