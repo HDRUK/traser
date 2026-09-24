@@ -22,12 +22,15 @@ import { Header } from "@hdruk/ui";
 import { createHdrukTheme } from "@hdruk/ui/theme";
 
 import type { Route } from "./+types/root";
+import type { TRASERUser } from "./lib/auth.server";
 
-const NAV_LINKS = [
+const PUBLIC_NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "API Docs", href: "/docs" },
   { label: "Playground", href: "/playground" },
 ];
+
+const PROTECTED_NAV_LINKS: { label: string; href: string }[] = [];
 
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
 const HeaderLink = forwardRef<
@@ -72,12 +75,13 @@ export const middleware: Route.MiddlewareFunction[] = [
   },
 ];
 
-export async function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
+  const { getUser } = await import("./lib/auth.server");
   // Kick off the once-per-server background job. It is an idempotent
   // lazy-singleton, so calling it on every request is free after the first.
   const { startSchemaReloader } = await import("./lib/schema.server");
   startSchemaReloader();
-  return null;
+  return { user: await getUser(request) };
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -122,9 +126,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
+  const { user } = loaderData as { user: TRASERUser | null };
   const navigation = useNavigation();
   const isNavigating = navigation.state === "loading";
+
+  const navLinks = user ? [...PUBLIC_NAV_LINKS, ...PROTECTED_NAV_LINKS] : PUBLIC_NAV_LINKS;
 
   return (
     <ThemeProvider theme={theme}>
@@ -152,10 +159,11 @@ export default function App() {
               TRASER
             </Typography>
           }
-          navItems={NAV_LINKS}
+          navItems={navLinks}
           linkComponent={HeaderLink}
-          isLoggedIn={false}
+          isLoggedIn={!!user}
           accountLoading={false}
+          accountName={user ? { first: user.firstname, last: user.lastname } : undefined}
         />
 
         {isNavigating && (
