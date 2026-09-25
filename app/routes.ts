@@ -16,4 +16,5 @@ export default [
   route("/get/form_hydration", "routes/api/get.form_hydration.ts"),
   route("/list/datasets", "routes/api/list.datasets.ts"),
   route("/get/dataset", "routes/api/get.dataset.ts"),
+  route("/playground", "routes/playground.tsx"),
 ] satisfies RouteConfig;
