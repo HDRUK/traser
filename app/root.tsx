@@ -30,7 +30,9 @@ const PUBLIC_NAV_LINKS = [
   { label: "Playground", href: "/playground" },
 ];
 
-const PROTECTED_NAV_LINKS: { label: string; href: string }[] = [];
+const PROTECTED_NAV_LINKS: { label: string; href: string }[] = [
+  { label: "Translation Graph", href: "/schema-graph" },
+];
 
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
 const HeaderLink = forwardRef<
