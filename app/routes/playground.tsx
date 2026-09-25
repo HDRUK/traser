@@ -590,7 +590,7 @@ export default function PlaygroundPage() {
               }}>
                 <ChevronRightIcon sx={{ fontSize: 20, color: "primary.main" }} />
                 <Typography variant="caption" sx={{
-                  fontFamily: "monospace", fontSize: "0.6rem", color: "text.disabled", letterSpacing: "0.08em",
+                  fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em",
                   writingMode: "vertical-rl", transform: "rotate(180deg)", userSelect: "none",
                 }}>JSON INPUT</Typography>
               </Box>
@@ -622,7 +622,7 @@ export default function PlaygroundPage() {
               variant={selectedDataset ? "filled" : "outlined"}
               sx={{
                 height: 20,
-                fontSize: "0.65rem",
+                fontSize: "0.75rem",
                 cursor: "pointer",
                 ...(selectedDataset
                   ? datasetMode === "modified"
@@ -633,11 +633,11 @@ export default function PlaygroundPage() {
               }}
             />
             <Box sx={{ flex: 1 }} />
-            <Button size="small" startIcon={<AutoFixHighIcon sx={{ fontSize: 14 }} />} onClick={handleBeautify} sx={{ py: 0, fontSize: "0.7rem" }}>
+            <Button variant="text" size="small" startIcon={<AutoFixHighIcon sx={{ fontSize: 14 }} />} onClick={handleBeautify} sx={{ py: 0, fontSize: "0.8rem" }}>
               Beautify
             </Button>
             <Tooltip title="Copy share link (template + schema)">
-              <Button size="small" startIcon={<LinkIcon sx={{ fontSize: 14 }} />} onClick={handleShare} sx={{ py: 0, fontSize: "0.7rem", color: copied ? "success.main" : undefined }}>
+              <Button variant="text" size="small" startIcon={<LinkIcon sx={{ fontSize: 14 }} />} onClick={handleShare} sx={{ py: 0, fontSize: "0.8rem", color: copied ? "success.main" : undefined }}>
                 {copied ? "Copied!" : "Share"}
               </Button>
             </Tooltip>
@@ -673,7 +673,7 @@ export default function PlaygroundPage() {
                   <Box sx={{ height: "100%", display: "flex", flexDirection: "column", borderTop: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.3)}`, bgcolor: (theme) => alpha(theme.palette.error.main, 0.06) }}>
                     <Box sx={{ ...PANEL_HEADER, bgcolor: (theme) => alpha(theme.palette.error.main, 0.12), borderBottom: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.2)}` }}>
                       <CancelIcon sx={{ color: "error.main", fontSize: 16 }} />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: "error.light", fontFamily: "monospace", flex: 1 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: "error.dark", fontFamily: "monospace", flex: 1 }}>
                         {which === "output" ? "OUTPUT" : "INPUT"} VALIDATION — {errors.length} error{errors.length === 1 ? "" : "s"}
                         {schema && (
                           <Typography component="span" variant="caption" sx={{ ml: 1, color: "text.secondary", fontWeight: 400 }}>
@@ -682,7 +682,7 @@ export default function PlaygroundPage() {
                         )}
                       </Typography>
                     </Box>
-                    <Box sx={{ flex: 1, overflow: "auto", p: 1.25, fontFamily: "monospace", fontSize: "0.72rem", color: "error.main", lineHeight: 1.55 }}>
+                    <Box sx={{ flex: 1, overflow: "auto", p: 1.25, fontFamily: "monospace", fontSize: "0.8rem", color: "error.main", lineHeight: 1.55 }}>
                       {errors.map((e, i) => {
                         const addProp = e.params?.additionalProperty as string | undefined;
                         const invalidVal = typeof e.invalidValue === "string" ? e.invalidValue : undefined;
@@ -694,7 +694,7 @@ export default function PlaygroundPage() {
                               <Box component="span" sx={{ color: "warning.main" }}>{e.instancePath || "(root)"}</Box>
                               <Box component="span" sx={{ color: "error.main", ml: 1 }}>{e.message ?? "error"}</Box>
                               {valueTag && (
-                                <Box component="span" sx={{ color: "warning.light", ml: 1, fontStyle: "italic" }}>(&quot;{valueTag}&quot;)</Box>
+                                <Box component="span" sx={{ color: "warning.dark", ml: 1, fontStyle: "italic" }}>(&quot;{valueTag}&quot;)</Box>
                               )}
                               {(() => {
                                 const MAX_SHOWN = 4;
@@ -753,7 +753,7 @@ export default function PlaygroundPage() {
             }}>
               <ChevronLeftIcon sx={{ fontSize: 20, color: "primary.main" }} />
               <Typography variant="caption" sx={{
-                fontFamily: "monospace", fontSize: "0.6rem", color: "text.disabled", letterSpacing: "0.08em",
+                fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em",
                 writingMode: "vertical-rl", transform: "rotate(180deg)", userSelect: "none",
               }}>TEMPLATE / RESULT</Typography>
             </Box>
@@ -776,7 +776,7 @@ export default function PlaygroundPage() {
                 "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
               }}>
                 <ExpandMoreIcon sx={{ fontSize: 18, color: "primary.main" }} />
-                <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.6rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
+                <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
                   JSONATA TEMPLATE
                 </Typography>
               </Box>
@@ -792,13 +792,13 @@ export default function PlaygroundPage() {
                   <Chip size="small"
                     label={`${selectedMapping.input_model} ${selectedMapping.input_version} → ${selectedMapping.output_model} ${selectedMapping.output_version}`}
                     onClick={() => setMappingOpen(true)}
-                    sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.primary.main, 0.25), color: "primary.light" }} />
+                    sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.primary.main, 0.25), color: "primary.dark" }} />
                 ) : (
                   <Chip size="small"
                     label={selectedMapping ? "Custom (modified)" : "Load mapping…"}
                     onClick={() => setMappingOpen(true)}
                     variant={!selectedMapping ? "outlined" : "filled"}
-                    sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", ...(selectedMapping ? { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.18), color: "warning.light" } : { borderColor: "text.disabled", color: "text.secondary" }) }} />
+                    sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", ...(selectedMapping ? { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.18), color: "warning.dark" } : { borderColor: "text.disabled", color: "text.secondary" }) }} />
                 )
               )}
               <Box sx={{ flex: 1 }} />
@@ -855,7 +855,7 @@ export default function PlaygroundPage() {
                 transition: "background 0.15s", "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
               }}>
                 <ExpandLessIcon sx={{ fontSize: 18, color: "primary.main" }} />
-                <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.6rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
+                <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
                   {error ? "ERROR" : "RESULT"}
                 </Typography>
               </Box>
@@ -881,7 +881,7 @@ export default function PlaygroundPage() {
                   {/* Custom-mode: pick an output schema target */}
                   {mappingMode === "custom" && (
                     <FormControl size="small" sx={{ minWidth: 170 }}>
-                      <InputLabel sx={{ fontSize: "0.7rem" }}>Validate against</InputLabel>
+                      <InputLabel sx={{ fontSize: "0.8rem" }}>Validate against</InputLabel>
                       <Select
                         label="Validate against"
                         value={customOutputSchema ? `${customOutputSchema.name}:${customOutputSchema.version}` : ""}
@@ -894,11 +894,11 @@ export default function PlaygroundPage() {
                             setValidateOutputOn(true);
                           }
                         }}
-                        sx={{ fontSize: "0.7rem", height: 24 }}
+                        sx={{ fontSize: "0.8rem", height: 24 }}
                       >
                         <MenuItem value=""><em>None</em></MenuItem>
                         {allSchemaRefs.map((s) => (
-                          <MenuItem key={s.key} value={s.key} sx={{ fontSize: "0.75rem" }}>
+                          <MenuItem key={s.key} value={s.key} sx={{ fontSize: "0.8rem" }}>
                             {s.name} {s.version}
                           </MenuItem>
                         ))}
@@ -909,15 +909,15 @@ export default function PlaygroundPage() {
                   {outputSchema && (
                     <Tooltip title={validateOutputOn ? "Output validation enabled" : "Output validation disabled"}>
                       <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.65rem", mr: 0.5 }}>Validate</Typography>
+                        <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.75rem", mr: 0.5 }}>Validate</Typography>
                         <Switch size="small" checked={validateOutputOn} onChange={(_, c) => setValidateOutputOn(c)} />
                       </Box>
                     </Tooltip>
                   )}
                   {result && (
-                    <Button size="small" startIcon={finding === "result" ? <Loading size="small" label="" /> : <FindInPageIcon sx={{ fontSize: 14 }} />}
+                    <Button variant="text" size="small" startIcon={finding === "result" ? <Loading size="small" label="" /> : <FindInPageIcon sx={{ fontSize: 14 }} />}
                       onClick={() => runFind("result", result)} disabled={finding === "result"}
-                      sx={{ py: 0, fontSize: "0.7rem" }}>
+                      sx={{ py: 0, fontSize: "0.8rem" }}>
                       {finding === "result" ? "Finding…" : "Find Schemas"}
                     </Button>
                   )}
@@ -935,7 +935,7 @@ export default function PlaygroundPage() {
               {!inputUnlocked ? (
                 <LockedPanel message="Result will appear here once the JSON input is valid against a schema." />
               ) : error ? (
-                <Box sx={{ p: 2, fontFamily: "monospace", fontSize: "0.78rem", color: "error.main", whiteSpace: "pre-wrap", overflow: "auto", height: "100%" }}>
+                <Box sx={{ p: 2, fontFamily: "monospace", fontSize: "0.85rem", color: "error.main", whiteSpace: "pre-wrap", overflow: "auto", height: "100%" }}>
                   {error}
                 </Box>
               ) : Editor ? (

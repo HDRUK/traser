@@ -74,7 +74,7 @@ export function MappingPickerDialog({ open, onClose, inputSchema, availableTempl
                     >
                       <ListItemText
                         primary={label(t)}
-                        slotProps={{ primary: { variant: "body2", sx: { fontWeight: isSelected ? 700 : 400, fontFamily: "monospace", fontSize: "0.85rem" } } }}
+                        slotProps={{ primary: { variant: "body2", sx: { fontWeight: isSelected ? 700 : 400, fontFamily: "monospace", fontSize: "0.9rem" } } }}
                       />
                     </ListItemButton>
                   </ListItem>

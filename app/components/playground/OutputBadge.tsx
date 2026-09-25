@@ -18,17 +18,17 @@ export function OutputBadge({ outputSchema, validateOutputOn, outputValidation }
   if (!outputSchema) {
     return (
       <Chip size="small" variant="outlined" label="No output schema"
-        sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />
+        sx={{ height: 20, fontSize: "0.75rem", borderColor: "text.disabled", color: "text.secondary" }} />
     );
   }
   const label = `${outputSchema.name} ${outputSchema.version}`;
   if (!validateOutputOn) {
     return <Chip size="small" variant="outlined" label={`Output: ${label}`}
-      sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />;
+      sx={{ height: 20, fontSize: "0.75rem", borderColor: "text.disabled", color: "text.secondary" }} />;
   }
   if (outputValidation.kind === "valid") {
     return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
-      sx={{ height: 20, fontSize: "0.65rem", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
+      sx={{ height: 20, fontSize: "0.75rem", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.dark", "& .MuiChip-icon": { color: "success.main" } }} />;
   }
   if (outputValidation.kind === "invalid") {
     const firstErr = outputValidation.errors[0];
@@ -41,10 +41,10 @@ export function OutputBadge({ outputSchema, validateOutputOn, outputValidation }
     return (
       <Tooltip title={tip}>
         <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
-          sx={{ height: 20, fontSize: "0.65rem", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
+          sx={{ height: 20, fontSize: "0.75rem", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.dark", "& .MuiChip-icon": { color: "error.main" } }} />
       </Tooltip>
     );
   }
   return <Chip size="small" label={`Checking ${label}…`}
-    sx={{ height: 20, fontSize: "0.65rem", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
+    sx={{ height: 20, fontSize: "0.75rem", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
 }

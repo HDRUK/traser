@@ -25,14 +25,14 @@ export function InputBadge({ inputSchema, inputValidation, finding, onFind, onOp
         icon={<FindInPageIcon sx={{ fontSize: "12px !important" }} />}
         onClick={onFind}
         disabled={finding === "input"}
-        sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", borderColor: "primary.main", color: "primary.main", "& .MuiChip-icon": { color: "primary.main" } }} />
+        sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", borderColor: "primary.main", color: "primary.main", "& .MuiChip-icon": { color: "primary.main" } }} />
     );
   }
   const label = `${inputSchema.name} ${inputSchema.version}`;
   if (inputValidation.kind === "valid") {
     return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
       onClick={onOpenPicker}
-      sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
+      sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.dark", "& .MuiChip-icon": { color: "success.main" } }} />;
   }
   if (inputValidation.kind === "invalid") {
     const firstErr = inputValidation.errors[0];
@@ -46,11 +46,11 @@ export function InputBadge({ inputSchema, inputValidation, finding, onFind, onOp
       <Tooltip title={tip}>
         <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
           onClick={onOpenPicker}
-          sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
+          sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.dark", "& .MuiChip-icon": { color: "error.main" } }} />
       </Tooltip>
     );
   }
   return <Chip size="small" label={`Checking ${label}…`}
     onClick={onOpenPicker}
-    sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
+    sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
 }

@@ -63,7 +63,7 @@ export function SchemaPickerDialog({ open, onClose, allSchemaRefs, schemaPickerF
                   >
                     <ListItemText
                       primary={`${s.name} ${s.version}`}
-                      slotProps={{ primary: { variant: "body2", sx: { fontFamily: "monospace", fontSize: "0.85rem", fontWeight: inputSchema?.name === s.name && inputSchema?.version === s.version ? 700 : 400 } } }}
+                      slotProps={{ primary: { variant: "body2", sx: { fontFamily: "monospace", fontSize: "0.9rem", fontWeight: inputSchema?.name === s.name && inputSchema?.version === s.version ? 700 : 400 } } }}
                     />
                   </ListItemButton>
                 </ListItem>
