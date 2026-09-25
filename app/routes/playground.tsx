@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 import { Group, Panel, Separator, type PanelImperativeHandle } from "react-resizable-panels";
 import LinkIcon from "@mui/icons-material/Link";
@@ -6,42 +6,24 @@ import type { EditorProps } from "@monaco-editor/react";
 import type { editor as MonacoEditorNS } from "monaco-editor";
 import jsonata from "jsonata";
 
-import Collapse from "@mui/material/Collapse";
 import Box from "@mui/material/Box";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemText from "@mui/material/ListItemText";
-import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import Dialog from "@mui/material/Dialog";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
-import IconButton from "@mui/material/IconButton";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Switch from "@mui/material/Switch";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { alpha, useTheme } from "@mui/material/styles";
+import { Button, IconButton, Loading } from "@hdruk/ui";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import CancelIcon from "@mui/icons-material/Cancel";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import CloseIcon from "@mui/icons-material/Close";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FindInPageIcon from "@mui/icons-material/FindInPage";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 
 import { playgroundStore, type SchemaRef } from "../stores/playgroundStore";
@@ -49,330 +31,17 @@ import { DEFAULT_JSON } from "../config/playgroundDefaults";
 import { getDatasetIndex } from "~/lib/cache.server";
 import { getAvailableTemplates } from "~/lib/templates.server";
 import { ensureLoaded, getAvailableSchemas } from "~/lib/schema.server";
-
-// Upper bound on a template decoded from a share link, before it is seeded and
-// auto-evaluated. Guards against a maliciously large/expensive expression in a
-// URL freezing the tab on open.
-const MAX_SHARED_TEMPLATE_CHARS = 20_000;
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface DatasetOption { pid: string; title: string; gatewayId?: string }
-interface TemplateOption { input_model: string; input_version: string; output_model: string; output_version: string }
-interface ValidationError {
-  instancePath?: string;
-  message?: string;
-  params?: Record<string, unknown>;
-  suggestion?: string;
-  invalidValue?: unknown;
-  allowedValues?: unknown[];
-}
-interface FindMatch {
-  name: string;
-  version: string;
-  matches: boolean;
-  errors?: Array<ValidationError> | null;
-}
-type ValidationState =
-  | { kind: "unchecked" }
-  | { kind: "checking" }
-  | { kind: "valid" }
-  | { kind: "invalid"; errors: Array<ValidationError> };
-
-// ─── Debounce hook ────────────────────────────────────────────────────────────
-
-function useDebounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): T {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  return useCallback(
-    ((...args) => {
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => fn(...args), delay);
-    }) as T,
-    [fn, delay]
-  );
-}
-
-// Walks a JSON string and returns the start/end character offsets of the value
-// at the given JSON Pointer instance path (e.g. "/provenance/origin/datasetType/0/subTypes/1").
-function findJsonPathRange(
-  text: string,
-  instancePath: string
-): { startOffset: number; endOffset: number } | null {
-  const segments = instancePath.replace(/^\//, "").split("/").filter(Boolean);
-  let i = 0;
-
-  const ws = () => { while (i < text.length && text[i] <= " ") i++; };
-
-  function readStr(): string | null {
-    if (text[i] !== '"') return null;
-    i++;
-    let s = "";
-    while (i < text.length) {
-      if (text[i] === "\\") {
-        i++;
-        const c = text[i++];
-        if (c === "u") { s += String.fromCharCode(parseInt(text.slice(i, i + 4), 16)); i += 4; }
-        else s += ({ '"': '"', "\\": "\\", "/": "/", n: "\n", r: "\r", t: "\t", b: "\b", f: "\f" } as Record<string, string>)[c] ?? c;
-      } else if (text[i] === '"') { i++; return s; }
-      else s += text[i++];
-    }
-    return null;
-  }
-
-  function skip(): boolean {
-    ws();
-    if (i >= text.length) return false;
-    const ch = text[i];
-    if (ch === '"') return readStr() !== null;
-    if (ch === "{") {
-      i++; ws();
-      if (text[i] === "}") { i++; return true; }
-      while (true) {
-        ws(); if (readStr() === null) return false; ws();
-        if (text[i++] !== ":") return false; ws();
-        if (!skip()) return false; ws();
-        if (text[i] === "}") { i++; return true; }
-        if (text[i++] !== ",") return false;
-      }
-    }
-    if (ch === "[") {
-      i++; ws();
-      if (text[i] === "]") { i++; return true; }
-      while (true) {
-        ws(); if (!skip()) return false; ws();
-        if (text[i] === "]") { i++; return true; }
-        if (text[i++] !== ",") return false;
-      }
-    }
-    while (i < text.length && !/[\s,\]{}"]/.test(text[i])) i++;
-    return true;
-  }
-
-  function nav(depth: number): { startOffset: number; endOffset: number } | null {
-    ws();
-    if (depth === segments.length) {
-      const start = i;
-      if (!skip()) return null;
-      return { startOffset: start, endOffset: i };
-    }
-    const seg = segments[depth].replace(/~1/g, "/").replace(/~0/g, "~");
-    if (text[i] === "{") {
-      i++; ws();
-      if (text[i] === "}") return null;
-      while (true) {
-        ws();
-        const key = readStr(); if (key === null) return null; ws();
-        if (text[i++] !== ":") return null; ws();
-        if (key === seg) return nav(depth + 1);
-        if (!skip()) return null; ws();
-        if (text[i] === "}") return null;
-        if (text[i++] !== ",") return null;
-      }
-    }
-    if (text[i] === "[") {
-      const idx = parseInt(seg, 10); if (isNaN(idx)) return null;
-      i++; ws();
-      if (text[i] === "]") return null;
-      for (let n = 0; ; n++) {
-        ws();
-        if (n === idx) return nav(depth + 1);
-        if (!skip()) return null; ws();
-        if (text[i] === "]") return null;
-        if (text[i++] !== ",") return null;
-      }
-    }
-    return null;
-  }
-
-  try { return nav(0); } catch { return null; }
-}
-
-const MONACO_ERROR_DECORATION_COLOR = "#f44336";
-
-// Builds Monaco decorations from a list of AJV validation errors.
-// Groups errors by instancePath so that anyOf/multi-branch failures on the
-// same field produce one decoration with an aggregated hover, not N duplicates.
-function buildValidationDecorations(
-  errors: ValidationError[],
-  text: string,
-  model: MonacoEditorNS.ITextModel
-): MonacoEditorNS.IModelDeltaDecoration[] {
-  const DECO_OPTS = (hoverMessage: { value: string }): MonacoEditorNS.IModelDecorationOptions => ({
-    inlineClassName: "traser-error-token",
-    hoverMessage,
-    overviewRuler: { color: MONACO_ERROR_DECORATION_COLOR, position: 4 },
-  });
-
-  const decos: MonacoEditorNS.IModelDeltaDecoration[] = [];
-
-  // Partition: addProp errors use text-search; all others are grouped by path
-  const byPath = new Map<string, ValidationError[]>();
-  const addPropErrors: ValidationError[] = [];
-
-  for (const err of errors) {
-    if (err.params?.additionalProperty) {
-      addPropErrors.push(err);
-    } else {
-      const key = err.instancePath || "";
-      if (!byPath.has(key)) byPath.set(key, []);
-      byPath.get(key)!.push(err);
-    }
-  }
-
-  // Path-based decorations — one per unique path, hover aggregates all errors at that path
-  for (const [path, errs] of byPath) {
-    if (!path) continue; // root-level errors have no specific location to highlight
-    const hoverLines: string[] = [];
-    if (errs.length === 1) {
-      const e = errs[0];
-      const invalidVal = typeof e.invalidValue === "string" ? e.invalidValue : undefined;
-      hoverLines.push(`**${path}**: ${e.message ?? "error"}${invalidVal ? ` ("${invalidVal}")` : ""}`);
-      if (e.allowedValues && e.allowedValues.length > 0) {
-        hoverLines.push(`Allowed: ${e.allowedValues.map(v => JSON.stringify(v)).join(", ")}`);
-      } else if (e.suggestion) {
-        hoverLines.push(`*${e.suggestion}*`);
-      }
-    } else {
-      hoverLines.push(`**${path}**: ${errs.length} errors`);
-      hoverLines.push(errs.map(e => `- ${e.message ?? "error"}`).join("\n"));
-    }
-    const hoverMessage = { value: hoverLines.join("\n\n") };
-    const offsets = findJsonPathRange(text, path);
-    if (!offsets) continue;
-    const start = model.getPositionAt(offsets.startOffset);
-    const end   = model.getPositionAt(offsets.endOffset);
-    decos.push({
-      range: { startLineNumber: start.lineNumber, startColumn: start.column, endLineNumber: end.lineNumber, endColumn: end.column },
-      options: DECO_OPTS(hoverMessage),
-    });
-  }
-
-  // additionalProperties decorations — text-search for the unexpected key name
-  for (const err of addPropErrors) {
-    const addProp = err.params!.additionalProperty as string;
-    const hoverMessage = { value: `**${err.instancePath || "(root)"}**: ${err.message ?? "error"} ("${addProp}")` };
-    const matches = model.findMatches(`"${addProp}"`, false, false, true, null, false);
-    for (const match of matches) {
-      decos.push({ range: match.range, options: DECO_OPTS(hoverMessage) });
-    }
-  }
-
-  return decos;
-}
-
-function EditorSkeleton() {
-  return (
-    <Box sx={{ height: "100%", bgcolor: "background.paper", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <Typography variant="caption" color="text.disabled" sx={{ fontFamily: "monospace" }}>
-        Loading editor…
-      </Typography>
-    </Box>
-  );
-}
-
-function LockedPanel({ message, onAction, actionLabel }: { message: string; onAction?: () => void; actionLabel?: string }) {
-  return (
-    <Box sx={{ height: "100%", bgcolor: "background.default", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, p: 3 }}>
-      <LockOutlinedIcon sx={{ fontSize: 36, color: "text.disabled" }} />
-      <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", maxWidth: 340 }}>
-        {message}
-      </Typography>
-      {onAction && actionLabel && (
-        <Button size="small" variant="outlined" startIcon={<FindInPageIcon />} onClick={onAction}>
-          {actionLabel}
-        </Button>
-      )}
-    </Box>
-  );
-}
-
-// ─── Header badges ────────────────────────────────────────────────────────────
-// Hoisted to module scope (not nested in PlaygroundPage) so they keep a stable
-// component identity across the parent's frequent re-renders (every keystroke in
-// the JSON editor) instead of remounting each time.
-
-function InputBadge({ inputSchema, inputValidation, finding, onFind, onOpenPicker }: {
-  inputSchema: SchemaRef | null;
-  inputValidation: ValidationState;
-  finding: "input" | "result" | null;
-  onFind: () => void;
-  onOpenPicker: () => void;
-}) {
-  if (!inputSchema) {
-    return (
-      <Chip size="small" variant="outlined"
-        label={finding === "input" ? "Finding…" : "Find schema"}
-        icon={<FindInPageIcon sx={{ fontSize: "12px !important" }} />}
-        onClick={onFind}
-        disabled={finding === "input"}
-        sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", borderColor: "primary.main", color: "primary.main", "& .MuiChip-icon": { color: "primary.main" } }} />
-    );
-  }
-  const label = `${inputSchema.name} ${inputSchema.version}`;
-  if (inputValidation.kind === "valid") {
-    return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
-      onClick={onOpenPicker}
-      sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
-  }
-  if (inputValidation.kind === "invalid") {
-    const firstErr = inputValidation.errors[0];
-    const addProp = firstErr?.params?.additionalProperty as string | undefined;
-    const invalidVal = typeof firstErr?.invalidValue === "string" ? firstErr.invalidValue : undefined;
-    const valueTag = addProp ?? invalidVal;
-    const tip = firstErr
-      ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
-      : "Invalid";
-    return (
-      <Tooltip title={tip}>
-        <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
-          onClick={onOpenPicker}
-          sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
-      </Tooltip>
-    );
-  }
-  return <Chip size="small" label={`Checking ${label}…`}
-    onClick={onOpenPicker}
-    sx={{ height: 20, fontSize: "0.65rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
-}
-
-function OutputBadge({ outputSchema, validateOutputOn, outputValidation }: {
-  outputSchema: SchemaRef | null;
-  validateOutputOn: boolean;
-  outputValidation: ValidationState;
-}) {
-  if (!outputSchema) {
-    return (
-      <Chip size="small" variant="outlined" label="No output schema"
-        sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />
-    );
-  }
-  const label = `${outputSchema.name} ${outputSchema.version}`;
-  if (!validateOutputOn) {
-    return <Chip size="small" variant="outlined" label={`Output: ${label}`}
-      sx={{ height: 20, fontSize: "0.65rem", borderColor: "text.disabled", color: "text.secondary" }} />;
-  }
-  if (outputValidation.kind === "valid") {
-    return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
-      sx={{ height: 20, fontSize: "0.65rem", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.light", "& .MuiChip-icon": { color: "success.main" } }} />;
-  }
-  if (outputValidation.kind === "invalid") {
-    const firstErr = outputValidation.errors[0];
-    const addProp = firstErr?.params?.additionalProperty as string | undefined;
-    const invalidVal = typeof firstErr?.invalidValue === "string" ? firstErr.invalidValue : undefined;
-    const valueTag = addProp ?? invalidVal;
-    const tip = firstErr
-      ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
-      : "Invalid";
-    return (
-      <Tooltip title={tip}>
-        <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
-          sx={{ height: 20, fontSize: "0.65rem", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.light", "& .MuiChip-icon": { color: "error.main" } }} />
-      </Tooltip>
-    );
-  }
-  return <Chip size="small" label={`Checking ${label}…`}
-    sx={{ height: 20, fontSize: "0.65rem", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
-}
+import { MAX_SHARED_TEMPLATE_CHARS, type DatasetOption, type TemplateOption, type FindMatch, type ValidationState } from "~/lib/playground/types";
+import { useDebounce } from "~/lib/playground/useDebounce";
+import { buildValidationDecorations, MONACO_ERROR_DECORATION_COLOR } from "~/lib/playground/monacoDecorations";
+import { EditorSkeleton } from "~/components/playground/EditorSkeleton";
+import { LockedPanel } from "~/components/playground/LockedPanel";
+import { InputBadge } from "~/components/playground/InputBadge";
+import { OutputBadge } from "~/components/playground/OutputBadge";
+import { DatasetPickerDialog } from "~/components/playground/DatasetPickerDialog";
+import { MappingPickerDialog } from "~/components/playground/MappingPickerDialog";
+import { SchemaPickerDialog } from "~/components/playground/SchemaPickerDialog";
+import { FindResultsDialog } from "~/components/playground/FindResultsDialog";
 
 // ─── Loader ─────────────────────────────────────────────────────────────────
 
@@ -973,7 +642,7 @@ export default function PlaygroundPage() {
               </Button>
             </Tooltip>
             <Tooltip title="Collapse panel">
-              <IconButton size="small" onClick={() => leftPanelRef.current?.collapse()} sx={{ ml: 0.5, p: 0.25 }}>
+              <IconButton size="small" aria-label="Collapse JSON input panel" onClick={() => leftPanelRef.current?.collapse()} sx={{ ml: 0.5, p: 0.25 }}>
                 <ChevronLeftIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Tooltip>
@@ -1135,13 +804,13 @@ export default function PlaygroundPage() {
               <Box sx={{ flex: 1 }} />
               <Tooltip title={resultCollapsed ? "Expand result panel first" : "Collapse panel"}>
                 <span>
-                  <IconButton size="small" onClick={() => templatePanelRef.current?.collapse()} disabled={resultCollapsed} sx={{ p: 0.25 }}>
+                  <IconButton size="small" aria-label="Collapse template panel" onClick={() => templatePanelRef.current?.collapse()} disabled={resultCollapsed} sx={{ p: 0.25 }}>
                     <ExpandLessIcon sx={{ fontSize: 18 }} />
                   </IconButton>
                 </span>
               </Tooltip>
               <Tooltip title="Collapse right side">
-                <IconButton size="small" onClick={() => rightPanelRef.current?.collapse()} sx={{ p: 0.25 }}>
+                <IconButton size="small" aria-label="Collapse right side" onClick={() => rightPanelRef.current?.collapse()} sx={{ p: 0.25 }}>
                   <ChevronRightIcon sx={{ fontSize: 18 }} />
                 </IconButton>
               </Tooltip>
@@ -1246,7 +915,7 @@ export default function PlaygroundPage() {
                     </Tooltip>
                   )}
                   {result && (
-                    <Button size="small" startIcon={<FindInPageIcon sx={{ fontSize: 14 }} />}
+                    <Button size="small" startIcon={finding === "result" ? <Loading size="small" label="" /> : <FindInPageIcon sx={{ fontSize: 14 }} />}
                       onClick={() => runFind("result", result)} disabled={finding === "result"}
                       sx={{ py: 0, fontSize: "0.7rem" }}>
                       {finding === "result" ? "Finding…" : "Find Schemas"}
@@ -1256,7 +925,7 @@ export default function PlaygroundPage() {
               )}
               <Tooltip title={templateCollapsed ? "Expand template panel first" : "Collapse panel"}>
                 <span>
-                  <IconButton size="small" onClick={() => resultPanelRef.current?.collapse()} disabled={templateCollapsed} sx={{ p: 0.25, ml: 0.5 }}>
+                  <IconButton size="small" aria-label="Collapse result panel" onClick={() => resultPanelRef.current?.collapse()} disabled={templateCollapsed} sx={{ p: 0.25, ml: 0.5 }}>
                     <ExpandMoreIcon sx={{ fontSize: 18 }} />
                   </IconButton>
                 </span>
@@ -1284,297 +953,54 @@ export default function PlaygroundPage() {
         </Panel>
       </Group>
 
-      {/* ── Dataset picker dialog ── */}
-      <Dialog open={datasetOpen} onClose={() => { setDatasetOpen(false); setDatasetFilter(""); }} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1, py: 1.5 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Load dataset</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {datasets.length > 0 ? `${datasets.length} datasets available` : "Loading…"}
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={() => { setDatasetOpen(false); setDatasetFilter(""); }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <Box sx={{ px: 2, pb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
-          <TextField
-            fullWidth size="small" autoFocus
-            placeholder="Search datasets…"
-            value={datasetFilter}
-            onChange={(e) => setDatasetFilter(e.target.value)}
-          />
-        </Box>
-        <DialogContent sx={{ p: 0, maxHeight: 400, overflowY: "auto" }}>
-          {(() => {
-            const filtered = datasets.filter(d => d.title.toLowerCase().includes(datasetFilter.toLowerCase()));
-            if (filtered.length === 0) return (
-              <Box sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>
-                <Typography variant="body2">No datasets match &quot;{datasetFilter}&quot;</Typography>
-              </Box>
-            );
-            return (
-              <List dense disablePadding>
-                {filtered.map((d) => (
-                  <ListItem key={d.pid} disablePadding divider>
-                    <ListItemButton
-                      selected={selectedDataset?.pid === d.pid}
-                      onClick={() => { handleDatasetSelect(d); setDatasetOpen(false); setDatasetFilter(""); }}
-                      sx={{ py: 1, px: 2 }}
-                    >
-                      <ListItemText
-                        primary={d.title}
-                        slotProps={{ primary: { variant: "body2", sx: { fontWeight: selectedDataset?.pid === d.pid ? 700 : 400 } } }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+      <DatasetPickerDialog
+        open={datasetOpen}
+        onClose={() => { setDatasetOpen(false); setDatasetFilter(""); }}
+        datasets={datasets}
+        datasetFilter={datasetFilter}
+        onFilterChange={setDatasetFilter}
+        selectedDataset={selectedDataset}
+        onSelect={(d) => { handleDatasetSelect(d); setDatasetOpen(false); setDatasetFilter(""); }}
+      />
 
       {/* ── Mapping picker dialog ── */}
-      <Dialog open={mappingOpen} onClose={() => { setMappingOpen(false); setMappingFilter(""); }} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1, py: 1.5 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Load mapping</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {inputSchema
-                ? `${availableTemplates.length} mapping${availableTemplates.length === 1 ? "" : "s"} for ${inputSchema.name} ${inputSchema.version}`
-                : "Select an input schema first"}
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={() => { setMappingOpen(false); setMappingFilter(""); }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <Box sx={{ px: 2, pb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
-          <TextField
-            fullWidth size="small" autoFocus
-            placeholder="Filter mappings…"
-            value={mappingFilter}
-            onChange={(e) => setMappingFilter(e.target.value)}
-          />
-        </Box>
-        <DialogContent sx={{ p: 0, maxHeight: 400, overflowY: "auto" }}>
-          {(() => {
-            const label = (t: TemplateOption) => `${t.input_model} ${t.input_version} → ${t.output_model} ${t.output_version}`;
-            const filtered = availableTemplates.filter(t => label(t).toLowerCase().includes(mappingFilter.toLowerCase()));
-            if (availableTemplates.length === 0) return (
-              <Box sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>
-                <Typography variant="body2">{inputSchema ? "No mappings available for this schema." : "Detect the input schema first."}</Typography>
-              </Box>
-            );
-            if (filtered.length === 0) return (
-              <Box sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>
-                <Typography variant="body2">No mappings match &quot;{mappingFilter}&quot;</Typography>
-              </Box>
-            );
-            return (
-              <List dense disablePadding>
-                {filtered.map((t) => {
-                  const key = `${t.input_model}:${t.input_version}:${t.output_model}:${t.output_version}`;
-                  const isSelected = selectedMapping?.input_model === t.input_model && selectedMapping?.input_version === t.input_version && selectedMapping?.output_model === t.output_model && selectedMapping?.output_version === t.output_version;
-                  return (
-                    <ListItem key={key} disablePadding divider>
-                      <ListItemButton
-                        selected={isSelected}
-                        onClick={() => { handleTemplateSelect(t); setMappingOpen(false); setMappingFilter(""); }}
-                        sx={{ py: 1, px: 2 }}
-                      >
-                        <ListItemText
-                          primary={label(t)}
-                          slotProps={{ primary: { variant: "body2", sx: { fontWeight: isSelected ? 700 : 400, fontFamily: "monospace", fontSize: "0.85rem" } } }}
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                  );
-                })}
-              </List>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+      <MappingPickerDialog
+        open={mappingOpen}
+        onClose={() => { setMappingOpen(false); setMappingFilter(""); }}
+        inputSchema={inputSchema}
+        availableTemplates={availableTemplates}
+        mappingFilter={mappingFilter}
+        onFilterChange={setMappingFilter}
+        selectedMapping={selectedMapping}
+        onSelect={(t) => { handleTemplateSelect(t); setMappingOpen(false); setMappingFilter(""); }}
+      />
 
       {/* ── Input schema picker dialog ── */}
-      <Dialog open={schemaPickerOpen} onClose={() => { setSchemaPickerOpen(false); setSchemaPickerFilter(""); }} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1, py: 1.5 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Select input schema</Typography>
-            <Typography variant="caption" color="text.secondary">
-              {allSchemaRefs.length} schemas available
-            </Typography>
-          </Box>
-          <IconButton size="small" onClick={() => { setSchemaPickerOpen(false); setSchemaPickerFilter(""); }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <Box sx={{ px: 2, pb: 1.5, borderBottom: "1px solid", borderColor: "divider" }}>
-          <TextField
-            fullWidth size="small" autoFocus
-            placeholder="Filter schemas…"
-            value={schemaPickerFilter}
-            onChange={(e) => setSchemaPickerFilter(e.target.value)}
-          />
-        </Box>
-        <DialogContent sx={{ p: 0, maxHeight: 400, overflowY: "auto" }}>
-          {(() => {
-            const filtered = allSchemaRefs.filter(s =>
-              `${s.name} ${s.version}`.toLowerCase().includes(schemaPickerFilter.toLowerCase())
-            );
-            if (filtered.length === 0) return (
-              <Box sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>
-                <Typography variant="body2">No schemas match &quot;{schemaPickerFilter}&quot;</Typography>
-              </Box>
-            );
-            return (
-              <List dense disablePadding>
-                {filtered.map((s) => (
-                  <ListItem key={s.key} disablePadding divider>
-                    <ListItemButton
-                      selected={inputSchema?.name === s.name && inputSchema?.version === s.version}
-                      onClick={() => {
-                        setInputSchema({ name: s.name, version: s.version });
-                        setSchemaPickerOpen(false);
-                        setSchemaPickerFilter("");
-                      }}
-                      sx={{ py: 1, px: 2 }}
-                    >
-                      <ListItemText
-                        primary={`${s.name} ${s.version}`}
-                        slotProps={{ primary: { variant: "body2", sx: { fontFamily: "monospace", fontSize: "0.85rem", fontWeight: inputSchema?.name === s.name && inputSchema?.version === s.version ? 700 : 400 } } }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+      <SchemaPickerDialog
+        open={schemaPickerOpen}
+        onClose={() => { setSchemaPickerOpen(false); setSchemaPickerFilter(""); }}
+        allSchemaRefs={allSchemaRefs}
+        schemaPickerFilter={schemaPickerFilter}
+        onFilterChange={setSchemaPickerFilter}
+        inputSchema={inputSchema}
+        onSelect={(s) => {
+          setInputSchema({ name: s.name, version: s.version });
+          setSchemaPickerOpen(false);
+          setSchemaPickerFilter("");
+        }}
+      />
 
       {/* ── Find Schemas dialog ── */}
-      <Dialog open={findResults !== null} onClose={() => setFindResults(null)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1, py: 1.5 }}>
-          <FindInPageIcon fontSize="small" sx={{ color: "primary.main" }} />
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
-              Schema match results
-              {findSource && (
-                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-                  — {findSource === "input" ? "JSON input" : "translation result"}
-                </Typography>
-              )}
-            </Typography>
-            {findResults && (
-              <Typography variant="caption" color="text.secondary">
-                {findResults.filter(r => r.matches).length} of {findResults.length} matched
-                {findSource === "input" && " — click \"Use this\" to set the schema"}
-              </Typography>
-            )}
-          </Box>
-          <IconButton size="small" onClick={() => setFindResults(null)}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 0 }}>
-          {findError && (
-            <Box sx={{ p: 1.5, color: "error.main", fontFamily: "monospace", fontSize: "0.78rem" }}>{findError}</Box>
-          )}
-
-          {findResults && findResults.length > 0 && (
-            <>
-              <Table size="small" sx={{
-                "& th": { fontWeight: 700, bgcolor: "background.paper", fontSize: "0.72rem" },
-                "& td, & th": { py: 0.5, px: 1.25 },
-              }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ width: 32, px: "6px !important" }}></TableCell>
-                    <TableCell>Schema</TableCell>
-                    <TableCell>Version</TableCell>
-                    <TableCell align="right">Status</TableCell>
-                    {findSource === "input" && <TableCell sx={{ width: 86 }}></TableCell>}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {findResults.map((r) => {
-                    const rowKey = `${r.name}:${r.version}`;
-                    const hasErrors = !r.matches && (r.errors?.length ?? 0) > 0;
-                    const isExpanded = expandedRows.has(rowKey);
-                    const colSpan = findSource === "input" ? 5 : 4;
-                    return (
-                      <Fragment key={rowKey}>
-                        <TableRow hover>
-                          <TableCell sx={{ px: "6px !important" }}>
-                            {r.matches
-                              ? <CheckCircleIcon sx={{ color: "success.main", fontSize: 16, display: "block" }} />
-                              : <CancelIcon sx={{ color: "error.main", fontSize: 16, display: "block" }} />}
-                          </TableCell>
-                          <TableCell sx={{ fontWeight: 600, fontSize: "0.8rem" }}>{r.name}</TableCell>
-                          <TableCell sx={{ color: "text.secondary", fontSize: "0.8rem" }}>{r.version}</TableCell>
-                          <TableCell align="right">
-                            {r.matches ? (
-                              <Typography variant="caption" color="success.main">matches</Typography>
-                            ) : hasErrors ? (
-                              <Button
-                                size="small"
-                                endIcon={<ExpandMoreIcon sx={{ fontSize: "12px !important", transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />}
-                                onClick={() => setExpandedRows(prev => {
-                                  const next = new Set(prev);
-                                  if (next.has(rowKey)) next.delete(rowKey);
-                                  else next.add(rowKey);
-                                  return next;
-                                })}
-                                sx={{ py: 0, px: 0.5, fontSize: "0.68rem", color: "error.main", minWidth: 0 }}
-                              >
-                                {r.errors!.length} error{r.errors!.length === 1 ? "" : "s"}
-                              </Button>
-                            ) : (
-                              <Typography variant="caption" color="text.secondary">0 errors</Typography>
-                            )}
-                          </TableCell>
-                          {findSource === "input" && (
-                            <TableCell sx={{ textAlign: "right" }}>
-                              {r.matches && (
-                                <Button size="small" variant={inputSchema?.name === r.name && inputSchema?.version === r.version ? "contained" : "outlined"}
-                                  onClick={() => pickInputSchema(r.name, r.version)}
-                                  sx={{ py: 0, px: 1, fontSize: "0.68rem", minWidth: 0 }}>
-                                  {inputSchema?.name === r.name && inputSchema?.version === r.version ? "✓ Set" : "Use"}
-                                </Button>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                        {hasErrors && (
-                          <TableRow>
-                            <TableCell colSpan={colSpan} sx={{ p: 0, border: isExpanded ? undefined : 0 }}>
-                              <Collapse in={isExpanded} unmountOnExit>
-                                <Box component="pre" sx={{ m: 0, px: 2, py: 1.25, bgcolor: (theme) => alpha(theme.palette.error.main, 0.06), borderTop: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.2)}`, fontFamily: "monospace", fontSize: "0.72rem", color: "error.light", lineHeight: 1.6, overflow: "auto", maxHeight: 200 }}>
-                                  {(r.errors ?? []).map((e, i) =>
-                                    `${i + 1}. ${e.instancePath || "(root)"}: ${e.message ?? "error"}${e.params ? ` ${JSON.stringify(e.params)}` : ""}`
-                                  ).join("\n")}
-                                </Box>
-                              </Collapse>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </>
-          )}
-
-          {findResults && findResults.length === 0 && !findError && (
-            <Box sx={{ p: 3, textAlign: "center", color: "text.secondary" }}>No schemas tested.</Box>
-          )}
-        </DialogContent>
-      </Dialog>
+      <FindResultsDialog
+        findResults={findResults}
+        findSource={findSource}
+        findError={findError}
+        expandedRows={expandedRows}
+        setExpandedRows={setExpandedRows}
+        inputSchema={inputSchema}
+        onPickInputSchema={pickInputSchema}
+        onClose={() => setFindResults(null)}
+      />
     </Box>
   );
 }
