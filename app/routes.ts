@@ -17,4 +17,5 @@ export default [
   route("/list/datasets", "routes/api/list.datasets.ts"),
   route("/get/dataset", "routes/api/get.dataset.ts"),
   route("/playground", "routes/playground.tsx"),
+  route("/schema-graph", "routes/schema-graph.tsx"),
 ] satisfies RouteConfig;
