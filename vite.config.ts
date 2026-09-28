@@ -11,7 +11,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   optimizeDeps: {
-    include: ["ajv", "ajv-formats", "jsonata"],
+    include: ["ajv", "ajv-formats", "jsonata", "monaco-editor", "@monaco-editor/react"],
   },
   server: {
     port: parseInt(process.env.PORT ?? "3001"),
