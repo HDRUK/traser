@@ -10,7 +10,6 @@ import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
-import { alpha } from "@mui/material/styles";
 import { Button, IconButton } from "@hdruk/ui";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -18,6 +17,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FindInPageIcon from "@mui/icons-material/FindInPage";
 
+import { FindResultsErrorPre } from "./FindResultsErrorPre";
 import type { SchemaRef } from "../../stores/playgroundStore";
 import type { FindMatch } from "../../lib/playground/types";
 
@@ -132,11 +132,7 @@ export function FindResultsDialog({
                         <TableRow>
                           <TableCell colSpan={colSpan} sx={{ p: 0, border: isExpanded ? undefined : 0 }}>
                             <Collapse in={isExpanded} unmountOnExit>
-                              <Box component="pre" sx={{ m: 0, px: 2, py: 1.25, bgcolor: (theme) => alpha(theme.palette.error.main, 0.06), borderTop: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.2)}`, fontFamily: "monospace", fontSize: "0.8rem", color: "error.dark", lineHeight: 1.6, overflow: "auto", maxHeight: 200 }}>
-                                {(r.errors ?? []).map((e, i) =>
-                                  `${i + 1}. ${e.instancePath || "(root)"}: ${e.message ?? "error"}${e.params ? ` ${JSON.stringify(e.params)}` : ""}`
-                                ).join("\n")}
-                              </Box>
+                              <FindResultsErrorPre errors={r.errors} />
                             </Collapse>
                           </TableCell>
                         </TableRow>

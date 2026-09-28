@@ -8,24 +8,15 @@ import jsonata from "jsonata";
 
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
-import Switch from "@mui/material/Switch";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { alpha, useTheme } from "@mui/material/styles";
-import { tokens } from "@hdruk/ui/theme";
-import { Button, IconButton, Loading } from "@hdruk/ui";
+import { useTheme } from "@mui/material/styles";
+import { Button, IconButton } from "@hdruk/ui";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
-import CancelIcon from "@mui/icons-material/Cancel";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import FindInPageIcon from "@mui/icons-material/FindInPage";
-
 
 import { playgroundStore, type SchemaRef } from "../stores/playgroundStore";
 import { DEFAULT_JSON } from "../config/playgroundDefaults";
@@ -34,7 +25,7 @@ import { getAvailableTemplates } from "~/lib/templates.server";
 import { ensureLoaded, getAvailableSchemas } from "~/lib/schema.server";
 import { MAX_SHARED_TEMPLATE_CHARS, type DatasetOption, type TemplateOption, type FindMatch, type ValidationState } from "~/lib/playground/types";
 import { useDebounce } from "~/lib/playground/useDebounce";
-import { buildValidationDecorations, MONACO_ERROR_DECORATION_COLOR } from "~/lib/playground/monacoDecorations";
+import { buildValidationDecorations } from "~/lib/playground/monacoDecorations";
 import { EditorSkeleton } from "~/components/playground/EditorSkeleton";
 import { LockedPanel } from "~/components/playground/LockedPanel";
 import { InputBadge } from "~/components/playground/InputBadge";
@@ -43,6 +34,13 @@ import { DatasetPickerDialog } from "~/components/playground/DatasetPickerDialog
 import { MappingPickerDialog } from "~/components/playground/MappingPickerDialog";
 import { SchemaPickerDialog } from "~/components/playground/SchemaPickerDialog";
 import { FindResultsDialog } from "~/components/playground/FindResultsDialog";
+import { CollapsedPanelHandle } from "~/components/playground/CollapsedPanelHandle";
+import { ValidationErrorPanel } from "~/components/playground/ValidationErrorPanel";
+import { DatasetChip } from "~/components/playground/DatasetChip";
+import { MappingChip } from "~/components/playground/MappingChip";
+import { ResultPanelActions } from "~/components/playground/ResultPanelActions";
+import { PanelSeparatorStyles } from "~/components/playground/PanelSeparatorStyles";
+import { EDITOR_OPTS, PANEL_HEADER_SX } from "~/lib/playground/editorConstants";
 
 // ─── Loader ─────────────────────────────────────────────────────────────────
 
@@ -556,22 +554,11 @@ export default function PlaygroundPage() {
   const theme = useTheme();
   const monacoTheme = "vs";
 
-  // ── Style consts
-
-  const EDITOR_OPTS = { minimap: { enabled: false }, fontSize: 13, scrollBeyondLastLine: false, wordWrap: "on" as const };
-  const PANEL_HEADER = { display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 0.75, bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider", flexShrink: 0, minHeight: 36 };
-
   // ── Render
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "calc(100vh - 48px)", overflow: "hidden" }}>
-      <style>{`
-        .traser-error-token { background: ${alpha(MONACO_ERROR_DECORATION_COLOR, 0.18)}; border-bottom: 2px solid ${MONACO_ERROR_DECORATION_COLOR}; }
-        .traser-sep-h { background: ${theme.palette.divider}; transition: background 0.15s; }
-        .traser-sep-h:hover, .traser-sep-h[data-state="drag"] { background: ${alpha(theme.palette.primary.main, 0.7)}; }
-        .traser-sep-v { background: ${theme.palette.divider}; transition: background 0.15s; }
-        .traser-sep-v:hover, .traser-sep-v[data-state="drag"] { background: ${alpha(theme.palette.primary.main, 0.7)}; }
-      `}</style>
+      <PanelSeparatorStyles theme={theme} />
       {/* ── Main split layout ── */}
       <Group orientation="horizontal" style={{ flex: 1, overflow: "hidden" }}>
 
@@ -579,26 +566,16 @@ export default function PlaygroundPage() {
         <Panel panelRef={leftPanelRef} id="left-panel" defaultSize={`${hSplit}%`} minSize="10%" collapsible collapsedSize="40px"
           onResize={(size) => { const collapsed = size.inPixels <= 42; setLeftCollapsed(collapsed); if (!collapsed && !rightPanelRef.current?.isCollapsed() && size.asPercentage > 5) setHSplit(size.asPercentage); }}>
           {leftCollapsed ? (
-            <Tooltip title="Expand JSON Input" placement="right">
-              <Box role="button" tabIndex={0} aria-label="Expand JSON Input panel"
-                onClick={() => leftPanelRef.current?.resize(`${hSplit}%`)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); leftPanelRef.current?.resize(`${hSplit}%`); } }}
-                sx={{
-                width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center",
-                justifyContent: "center", gap: 1.5, cursor: "pointer", bgcolor: "background.paper",
-                borderRight: "1px solid", borderColor: "divider", transition: "background 0.15s",
-                "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
-              }}>
-                <ChevronRightIcon sx={{ fontSize: 20, color: "primary.main" }} />
-                <Typography variant="caption" sx={{
-                  fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em",
-                  writingMode: "vertical-rl", transform: "rotate(180deg)", userSelect: "none",
-                }}>JSON INPUT</Typography>
-              </Box>
-            </Tooltip>
+            <CollapsedPanelHandle
+              orientation="vertical" borderSide="right"
+              icon={<ChevronRightIcon sx={{ fontSize: 20, color: "primary.main" }} />}
+              label="JSON INPUT" ariaLabel="Expand JSON Input panel"
+              tooltip="Expand JSON Input" tooltipPlacement="right"
+              onClick={() => leftPanelRef.current?.resize(`${hSplit}%`)}
+            />
           ) : (
           <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: "1px solid", borderColor: "divider", overflow: "hidden" }}>
-          <Box sx={{ ...PANEL_HEADER }}>
+          <Box sx={{ ...PANEL_HEADER_SX }}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", fontFamily: "monospace" }}>
               JSON INPUT
             </Typography>
@@ -609,29 +586,12 @@ export default function PlaygroundPage() {
               onFind={() => runFind("input", jsonRef.current)}
               onOpenPicker={() => setSchemaPickerOpen(true)}
             />
-            <Chip
-              size="small"
-              label={
-                loadingDataset
-                  ? "Loading…"
-                  : selectedDataset
-                    ? `${selectedDataset.title.length > 20 ? selectedDataset.title.slice(0, 20) + "…" : selectedDataset.title}${datasetMode === "modified" ? " (modified)" : ""}`
-                    : "Load dataset…"
-              }
+            <DatasetChip
+              loadingDataset={loadingDataset}
+              selectedDataset={selectedDataset}
+              datasetMode={datasetMode}
               onClick={() => setDatasetOpen(true)}
-              onDelete={selectedDataset ? handleDatasetClear : undefined}
-              variant={selectedDataset ? "filled" : "outlined"}
-              sx={{
-                height: tokens.iconSize.small,
-                fontSize: (theme) => theme.typography.caption.fontSize,
-                cursor: "pointer",
-                ...(selectedDataset
-                  ? datasetMode === "modified"
-                    ? { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.12), color: "warning.dark" }
-                    : { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.15), color: "primary.main" }
-                  : { borderColor: "text.disabled", color: "text.secondary" }),
-                "& .MuiChip-deleteIcon": { fontSize: 12 },
-              }}
+              onDelete={handleDatasetClear}
             />
             <Box sx={{ flex: 1 }} />
             <Button variant="text" size="small" startIcon={<AutoFixHighIcon sx={{ fontSize: 14 }} />} onClick={handleBeautify} sx={{ py: 0, fontSize: "0.8rem" }}>
@@ -671,61 +631,13 @@ export default function PlaygroundPage() {
                   : (inputValidation.kind === "invalid" ? inputValidation.errors : []);
                 const schema = which === "output" ? outputSchema : inputSchema;
                 return (
-                  <Box sx={{ height: "100%", display: "flex", flexDirection: "column", borderTop: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.3)}`, bgcolor: (theme) => alpha(theme.palette.error.main, 0.06) }}>
-                    <Box sx={{ ...PANEL_HEADER, bgcolor: (theme) => alpha(theme.palette.error.main, 0.12), borderBottom: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.2)}` }}>
-                      <CancelIcon sx={{ color: "error.main", fontSize: 16 }} />
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: "error.dark", fontFamily: "monospace", flex: 1 }}>
-                        {which === "output" ? "OUTPUT" : "INPUT"} VALIDATION — {errors.length} error{errors.length === 1 ? "" : "s"}
-                        {schema && (
-                          <Typography component="span" variant="caption" sx={{ ml: 1, color: "text.secondary", fontWeight: 400 }}>
-                            against {schema.name} {schema.version}
-                          </Typography>
-                        )}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ flex: 1, overflow: "auto", p: 1.25, fontFamily: "monospace", fontSize: "0.8rem", color: "error.main", lineHeight: 1.55 }}>
-                      {errors.map((e, i) => {
-                        const addProp = e.params?.additionalProperty as string | undefined;
-                        const invalidVal = typeof e.invalidValue === "string" ? e.invalidValue : undefined;
-                        const valueTag = addProp ?? invalidVal;
-                        return (
-                          <Box key={i} sx={{ mb: 0.5, display: "flex", gap: 1 }}>
-                            <Box sx={{ color: "text.disabled", flexShrink: 0 }}>{i + 1}.</Box>
-                            <Box>
-                              <Box component="span" sx={{ color: "warning.main" }}>{e.instancePath || "(root)"}</Box>
-                              <Box component="span" sx={{ color: "error.main", ml: 1 }}>{e.message ?? "error"}</Box>
-                              {valueTag && (
-                                <Box component="span" sx={{ color: "warning.dark", ml: 1, fontStyle: "italic" }}>(&quot;{valueTag}&quot;)</Box>
-                              )}
-                              {(() => {
-                                const MAX_SHOWN = 4;
-                                if (e.allowedValues && e.allowedValues.length > MAX_SHOWN) {
-                                  const isExpanded = expandedSuggestions.has(i);
-                                  const shown = isExpanded ? e.allowedValues : e.allowedValues.slice(0, MAX_SHOWN);
-                                  const remaining = e.allowedValues.length - MAX_SHOWN;
-                                  return (
-                                    <Box component="span" sx={{ color: "text.secondary", ml: 1 }}>
-                                      → Allowed: {shown.map(v => JSON.stringify(v)).join(", ")}
-                                      {!isExpanded && (
-                                        <Box component="span"
-                                          onClick={() => setExpandedSuggestions(prev => { const next = new Set(prev); next.add(i); return next; })}
-                                          sx={{ color: "primary.main", cursor: "pointer", ml: 0.5, textDecoration: "underline" }}>
-                                          (+{remaining} more)
-                                        </Box>
-                                      )}
-                                    </Box>
-                                  );
-                                }
-                                return e.suggestion ? (
-                                  <Box component="span" sx={{ color: "text.secondary", ml: 1 }}>{`→ ${e.suggestion}`}</Box>
-                                ) : null;
-                              })()}
-                            </Box>
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  </Box>
+                  <ValidationErrorPanel
+                    which={which}
+                    errors={errors}
+                    schema={schema}
+                    expandedSuggestions={expandedSuggestions}
+                    setExpandedSuggestions={setExpandedSuggestions}
+                  />
                 );
               })()}
             </Panel>
@@ -742,23 +654,13 @@ export default function PlaygroundPage() {
           collapsible collapsedSize="40px"
           onResize={(size) => { const collapsed = size.inPixels <= 42; setRightCollapsed(collapsed); }}>
         {rightCollapsed ? (
-          <Tooltip title="Expand right panels" placement="left">
-            <Box role="button" tabIndex={0} aria-label="Expand template and result panels"
-              onClick={() => rightPanelRef.current?.resize(`${100 - hSplit}%`)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); rightPanelRef.current?.resize(`${100 - hSplit}%`); } }}
-              sx={{
-              width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center",
-              justifyContent: "center", gap: 1.5, cursor: "pointer", bgcolor: "background.paper",
-              borderLeft: "1px solid", borderColor: "divider", transition: "background 0.15s",
-              "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
-            }}>
-              <ChevronLeftIcon sx={{ fontSize: 20, color: "primary.main" }} />
-              <Typography variant="caption" sx={{
-                fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em",
-                writingMode: "vertical-rl", transform: "rotate(180deg)", userSelect: "none",
-              }}>TEMPLATE / RESULT</Typography>
-            </Box>
-          </Tooltip>
+          <CollapsedPanelHandle
+            orientation="vertical" borderSide="left"
+            icon={<ChevronLeftIcon sx={{ fontSize: 20, color: "primary.main" }} />}
+            label="TEMPLATE / RESULT" ariaLabel="Expand template and result panels"
+            tooltip="Expand right panels" tooltipPlacement="left"
+            onClick={() => rightPanelRef.current?.resize(`${100 - hSplit}%`)}
+          />
         ) : (
         <Group orientation="vertical" style={{ height: "100%" }}>
 
@@ -766,41 +668,25 @@ export default function PlaygroundPage() {
           <Panel panelRef={templatePanelRef} id="template-panel" defaultSize={`${vSplit}%`} minSize="10%" collapsible collapsedSize="40px"
             onResize={(size) => { const collapsed = size.inPixels <= 42; setTemplateCollapsed(collapsed); if (!collapsed && !resultPanelRef.current?.isCollapsed() && size.asPercentage > 5) setVSplit(size.asPercentage); }}>
           {templateCollapsed ? (
-            <Tooltip title="Expand Template" placement="bottom">
-              <Box role="button" tabIndex={0} aria-label="Expand JSONata template panel"
-                onClick={() => templatePanelRef.current?.resize(`${vSplit}%`)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); templatePanelRef.current?.resize(`${vSplit}%`); } }}
-                sx={{
-                width: "100%", height: "100%", display: "flex", flexDirection: "row", alignItems: "center",
-                justifyContent: "center", gap: 1, cursor: "pointer", bgcolor: "background.paper",
-                borderBottom: "1px solid", borderColor: "divider", transition: "background 0.15s",
-                "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
-              }}>
-                <ExpandMoreIcon sx={{ fontSize: 18, color: "primary.main" }} />
-                <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
-                  JSONATA TEMPLATE
-                </Typography>
-              </Box>
-            </Tooltip>
+            <CollapsedPanelHandle
+              orientation="horizontal" borderSide="bottom"
+              icon={<ExpandMoreIcon sx={{ fontSize: 18, color: "primary.main" }} />}
+              label="JSONATA TEMPLATE" ariaLabel="Expand JSONata template panel"
+              tooltip="Expand Template" tooltipPlacement="bottom"
+              onClick={() => templatePanelRef.current?.resize(`${vSplit}%`)}
+            />
           ) : (
           <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderBottom: "1px solid", borderColor: "divider", overflow: "hidden" }}>
-            <Box sx={{ ...PANEL_HEADER }}>
+            <Box sx={{ ...PANEL_HEADER_SX }}>
               <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", fontFamily: "monospace" }}>
                 JSONATA TEMPLATE
               </Typography>
               {inputUnlocked && (
-                mappingMode === "known" && selectedMapping ? (
-                  <Chip size="small"
-                    label={`${selectedMapping.input_model} ${selectedMapping.input_version} → ${selectedMapping.output_model} ${selectedMapping.output_version}`}
-                    onClick={() => setMappingOpen(true)}
-                    sx={{ height: tokens.iconSize.small, fontSize: (theme) => theme.typography.caption.fontSize, cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.primary.main, 0.25), color: "primary.dark" }} />
-                ) : (
-                  <Chip size="small"
-                    label={selectedMapping ? "Custom (modified)" : "Load mapping…"}
-                    onClick={() => setMappingOpen(true)}
-                    variant={!selectedMapping ? "outlined" : "filled"}
-                    sx={{ height: tokens.iconSize.small, fontSize: (theme) => theme.typography.caption.fontSize, cursor: "pointer", ...(selectedMapping ? { bgcolor: (theme) => alpha(theme.palette.warning.main, 0.18), color: "warning.dark" } : { borderColor: "text.disabled", color: "text.secondary" }) }} />
-                )
+                <MappingChip
+                  mappingMode={mappingMode}
+                  selectedMapping={selectedMapping}
+                  onClick={() => setMappingOpen(true)}
+                />
               )}
               <Box sx={{ flex: 1 }} />
               <Tooltip title={resultCollapsed ? "Expand result panel first" : "Collapse panel"}>
@@ -846,24 +732,16 @@ export default function PlaygroundPage() {
           <Panel panelRef={resultPanelRef} id="result-panel" defaultSize={`${100 - vSplit}%`} minSize="10%" collapsible collapsedSize="40px"
             onResize={(size) => { const collapsed = size.inPixels <= 42; setResultCollapsed(collapsed); }}>
           {resultCollapsed ? (
-            <Tooltip title="Expand Result" placement="top">
-              <Box role="button" tabIndex={0} aria-label="Expand result panel"
-                onClick={() => resultPanelRef.current?.resize(`${100 - vSplit}%`)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); resultPanelRef.current?.resize(`${100 - vSplit}%`); } }}
-                sx={{
-                width: "100%", height: "100%", display: "flex", flexDirection: "row", alignItems: "center",
-                justifyContent: "center", gap: 1, cursor: "pointer", bgcolor: "background.paper",
-                transition: "background 0.15s", "&:hover": { bgcolor: "action.hover" }, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: "-2px" },
-              }}>
-                <ExpandLessIcon sx={{ fontSize: 18, color: "primary.main" }} />
-                <Typography variant="caption" sx={{ fontFamily: "monospace", fontSize: "0.7rem", color: "text.disabled", letterSpacing: "0.08em", userSelect: "none" }}>
-                  {error ? "ERROR" : "RESULT"}
-                </Typography>
-              </Box>
-            </Tooltip>
+            <CollapsedPanelHandle
+              orientation="horizontal"
+              icon={<ExpandLessIcon sx={{ fontSize: 18, color: "primary.main" }} />}
+              label={error ? "ERROR" : "RESULT"} ariaLabel="Expand result panel"
+              tooltip="Expand Result" tooltipPlacement="top"
+              onClick={() => resultPanelRef.current?.resize(`${100 - vSplit}%`)}
+            />
           ) : (
           <Box sx={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
-            <Box sx={{ ...PANEL_HEADER }}>
+            <Box sx={{ ...PANEL_HEADER_SX }}>
               <Typography variant="caption" sx={{ fontWeight: 600, color: error ? "error.main" : "text.secondary", fontFamily: "monospace" }}>
                 {error ? "ERROR" : "RESULT"}
               </Typography>
@@ -878,51 +756,18 @@ export default function PlaygroundPage() {
               {inputUnlocked && !error && result && <Chip label="Translated" size="small" color="success" />}
               <Box sx={{ flex: 1 }} />
               {inputUnlocked && !error && (
-                <>
-                  {/* Custom-mode: pick an output schema target */}
-                  {mappingMode === "custom" && (
-                    <FormControl size="small" sx={{ minWidth: 170 }}>
-                      <InputLabel sx={{ fontSize: "0.8rem" }}>Validate against</InputLabel>
-                      <Select
-                        label="Validate against"
-                        value={customOutputSchema ? `${customOutputSchema.name}:${customOutputSchema.version}` : ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          if (!v) { setCustomOutputSchema(null); setValidateOutputOn(false); }
-                          else {
-                            const [name, ...rest] = v.split(":");
-                            setCustomOutputSchema({ name, version: rest.join(":") });
-                            setValidateOutputOn(true);
-                          }
-                        }}
-                        sx={{ fontSize: "0.8rem", height: 24 }}
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem>
-                        {allSchemaRefs.map((s) => (
-                          <MenuItem key={s.key} value={s.key} sx={{ fontSize: "0.8rem" }}>
-                            {s.name} {s.version}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
-                  {/* Toggle (only meaningful if there is an output schema) */}
-                  {outputSchema && (
-                    <Tooltip title={validateOutputOn ? "Output validation enabled" : "Output validation disabled"}>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.75rem", mr: 0.5 }}>Validate</Typography>
-                        <Switch size="small" checked={validateOutputOn} onChange={(_, c) => setValidateOutputOn(c)} />
-                      </Box>
-                    </Tooltip>
-                  )}
-                  {result && (
-                    <Button variant="text" size="small" startIcon={finding === "result" ? <Loading size="small" label="" /> : <FindInPageIcon sx={{ fontSize: 14 }} />}
-                      onClick={() => runFind("result", result)} disabled={finding === "result"}
-                      sx={{ py: 0, fontSize: "0.8rem" }}>
-                      {finding === "result" ? "Finding…" : "Find Schemas"}
-                    </Button>
-                  )}
-                </>
+                <ResultPanelActions
+                  mappingMode={mappingMode}
+                  customOutputSchema={customOutputSchema}
+                  setCustomOutputSchema={setCustomOutputSchema}
+                  setValidateOutputOn={setValidateOutputOn}
+                  allSchemaRefs={allSchemaRefs}
+                  outputSchema={outputSchema}
+                  validateOutputOn={validateOutputOn}
+                  result={result}
+                  finding={finding}
+                  onFindResult={() => runFind("result", result)}
+                />
               )}
               <Tooltip title={templateCollapsed ? "Expand template panel first" : "Collapse panel"}>
                 <span>
