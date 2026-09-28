@@ -719,7 +719,7 @@ export default function PlaygroundPage() {
                   onChange={(v) => setTemplate(v ?? "")}
                   options={{ ...EDITOR_OPTS, "semanticHighlighting.enabled": false }}
                   beforeMount={(monaco) => {
-                    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+                    monaco.typescript.javascriptDefaults.setDiagnosticsOptions({
                       noSemanticValidation: true, noSyntaxValidation: true,
                     });
                   }}
