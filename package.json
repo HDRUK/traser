@@ -44,6 +44,7 @@
     "jose": "^6.1.0",
     "jsonata": "^2.2.1",
     "lru-cache": "^11.5.2",
+    "mermaid": "^11.17.2",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-resizable-panels": "^4.13.3",

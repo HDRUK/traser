@@ -28,9 +28,8 @@ const PUBLIC_NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "API Docs", href: "/docs" },
   { label: "Playground", href: "/playground" },
+  { label: "Translation Graph", href: "/schema-graph" },
 ];
-
-const PROTECTED_NAV_LINKS: { label: string; href: string }[] = [];
 
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
 const HeaderLink = forwardRef<
@@ -131,8 +130,6 @@ export default function App({ loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const isNavigating = navigation.state === "loading";
 
-  const navLinks = user ? [...PUBLIC_NAV_LINKS, ...PROTECTED_NAV_LINKS] : PUBLIC_NAV_LINKS;
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -159,7 +156,7 @@ export default function App({ loaderData }: Route.ComponentProps) {
               TRASER
             </Typography>
           }
-          navItems={navLinks}
+          navItems={PUBLIC_NAV_LINKS}
           linkComponent={HeaderLink}
           isLoggedIn={!!user}
           accountLoading={false}
