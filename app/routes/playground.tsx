@@ -79,6 +79,15 @@ export default function PlaygroundPage() {
     seed,
   } = playgroundStore();
 
+  // onResize fires on every drag tick, not just at drag end. Feeding that
+  // straight into hSplit/vSplit re-renders the same Panel's defaultSize prop
+  // mid-drag, which fights the library's own live drag tracking and damps
+  // the resize to a fraction of the actual pointer movement. Debouncing so
+  // the write only lands once movement pauses keeps defaultSize stable for
+  // the whole gesture.
+  const debouncedSetHSplit = useDebounce(setHSplit, 150);
+  const debouncedSetVSplit = useDebounce(setVSplit, 150);
+
   // ── Panel refs for programmatic collapse/expand
   const leftPanelRef = useRef<PanelImperativeHandle | null>(null);
   const rightPanelRef = useRef<PanelImperativeHandle | null>(null);
@@ -569,7 +578,7 @@ export default function PlaygroundPage() {
 
         {/* ── LEFT: JSON input ── */}
         <Panel panelRef={leftPanelRef} id="left-panel" defaultSize={`${hSplit}%`} minSize="10%" collapsible collapsedSize="40px"
-          onResize={(size) => { const collapsed = size.inPixels <= 42; setLeftCollapsed(collapsed); if (!collapsed && !rightPanelRef.current?.isCollapsed() && size.asPercentage > 5) setHSplit(size.asPercentage); }}>
+          onResize={(size) => { const collapsed = size.inPixels <= 42; setLeftCollapsed(collapsed); if (!collapsed && !rightPanelRef.current?.isCollapsed() && size.asPercentage > 5) debouncedSetHSplit(size.asPercentage); }}>
           {leftCollapsed ? (
             <CollapsedPanelHandle
               orientation="vertical" borderSide="right"
@@ -671,7 +680,7 @@ export default function PlaygroundPage() {
 
           {/* ── Top right: JSONata template ── */}
           <Panel panelRef={templatePanelRef} id="template-panel" defaultSize={`${vSplit}%`} minSize="10%" collapsible collapsedSize="40px"
-            onResize={(size) => { const collapsed = size.inPixels <= 42; setTemplateCollapsed(collapsed); if (!collapsed && !resultPanelRef.current?.isCollapsed() && size.asPercentage > 5) setVSplit(size.asPercentage); }}>
+            onResize={(size) => { const collapsed = size.inPixels <= 42; setTemplateCollapsed(collapsed); if (!collapsed && !resultPanelRef.current?.isCollapsed() && size.asPercentage > 5) debouncedSetVSplit(size.asPercentage); }}>
           {templateCollapsed ? (
             <CollapsedPanelHandle
               orientation="horizontal" borderSide="bottom"
