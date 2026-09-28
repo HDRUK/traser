@@ -867,7 +867,7 @@ export default function ResultsPage() {
             <input type="hidden" name="intent" value="cancel" />
             <Tooltip title="Stop this refresh — it can be started again afterwards">
               <span>
-                <Button type="submit" size="small" color="warning" variant="outlined"
+                <Button type="submit" size="small" variant="outlined"
                   disabled={cancelFetcher.state !== "idle"}>
                   Cancel
                 </Button>
