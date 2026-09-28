@@ -45,7 +45,7 @@ export const DatasetRow = memo(function DatasetRow({
           </Tooltip>
           {datasetStatus === DatasetStatus.Draft && (
             <Chip label="DRAFT" size="small" variant="outlined"
-              sx={{ height: 16, fontSize: "0.6rem", fontWeight: 700, borderColor: "warning.main", color: "warning.main", flexShrink: 0, "& .MuiChip-label": { px: 0.5 } }} />
+              sx={{ height: 16, fontSize: "0.6rem", fontWeight: 700, borderColor: "warning.main", color: "warning.contrastText", flexShrink: 0, "& .MuiChip-label": { px: 0.5 } }} />
           )}
           {gatewayId && (
             <Tooltip title={`Open on Health Data Gateway (ID ${gatewayId})`}>

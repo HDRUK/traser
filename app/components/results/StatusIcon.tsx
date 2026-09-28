@@ -9,7 +9,7 @@ export function StatusIcon({ status, fontSize = 20 }: { status: CellStatus; font
     case CellStatus.Ok:
       return <CheckCircleIcon sx={{ color: "success.main", fontSize }} />;
     case CellStatus.Invalid:
-      return <WarningIcon sx={{ color: "warning.main", fontSize }} />;
+      return <WarningIcon sx={{ color: "warning.contrastText", fontSize }} />;
     case CellStatus.Failed:
       return <CancelIcon sx={{ color: "error.main", fontSize }} />;
     case CellStatus.Pending:
