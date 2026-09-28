@@ -32,6 +32,8 @@ const PUBLIC_NAV_LINKS = [
   { label: "Schema View", href: "/schema-view" },
 ];
 
+const ADMIN_NAV_LINKS: typeof PUBLIC_NAV_LINKS = [];
+
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
 const HeaderLink = forwardRef<
   HTMLAnchorElement,
@@ -77,10 +79,12 @@ export const middleware: Route.MiddlewareFunction[] = [
 
 export async function loader({ request }: Route.LoaderArgs) {
   const { getUser } = await import("./lib/auth.server");
-  // Kick off the once-per-server background job. It is an idempotent
-  // lazy-singleton, so calling it on every request is free after the first.
+  // Kick off the once-per-server background jobs. Both are idempotent
+  // lazy-singletons, so calling them on every request is free after the first.
   const { startSchemaReloader } = await import("./lib/schema.server");
   startSchemaReloader();
+  const { ensureRetentionSweeperStarted } = await import("./lib/retention.server");
+  ensureRetentionSweeperStarted();
   return { user: await getUser(request) };
 }
 
@@ -157,7 +161,10 @@ export default function App({ loaderData }: Route.ComponentProps) {
               TRASER
             </Typography>
           }
-          navItems={PUBLIC_NAV_LINKS}
+          navItems={[
+            ...PUBLIC_NAV_LINKS,
+            ...(user?.is_admin === 1 ? ADMIN_NAV_LINKS : []),
+          ]}
           linkComponent={HeaderLink}
           isLoggedIn={!!user}
           accountLoading={false}
