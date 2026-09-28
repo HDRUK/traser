@@ -22,7 +22,6 @@ import {
   type TemplateEntry,
 } from "~/lib/templates.server";
 import { TranslationGraph } from "~/lib/graph.server";
-import { requireAuth } from "~/lib/auth.server";
 import { buildFullGraph, buildPathsGraph } from "~/lib/schema-graph/mermaidBuilders";
 import { useMermaidSvg } from "~/lib/schema-graph/useMermaidSvg";
 
@@ -31,7 +30,6 @@ export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
 // ─── Loader ───────────────────────────────────────────────────────────────
 
 export async function loader({ request }: Route.LoaderArgs) {
-  await requireAuth(request);
   await ensureLoaded();
 
   const url = new URL(request.url);

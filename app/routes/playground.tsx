@@ -136,7 +136,12 @@ export default function PlaygroundPage() {
   // ── Monaco
   const [Editor, setEditor] = useState<ComponentType<EditorProps> | null>(null);
   useEffect(() => {
-    import("@monaco-editor/react").then((m) => setEditor(() => m.default));
+    Promise.all([import("@monaco-editor/react"), import("monaco-editor")]).then(
+      ([{ default: ReactEditor, loader }, monaco]) => {
+        loader.config({ monaco });
+        setEditor(() => ReactEditor);
+      },
+    );
   }, []);
 
   // ── Live refs
