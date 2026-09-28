@@ -29,6 +29,7 @@ const PUBLIC_NAV_LINKS = [
   { label: "API Docs", href: "/docs" },
   { label: "Playground", href: "/playground" },
   { label: "Translation Graph", href: "/schema-graph" },
+  { label: "Schema View", href: "/schema-view" },
 ];
 
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
