@@ -32,7 +32,9 @@ const PUBLIC_NAV_LINKS = [
   { label: "Schema View", href: "/schema-view" },
 ];
 
-const ADMIN_NAV_LINKS: typeof PUBLIC_NAV_LINKS = [];
+const ADMIN_NAV_LINKS: typeof PUBLIC_NAV_LINKS = [
+  { label: "Test Results", href: "/results" },
+];
 
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
 const HeaderLink = forwardRef<
