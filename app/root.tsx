@@ -26,6 +26,7 @@ import type { Route } from "./+types/root";
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "API Docs", href: "/docs" },
+  { label: "Playground", href: "/playground" },
 ];
 
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
