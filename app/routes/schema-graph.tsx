@@ -23,7 +23,7 @@ import {
 } from "~/lib/templates.server";
 import { TranslationGraph } from "~/lib/graph.server";
 import { buildFullGraph, buildPathsGraph } from "~/lib/schema-graph/mermaidBuilders";
-import { useMermaidSvg } from "~/lib/schema-graph/useMermaidSvg";
+import { useMermaidSvg } from "~/lib/mermaid/useMermaidSvg";
 
 export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
 
