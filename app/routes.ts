@@ -19,4 +19,5 @@ export default [
   route("/playground", "routes/playground.tsx"),
   route("/schema-graph", "routes/schema-graph.tsx"),
   route("/schema-view", "routes/schema-view.tsx"),
+  route("/results", "routes/results.tsx"),
 ] satisfies RouteConfig;
