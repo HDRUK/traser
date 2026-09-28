@@ -4,7 +4,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { alpha, type Theme } from "@mui/material/styles";
 import { tokens } from "@hdruk/ui/theme";
 
-export type StatusChipTone = "primary" | "success" | "error" | "neutral";
+export type StatusChipTone = "primary" | "success" | "error" | "warning" | "neutral";
 
 function toneSx(tone: StatusChipTone, variant: "filled" | "outlined") {
   if (tone === "neutral") {
@@ -13,7 +13,7 @@ function toneSx(tone: StatusChipTone, variant: "filled" | "outlined") {
       : { bgcolor: (theme: Theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" };
   }
   return variant === "outlined"
-    ? { borderColor: `${tone}.main`, color: `${tone}.main` }
+    ? { borderColor: `${tone}.main`, color: `${tone}.main`, "& .MuiChip-icon": { color: `${tone}.main` } }
     : {
         bgcolor: (theme: Theme) => alpha(theme.palette[tone].main, 0.15),
         color: `${tone}.dark`,
