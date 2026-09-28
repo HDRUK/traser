@@ -1,10 +1,8 @@
-import Chip from "@mui/material/Chip";
-import Tooltip from "@mui/material/Tooltip";
-import { alpha } from "@mui/material/styles";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import FindInPageIcon from "@mui/icons-material/FindInPage";
 
+import { StatusChip } from "../StatusChip";
 import type { SchemaRef } from "../../stores/playgroundStore";
 import type { ValidationState } from "../../lib/playground/types";
 
@@ -20,19 +18,18 @@ export function InputBadge({ inputSchema, inputValidation, finding, onFind, onOp
 }) {
   if (!inputSchema) {
     return (
-      <Chip size="small" variant="outlined"
+      <StatusChip tone="primary" variant="outlined"
         label={finding === "input" ? "Finding…" : "Find schema"}
         icon={<FindInPageIcon sx={{ fontSize: "12px !important" }} />}
         onClick={onFind}
-        disabled={finding === "input"}
-        sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", borderColor: "primary.main", color: "primary.main", "& .MuiChip-icon": { color: "primary.main" } }} />
+        disabled={finding === "input"} />
     );
   }
   const label = `${inputSchema.name} ${inputSchema.version}`;
   if (inputValidation.kind === "valid") {
-    return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
-      onClick={onOpenPicker}
-      sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.dark", "& .MuiChip-icon": { color: "success.main" } }} />;
+    return <StatusChip tone="success" label={`Valid ${label}`}
+      icon={<CheckCircleIcon sx={{ fontSize: 14 }} />}
+      onClick={onOpenPicker} />;
   }
   if (inputValidation.kind === "invalid") {
     const firstErr = inputValidation.errors[0];
@@ -43,14 +40,11 @@ export function InputBadge({ inputSchema, inputValidation, finding, onFind, onOp
       ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
       : "Invalid";
     return (
-      <Tooltip title={tip}>
-        <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
-          onClick={onOpenPicker}
-          sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.dark", "& .MuiChip-icon": { color: "error.main" } }} />
-      </Tooltip>
+      <StatusChip tone="error" label={`Invalid as ${label}`}
+        icon={<CancelIcon sx={{ fontSize: 14 }} />}
+        onClick={onOpenPicker}
+        tooltip={tip} />
     );
   }
-  return <Chip size="small" label={`Checking ${label}…`}
-    onClick={onOpenPicker}
-    sx={{ height: 20, fontSize: "0.75rem", cursor: "pointer", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
+  return <StatusChip tone="neutral" label={`Checking ${label}…`} onClick={onOpenPicker} />;
 }

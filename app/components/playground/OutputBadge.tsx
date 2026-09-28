@@ -1,9 +1,7 @@
-import Chip from "@mui/material/Chip";
-import Tooltip from "@mui/material/Tooltip";
-import { alpha } from "@mui/material/styles";
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
+import { StatusChip } from "../StatusChip";
 import type { SchemaRef } from "../../stores/playgroundStore";
 import type { ValidationState } from "../../lib/playground/types";
 
@@ -16,19 +14,14 @@ export function OutputBadge({ outputSchema, validateOutputOn, outputValidation }
   outputValidation: ValidationState;
 }) {
   if (!outputSchema) {
-    return (
-      <Chip size="small" variant="outlined" label="No output schema"
-        sx={{ height: 20, fontSize: "0.75rem", borderColor: "text.disabled", color: "text.secondary" }} />
-    );
+    return <StatusChip tone="neutral" variant="outlined" label="No output schema" />;
   }
   const label = `${outputSchema.name} ${outputSchema.version}`;
   if (!validateOutputOn) {
-    return <Chip size="small" variant="outlined" label={`Output: ${label}`}
-      sx={{ height: 20, fontSize: "0.75rem", borderColor: "text.disabled", color: "text.secondary" }} />;
+    return <StatusChip tone="neutral" variant="outlined" label={`Output: ${label}`} />;
   }
   if (outputValidation.kind === "valid") {
-    return <Chip size="small" icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} label={`Valid ${label}`}
-      sx={{ height: 20, fontSize: "0.75rem", bgcolor: (theme) => alpha(theme.palette.success.main, 0.15), color: "success.dark", "& .MuiChip-icon": { color: "success.main" } }} />;
+    return <StatusChip tone="success" label={`Valid ${label}`} icon={<CheckCircleIcon sx={{ fontSize: 14 }} />} />;
   }
   if (outputValidation.kind === "invalid") {
     const firstErr = outputValidation.errors[0];
@@ -39,12 +32,10 @@ export function OutputBadge({ outputSchema, validateOutputOn, outputValidation }
       ? `${firstErr.instancePath || "(root)"}: ${firstErr.message ?? "error"}${valueTag ? ` ("${valueTag}")` : ""}${firstErr.suggestion ? ` — ${firstErr.suggestion}` : ""}`
       : "Invalid";
     return (
-      <Tooltip title={tip}>
-        <Chip size="small" icon={<CancelIcon sx={{ fontSize: 14 }} />} label={`Invalid as ${label}`}
-          sx={{ height: 20, fontSize: "0.75rem", bgcolor: (theme) => alpha(theme.palette.error.main, 0.15), color: "error.dark", "& .MuiChip-icon": { color: "error.main" } }} />
-      </Tooltip>
+      <StatusChip tone="error" label={`Invalid as ${label}`}
+        icon={<CancelIcon sx={{ fontSize: 14 }} />}
+        tooltip={tip} />
     );
   }
-  return <Chip size="small" label={`Checking ${label}…`}
-    sx={{ height: 20, fontSize: "0.75rem", bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06), color: "text.secondary" }} />;
+  return <StatusChip tone="neutral" label={`Checking ${label}…`} />;
 }
