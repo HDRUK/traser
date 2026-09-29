@@ -14,7 +14,22 @@ interface JwtPayload {
   user?: Partial<TRASERUser>;
 }
 
+const AUTH_DISABLED_USER: TRASERUser = {
+  id: 0,
+  firstname: "Auth",
+  lastname: "Disabled",
+  email: "",
+  is_admin: 1,
+};
+
+export function isAuthEnforced(): boolean {
+  const flag = process.env.AUTH_ENFORCED?.trim().toLowerCase();
+  return flag !== "0" && flag !== "false";
+}
+
 export async function getUser(request: Request): Promise<TRASERUser | null> {
+  if (!isAuthEnforced()) return AUTH_DISABLED_USER;
+
   const cookieHeader = request.headers.get("cookie");
   if (!cookieHeader) return null;
 
