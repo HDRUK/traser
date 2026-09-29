@@ -2,6 +2,8 @@ import { redirect } from "react-router";
 import { jwtVerify } from "jose";
 import { parse as parseCookies } from "cookie";
 
+import { envBoolean } from "./env.server";
+
 export interface TRASERUser {
   id: number;
   firstname: string;
@@ -14,7 +16,21 @@ interface JwtPayload {
   user?: Partial<TRASERUser>;
 }
 
+const AUTH_DISABLED_USER: TRASERUser = {
+  id: 0,
+  firstname: "Auth",
+  lastname: "Disabled",
+  email: "",
+  is_admin: 1,
+};
+
+export function isAuthEnforced(): boolean {
+  return envBoolean("AUTH_ENFORCED", true);
+}
+
 export async function getUser(request: Request): Promise<TRASERUser | null> {
+  if (!isAuthEnforced()) return AUTH_DISABLED_USER;
+
   const cookieHeader = request.headers.get("cookie");
   if (!cookieHeader) return null;
 
