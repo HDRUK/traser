@@ -2,6 +2,8 @@ import { redirect } from "react-router";
 import { jwtVerify } from "jose";
 import { parse as parseCookies } from "cookie";
 
+import { envBoolean } from "./env.server";
+
 export interface TRASERUser {
   id: number;
   firstname: string;
@@ -23,8 +25,7 @@ const AUTH_DISABLED_USER: TRASERUser = {
 };
 
 export function isAuthEnforced(): boolean {
-  const flag = process.env.AUTH_ENFORCED?.trim().toLowerCase();
-  return flag !== "0" && flag !== "false";
+  return envBoolean("AUTH_ENFORCED", true);
 }
 
 export async function getUser(request: Request): Promise<TRASERUser | null> {

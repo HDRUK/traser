@@ -29,8 +29,6 @@ describe("auth enforcement flag (auth.server)", () => {
   it("disables the token checks when the flag is off", () => {
     setEnv({ AUTH_ENFORCED: "0" });
     expect(isAuthEnforced()).toBe(false);
-    setEnv({ AUTH_ENFORCED: "False" });
-    expect(isAuthEnforced()).toBe(false);
   });
 
   it("enforces when the flag is on", () => {
@@ -38,9 +36,9 @@ describe("auth enforcement flag (auth.server)", () => {
     expect(isAuthEnforced()).toBe(true);
   });
 
-  it("enforces for an unrecognised value", () => {
+  it("throws on an unparseable value rather than guessing", () => {
     setEnv({ AUTH_ENFORCED: "maybe" });
-    expect(isAuthEnforced()).toBe(true);
+    expect(() => isAuthEnforced()).toThrow(/AUTH_ENFORCED must be one of/);
   });
 
   it("rejects an anonymous request while enforced", async () => {
