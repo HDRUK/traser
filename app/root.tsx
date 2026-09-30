@@ -25,7 +25,6 @@ import type { Route } from "./+types/root";
 import type { TRASERUser } from "./lib/auth.server";
 
 const PUBLIC_NAV_LINKS: HeaderMenuLinkItem[] = [
-  { label: "Home", href: "/" },
   { label: "API Docs", href: "/docs" },
   {
     label: "Schema Tools",
@@ -158,10 +157,11 @@ export default function App({ loaderData }: Route.ComponentProps) {
               component="img"
               src="/gateway-white-logo.svg"
               alt="Gateway"
-              sx={{ height: 22, display: "block" }}
+              sx={{ height: 44, display: "block" }}
             />
           }
           logoHref="/"
+          brandingLogoHref="/"
           brandingLogoImage={
             <Typography
               variant="subtitle1"
