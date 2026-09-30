@@ -40,7 +40,7 @@ export function RunConfigForm({ busy, error, duplicateFrom, defaultBaseUrl, allo
         defaultValue={duplicateFrom?.baseUrl ?? defaultBaseUrl}
         helperText={allowedHosts.length > 0
           ? `Allowed hosts: ${allowedHosts.join(", ")}`
-          : "No hosts allowed — set BENCHMARK_ALLOWED_HOSTS (or GATEWAY_API_URL) on the server."}
+          : "No hosts allowed — BENCHMARK_ALLOWED_HOSTS is set but empty on the server."}
         slotProps={{ inputLabel: { shrink: true } }}
       />
       <Box sx={{ display: "flex", gap: 2 }}>

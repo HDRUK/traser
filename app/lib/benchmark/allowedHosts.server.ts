@@ -10,6 +10,12 @@ export function defaultBenchmarkBaseUrl(): string {
   return process.env.GATEWAY_API_URL ?? "";
 }
 
+export const DEFAULT_BENCHMARK_HOSTS = [
+  "api.prod.hdruk.cloud",
+  "api.preprod.hdruk.cloud",
+  "api.dev.hdruk.cloud",
+];
+
 export function allowedBenchmarkHosts(): string[] {
   const configured = process.env.BENCHMARK_ALLOWED_HOSTS;
   if (configured !== undefined) {
@@ -20,13 +26,15 @@ export function allowedBenchmarkHosts(): string[] {
   }
 
   const gatewayHost = hostnameOf(defaultBenchmarkBaseUrl());
-  return gatewayHost ? [gatewayHost] : [];
+  return gatewayHost && !DEFAULT_BENCHMARK_HOSTS.includes(gatewayHost)
+    ? [...DEFAULT_BENCHMARK_HOSTS, gatewayHost]
+    : DEFAULT_BENCHMARK_HOSTS;
 }
 
 export function benchmarkBaseUrlError(baseUrl: string): string | null {
   const allowed = allowedBenchmarkHosts();
   if (allowed.length === 0) {
-    return "No benchmark hosts are configured — set BENCHMARK_ALLOWED_HOSTS (or GATEWAY_API_URL) before starting a run.";
+    return "BENCHMARK_ALLOWED_HOSTS is set but empty, so no host is permitted. Unset it to fall back to the default Gateway hosts.";
   }
 
   let url: URL;

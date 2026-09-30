@@ -4,6 +4,7 @@ import {
   allowedBenchmarkHosts,
   benchmarkBaseUrlError,
   defaultBenchmarkBaseUrl,
+  DEFAULT_BENCHMARK_HOSTS,
 } from "../../app/lib/benchmark/allowedHosts.server";
 
 const originalEnv = { ...process.env };
@@ -13,17 +14,28 @@ afterEach(() => {
 });
 
 describe("allowedBenchmarkHosts", () => {
-  it("falls back to the GATEWAY_API_URL host when the allow-list is unset", () => {
-    delete process.env.BENCHMARK_ALLOWED_HOSTS;
-    process.env.GATEWAY_API_URL = "https://api.prod.hdruk.cloud/api/v2";
-    expect(allowedBenchmarkHosts()).toEqual(["api.prod.hdruk.cloud"]);
-  });
-
-  it("is empty when neither variable is set, so nothing is reachable by default", () => {
+  it("defaults to the three Gateway environments when neither variable is set", () => {
     delete process.env.BENCHMARK_ALLOWED_HOSTS;
     delete process.env.GATEWAY_API_URL;
-    expect(allowedBenchmarkHosts()).toEqual([]);
+    expect(allowedBenchmarkHosts()).toEqual(DEFAULT_BENCHMARK_HOSTS);
+    expect(DEFAULT_BENCHMARK_HOSTS).toEqual([
+      "api.prod.hdruk.cloud",
+      "api.preprod.hdruk.cloud",
+      "api.dev.hdruk.cloud",
+    ]);
     expect(defaultBenchmarkBaseUrl()).toBe("");
+  });
+
+  it("adds the GATEWAY_API_URL host to the defaults when it is not already one", () => {
+    delete process.env.BENCHMARK_ALLOWED_HOSTS;
+    process.env.GATEWAY_API_URL = "http://localhost:8100/api/v2";
+    expect(allowedBenchmarkHosts()).toEqual([...DEFAULT_BENCHMARK_HOSTS, "localhost"]);
+  });
+
+  it("does not duplicate the GATEWAY_API_URL host when it is already a default", () => {
+    delete process.env.BENCHMARK_ALLOWED_HOSTS;
+    process.env.GATEWAY_API_URL = "https://api.prod.hdruk.cloud/api/v2";
+    expect(allowedBenchmarkHosts()).toEqual(DEFAULT_BENCHMARK_HOSTS);
   });
 
   it("splits, trims and lowercases a configured list", () => {
@@ -39,10 +51,18 @@ describe("allowedBenchmarkHosts", () => {
 });
 
 describe("benchmarkBaseUrlError", () => {
-  it("rejects every URL when no host is configured", () => {
+  it("accepts each default Gateway host with no configuration at all", () => {
     delete process.env.BENCHMARK_ALLOWED_HOSTS;
     delete process.env.GATEWAY_API_URL;
-    expect(benchmarkBaseUrlError("https://api.prod.hdruk.cloud/api/v2")).toMatch(/No benchmark hosts are configured/);
+    for (const host of DEFAULT_BENCHMARK_HOSTS) {
+      expect(benchmarkBaseUrlError(`https://${host}/api/v2`)).toBeNull();
+    }
+    expect(benchmarkBaseUrlError("https://api.unlisted.test/api/v2")).toMatch(/not in the benchmark allow-list/);
+  });
+
+  it("rejects every URL when the allow-list is set but empty", () => {
+    process.env.BENCHMARK_ALLOWED_HOSTS = " , ";
+    expect(benchmarkBaseUrlError("https://api.prod.hdruk.cloud/api/v2")).toMatch(/set but empty/);
   });
 
   it("accepts a host on the list, on any path or port", () => {
@@ -52,10 +72,11 @@ describe("benchmarkBaseUrlError", () => {
     expect(benchmarkBaseUrlError("https://API.PREPROD.hdruk.cloud/api/v2")).toBeNull();
   });
 
-  it("rejects a host that is not on the list", () => {
+  it("rejects an unlisted host, including the cloud metadata endpoint", () => {
     process.env.BENCHMARK_ALLOWED_HOSTS = "api.preprod.hdruk.cloud";
-    expect(benchmarkBaseUrlError("http://169.254.169.254/latest/meta-data")).toMatch(/not in the benchmark allow-list/);
+    expect(benchmarkBaseUrlError("https://api.unlisted.test/api/v2")).toMatch(/not in the benchmark allow-list/);
     expect(benchmarkBaseUrlError("http://localhost:8100/api/v2")).toMatch(/not in the benchmark allow-list/);
+    expect(benchmarkBaseUrlError("http://169.254.169.254/latest/meta-data")).toMatch(/not in the benchmark allow-list/);
   });
 
   it("rejects a subdomain or suffix that merely resembles an allowed host", () => {
@@ -70,8 +91,8 @@ describe("benchmarkBaseUrlError", () => {
     expect(benchmarkBaseUrlError("api.preprod.hdruk.cloud/api/v2")).toMatch(/valid absolute URL/);
   });
 
-  it("rejects credentials-in-URL pointing at an unlisted host", () => {
+  it("reads the host after the @, not the userinfo before it", () => {
     process.env.BENCHMARK_ALLOWED_HOSTS = "api.preprod.hdruk.cloud";
-    expect(benchmarkBaseUrlError("https://api.preprod.hdruk.cloud@169.254.169.254/")).toMatch(/not in the benchmark allow-list/);
+    expect(benchmarkBaseUrlError("https://api.preprod.hdruk.cloud@api.unlisted.test/api/v2")).toMatch(/not in the benchmark allow-list/);
   });
 });
