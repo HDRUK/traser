@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "description": "Metadata TRAnslation SERvice — converts health dataset metadata between schema formats (HDRUK, GWDM, SchemaOrg, CRUK) and validates metadata against those schemas."
   },
-  "servers": [{ "url": "/", "description": "This server" }],
   "tags": [
     { "name": "translate", "description": "Translate metadata between schemas" },
     { "name": "validate", "description": "Validate metadata against a schema" },
