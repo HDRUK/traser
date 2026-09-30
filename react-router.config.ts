@@ -4,6 +4,10 @@ export default {
   // Config options...
   // Server-side render by default, to enable SPA mode set this to `false`
   ssr: true,
+  allowedActionOrigins: [
+    "translate.healthdatagateway.org",
+    "*.europe-west1.run.app",
+  ],
   future: {
     v8_middleware: true,
     v8_passThroughRequests: true,
