@@ -18,22 +18,32 @@ import CssBaseline from "@mui/material/CssBaseline";
 import LinearProgress from "@mui/material/LinearProgress";
 import Typography from "@mui/material/Typography";
 import { ThemeProvider } from "@mui/material/styles";
-import { Header } from "@hdruk/ui";
+import { Header, type HeaderMenuLinkItem } from "@hdruk/ui";
 import { createHdrukTheme } from "@hdruk/ui/theme";
 
 import type { Route } from "./+types/root";
 import type { TRASERUser } from "./lib/auth.server";
 
-const PUBLIC_NAV_LINKS = [
-  { label: "Home", href: "/" },
+const PUBLIC_NAV_LINKS: HeaderMenuLinkItem[] = [
   { label: "API Docs", href: "/docs" },
-  { label: "Playground", href: "/playground" },
-  { label: "Translation Graph", href: "/schema-graph" },
-  { label: "Schema View", href: "/schema-view" },
+  {
+    label: "Schema Tools",
+    subItems: [
+      { label: "Playground", href: "/playground" },
+      { label: "Translation Graph", href: "/schema-graph" },
+      { label: "Schema View", href: "/schema-view" },
+    ],
+  },
 ];
 
-const ADMIN_NAV_LINKS: typeof PUBLIC_NAV_LINKS = [
-  { label: "Test Results", href: "/results" },
+const ADMIN_NAV_LINKS: HeaderMenuLinkItem[] = [
+  {
+    label: "Admin Tools",
+    subItems: [
+      { label: "Test Results", href: "/results" },
+      { label: "Benchmark", href: "/benchmark" },
+    ],
+  },
 ];
 
 // Adapts @hdruk/ui's `href`-based link contract to React Router's `to`.
@@ -147,10 +157,11 @@ export default function App({ loaderData }: Route.ComponentProps) {
               component="img"
               src="/gateway-white-logo.svg"
               alt="Gateway"
-              sx={{ height: 22, display: "block" }}
+              sx={{ height: 44, display: "block" }}
             />
           }
           logoHref="/"
+          brandingLogoHref="/"
           brandingLogoImage={
             <Typography
               variant="subtitle1"

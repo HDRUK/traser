@@ -13,8 +13,3 @@ export const DATASET_COUNT_ACCENT_COLOUR = "#90caf9";
 
 export const PIE_TOOLTIP_BACKGROUND = "#1e1e1e";
 export const PIE_TOOLTIP_BORDER = "1px solid rgba(255,255,255,0.1)";
-
-export const LOG_SURFACE_BACKGROUND = "#0d1117";
-export const LOG_SURFACE_TEXT = "#c9d1d9";
-export const LOG_SURFACE_ACCENT = "#58a6ff";
-export const LOG_SURFACE_BORDER = "1px solid rgba(255,255,255,0.1)";
