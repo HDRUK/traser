@@ -146,6 +146,10 @@ export function getPropertyIndex(name: string, version: string): Map<string, str
 
 const loadFromLocal = !SCHEMA_LOCATION.startsWith("http");
 
+function schemaKey(name: string, version: string): string {
+  return `${name}/${version}`;
+}
+
 function schemaPath(model: string, version: string): string {
   return `${SCHEMA_LOCATION}/hdr_schemata/models/${model}/${version}/schema.json`;
 }
@@ -213,7 +217,7 @@ export async function loadSchemas(): Promise<void> {
       const key = `${name}:${version}`;
       try {
         const schema = await fetchOrReadJson(schemaPath(name, version));
-        nextAjv.addSchema(schema as object, key);
+        nextAjv.addSchema(schema as object, schemaKey(name, version));
         nextPropertyIndex.set(key, buildPropertyIndex(schema as object));
         nextNameDiscriminator.set(key, buildNameDiscriminatorMap(schema as object));
         console.log(`[schema] loaded ${key}`);
@@ -264,7 +268,7 @@ export function startSchemaReloader(): void {
 }
 
 export function getSchema(name: string, version: string) {
-  return ajv.getSchema(`${name}:${version}`);
+  return ajv.getSchema(schemaKey(name, version));
 }
 
 export async function validateMetadata(
@@ -290,7 +294,7 @@ export async function validateMetadataSection(
   subsection: string
 ): Promise<unknown[]> {
   await ensureLoaded();
-  const ref = `${modelName}:${modelVersion}#/properties/${subsection}`;
+  const ref = `${schemaKey(modelName, modelVersion)}#/properties/${subsection}`;
   const validator = ajv.getSchema(ref);
   if (!validator) return [{ message: `Schema ${modelName}:${modelVersion}#${subsection} is not known` }];
   const section = (metadata as Record<string, unknown>)[subsection];
