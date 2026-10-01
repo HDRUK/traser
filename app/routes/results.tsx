@@ -84,6 +84,10 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (intent === ResultsIntent.Deep) {
+    // Stop any in-flight refresh before the cache is wiped, so it can't keep
+    // reading files that are being deleted out from under it — and so
+    // runAllTests() below isn't refused for a run that is already going.
+    await requestCancelRefresh();
     await clearAllDatasetFiles();
     const cache = await readTestResults();
     cache.running = true;
