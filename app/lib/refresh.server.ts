@@ -2,7 +2,7 @@ import { readFile, writeFile, rename } from "fs/promises";
 import path from "path";
 import pLimit from "p-limit";
 import {
-  getDatasetIndex,
+  listCachedPids,
   getDataDir,
   extractMetadata,
   invalidateDatasetIndex,
@@ -14,6 +14,14 @@ import { listSchemas, translateAndValidate, REFERENCE_SCHEMA, REFERENCE_VERSION 
 
 let _running = false;
 let _cancelRequested = false;
+let _generation = 0;
+let _abort: AbortController | null = null;
+let _lastProgressAt = 0;
+
+const STALL_TIMEOUT_MS = 10 * 60_000;
+const FLUSH_INTERVAL_MS = 5_000;
+const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 40;
+const TEST_CONCURRENCY = Number(process.env.TEST_CONCURRENCY) || 10;
 
 function getGatewayApiUrl(): string {
   const url = process.env.GATEWAY_API_URL;
@@ -30,16 +38,48 @@ function appendLog(log: string[], entry: string): string[] {
   return next.length > 50 ? next.slice(next.length - 50) : next;
 }
 
+function isRefreshStalled(): boolean {
+  return _running && Date.now() - _lastProgressAt > STALL_TIMEOUT_MS;
+}
+
 export function isRefreshRunning(): boolean {
-  return _running;
+  return _running && !isRefreshStalled();
+}
+
+function markProgress(): void {
+  _lastProgressAt = Date.now();
+}
+
+function requestSignal(timeoutMs: number): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return _abort ? AbortSignal.any([_abort.signal, timeout]) : timeout;
 }
 
 // Cooperative cancellation: loops below poll this between iterations so a
 // long-running (or stuck, e.g. slow API) refresh can be stopped without
-// restarting the dev server, and a new refresh started right after.
-export function requestCancelRefresh(): boolean {
-  if (!_running) return false;
+// restarting the dev server, and a new refresh started right after. Bumping the
+// generation also orphans a run wedged somewhere unpollable.
+function abandonCurrentRun(): void {
+  _generation++;
   _cancelRequested = true;
+  _abort?.abort();
+  _abort = null;
+  _running = false;
+}
+
+export function abandonStalledRefresh(): boolean {
+  if (!isRefreshStalled()) return false;
+  abandonCurrentRun();
+  return true;
+}
+
+export async function requestCancelRefresh(): Promise<boolean> {
+  if (!_running) return false;
+  abandonCurrentRun();
+  const cache = await readTestResults();
+  cache.running = false;
+  cache.log = appendLog(cache.log ?? [], "Cancelled by user");
+  await writeTestResults(cache);
   return true;
 }
 
@@ -111,11 +151,13 @@ async function enrichFetchFailureTitles(fetchFailures: Record<string, FetchFailu
   const PER_PAGE = 200;
   const MAX_PAGES = 10;
   for (let page = 1; page <= MAX_PAGES && needed.size > 0; page++) {
+    if (_cancelRequested) return;
+    markProgress();
     let body: { data: ListItem[]; last_page?: number };
     try {
       const res = await fetch(
         `${getGatewayApiUrl()}/datasets?with_metadata=1&status=ACTIVE&per_page=${PER_PAGE}&page=${page}`,
-        { signal: AbortSignal.timeout(30_000) }
+        { signal: requestSignal(30_000) }
       );
       if (!res.ok) break;
       body = await res.json();
@@ -150,7 +192,7 @@ async function syncDatasetsFromApi(
   try {
     const res = await fetch(
       `${getGatewayApiUrl()}/datasets?with_metadata=0&status=ACTIVE&per_page=100000`,
-      { signal: AbortSignal.timeout(30_000) }
+      { signal: requestSignal(30_000) }
     );
     if (!res.ok) throw new Error(`HTTP ${res.status} for status=ACTIVE`);
     const body = (await res.json()) as { data: ListItem[] };
@@ -160,7 +202,7 @@ async function syncDatasetsFromApi(
       try {
         const res = await fetch(
           `${getGatewayApiUrl()}/datasets?with_metadata=1&status=DRAFT&per_page=100000`,
-          { signal: AbortSignal.timeout(30_000) }
+          { signal: requestSignal(30_000) }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status} for status=DRAFT`);
         const body = (await res.json()) as { data: ListItem[] };
@@ -196,10 +238,9 @@ async function syncDatasetsFromApi(
   const dedupedActive = dedupeByPid(activeRecords);
   const dedupedDrafts = dedupeByPid(draftRecords);
 
-  // 2. Build set of already-synced pids from the in-memory index
-  //    (getDatasetIndex() reads all existing data/{pid}.json files).
-  const existingDatasets = await getDatasetIndex();
-  const existingPids = new Set(existingDatasets.map((d) => d.pid));
+  // 2. Build set of already-synced pids straight from the cache directory
+  //    listing — only the filenames are needed, so the files stay unread.
+  const existingPids = new Set(await listCachedPids());
 
   // Now that pids satisfied by an earlier sync are known, drop any remaining
   // fetch failure whose id maps to an already-cached pid (e.g. it failed under
@@ -260,56 +301,61 @@ async function syncDatasetsFromApi(
   }
 
   // 4. Fetch and save missing ACTIVE datasets with concurrency limit
-  const limit = pLimit(20);
+  const limit = pLimit(SYNC_CONCURRENCY);
   let fetched = 0;
   let fetchFailed = 0;
+
+  const fetchActiveRecord = async (record: ListItem): Promise<void> => {
+    const id = String(record.id);
+    try {
+      // translateAndValidate() assumes every cached {pid}.json is already
+      // shaped like REFERENCE_SCHEMA:REFERENCE_VERSION — request the Gateway
+      // API's own translation so that assumption holds, instead of caching
+      // whichever schema the dataset happens to be natively stored as.
+      const qs = new URLSearchParams({
+        schema_model: REFERENCE_SCHEMA,
+        schema_version: REFERENCE_VERSION,
+      });
+      const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, {
+        signal: requestSignal(15_000),
+      });
+      if (!res.ok) {
+        fetchFailed++;
+        recordFetchFailure(fetchFailures, id, `HTTP ${res.status}`, res.status);
+        return;
+      }
+      const body = (await res.json()) as { data: { pid?: string } };
+      const dataset = body.data;
+      const pid = dataset?.pid;
+      if (!pid) {
+        fetchFailed++;
+        recordFetchFailure(fetchFailures, id, "Response missing pid", res.status);
+        return;
+      }
+
+      // Atomic write (tmp + rename) so a process kill mid-write can't leave
+      // a truncated {pid}.json that getDatasetIndex() would silently drop.
+      // The pid is unique and toFetchActive is deduplicated, so the tmp
+      // name won't collide within a run.
+      const target = path.join(dataDir, `${pid}.json`);
+      const tmp = `${target}.tmp`;
+      await writeFile(tmp, JSON.stringify(dataset), "utf-8");
+      await rename(tmp, target);
+      fetched++;
+      delete fetchFailures[id];
+    } catch (err) {
+      fetchFailed++;
+      recordFetchFailure(fetchFailures, id, err instanceof Error ? err.message : String(err));
+      console.error(`Failed to fetch dataset ${id}:`, err);
+    }
+  };
 
   await Promise.all(
     toFetchActive.map((record) =>
       limit(async () => {
         if (_cancelRequested) return;
-        const id = String(record.id);
-        try {
-          // translateAndValidate() assumes every cached {pid}.json is already
-          // shaped like REFERENCE_SCHEMA:REFERENCE_VERSION — request the Gateway
-          // API's own translation so that assumption holds, instead of caching
-          // whichever schema the dataset happens to be natively stored as.
-          const qs = new URLSearchParams({
-            schema_model: REFERENCE_SCHEMA,
-            schema_version: REFERENCE_VERSION,
-          });
-          const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, {
-            signal: AbortSignal.timeout(15_000),
-          });
-          if (!res.ok) {
-            fetchFailed++;
-            recordFetchFailure(fetchFailures, id, `HTTP ${res.status}`, res.status);
-            return;
-          }
-          const body = (await res.json()) as { data: { pid?: string } };
-          const dataset = body.data;
-          const pid = dataset?.pid;
-          if (!pid) {
-            fetchFailed++;
-            recordFetchFailure(fetchFailures, id, "Response missing pid", res.status);
-            return;
-          }
-
-          // Atomic write (tmp + rename) so a process kill mid-write can't leave
-          // a truncated {pid}.json that getDatasetIndex() would silently drop.
-          // The pid is unique and toFetchActive is deduplicated, so the tmp
-          // name won't collide within a run.
-          const target = path.join(dataDir, `${pid}.json`);
-          const tmp = `${target}.tmp`;
-          await writeFile(tmp, JSON.stringify(dataset), "utf-8");
-          await rename(tmp, target);
-          fetched++;
-          delete fetchFailures[id];
-        } catch (err) {
-          fetchFailed++;
-          recordFetchFailure(fetchFailures, id, err instanceof Error ? err.message : String(err));
-          console.error(`Failed to fetch dataset ${id}:`, err);
-        }
+        await fetchActiveRecord(record);
+        markProgress();
 
         // Log progress every 100 fetches
         const done = fetched + fetchFailed;
@@ -324,13 +370,19 @@ async function syncDatasetsFromApi(
     )
   );
 
+  if (_cancelRequested) return log;
+
   // 5. Bust the index so getDatasetIndex() re-reads all files including new ones
   invalidateDatasetIndex();
 
   const total = existingPids.size + fetched + draftsWritten;
   const remainingFailures = Object.keys(fetchFailures).length;
 
-  if (remainingFailures > 0) await enrichFetchFailureTitles(fetchFailures);
+  if (remainingFailures > 0) {
+    log = appendLog(log, `Looking up titles for ${remainingFailures} failed dataset(s)…`);
+    await flush(log);
+    await enrichFetchFailureTitles(fetchFailures);
+  }
 
   log = appendLog(
     log,
@@ -340,6 +392,16 @@ async function syncDatasetsFromApi(
   await flush(log);
 
   return log;
+}
+
+async function readDatasetMetadata(dataDir: string, pid: string) {
+  try {
+    const content = await readFile(path.join(dataDir, `${pid}.json`), "utf-8");
+    return extractMetadata(JSON.parse(content));
+  } catch (err) {
+    console.error(`Error reading dataset ${pid}:`, err);
+    return null;
+  }
 }
 
 // ─── Per-dataset test (per-row action) ────────────────────────────────────
@@ -388,9 +450,15 @@ export async function runSingleDataset(pid: string): Promise<void> {
 // ─── Full refresh (background job) ────────────────────────────────────────
 
 export async function runAllTests(): Promise<void> {
-  if (_running) return;
+  if (isRefreshRunning()) return;
+  if (_running) abandonCurrentRun();
   _running = true;
   _cancelRequested = false;
+  _abort = new AbortController();
+  const generation = ++_generation;
+  markProgress();
+
+  const isCurrent = () => generation === _generation;
 
   try {
     const cache = await readTestResults();
@@ -402,6 +470,7 @@ export async function runAllTests(): Promise<void> {
 
     // Flush helper — writes intermediate state to disk
     const flush = async (log: string[]) => {
+      if (!isCurrent()) return;
       cache.log = log;
       await writeTestResults({ ...cache, running: true });
     };
@@ -415,9 +484,11 @@ export async function runAllTests(): Promise<void> {
     // closes over the same `cache` object.
     cache.log = await syncDatasetsFromApi(cache.log, cache.fetchFailures, flush);
 
+    if (!isCurrent()) return;
+
     // ── Phase 2: run translation tests ───────────────────────────────────
-    const [datasets, schemas] = await Promise.all([
-      getDatasetIndex(),
+    const [pids, schemas] = await Promise.all([
+      listCachedPids(),
       listSchemas(),
     ]);
 
@@ -428,65 +499,72 @@ export async function runAllTests(): Promise<void> {
       }
     }
 
-    const pending = datasets.flatMap(({ pid }) =>
-      schemaCombos
-        .filter(({ schema, version }) => !cache.results[pid]?.[`${schema}:${version}`])
-        .map((combo) => ({ pid, ...combo }))
-    );
+    const pending = pids
+      .map((pid) => ({
+        pid,
+        combos: schemaCombos.filter(
+          ({ schema, version }) => !cache.results[pid]?.[`${schema}:${version}`]
+        ),
+      }))
+      .filter(({ combos }) => combos.length > 0);
 
-    const total = pending.length;
+    const total = pending.reduce((sum, { combos }) => sum + combos.length, 0);
     cache.progress = { completed: 0, total };
     cache.log = appendLog(
       cache.log,
-      `Phase 2: testing — ${datasets.length} datasets × ${schemaCombos.length} schemas = ${total} pending`
+      `Phase 2: testing — ${pids.length} datasets × ${schemaCombos.length} schemas = ${total} pending`
     );
-    await writeTestResults(cache);
+    await flush(cache.log);
 
-    const limit = pLimit(10);
+    const limit = pLimit(TEST_CONCURRENCY);
     let completed = 0;
     let succeeded = 0;
     let failed = 0;
+    let lastFlushAt = Date.now();
     const dataDir = getDataDir();
 
-    const tasks = pending.map(({ pid, schema, version }) =>
+    const tasks = pending.map(({ pid, combos }) =>
       limit(async () => {
         if (_cancelRequested) return;
-        try {
-          const content = await readFile(path.join(dataDir, `${pid}.json`), "utf-8");
-          const data = JSON.parse(content);
-          const metadata = extractMetadata(data);
-          if (!metadata) return;
 
-          const result = await translateAndValidate(metadata, schema, version);
-          if (!cache.results[pid]) cache.results[pid] = {};
-          cache.results[pid][`${schema}:${version}`] = {
-            ...result,
-            at: new Date().toISOString(),
-          };
+        const metadata = await readDatasetMetadata(dataDir, pid);
+        if (!metadata) return;
 
-          if (result.translated) succeeded++;
-          else failed++;
-        } catch (err) {
-          console.error(`Error testing ${pid} ${schema}:${version}:`, err);
-          if (!cache.results[pid]) cache.results[pid] = {};
-          cache.results[pid][`${schema}:${version}`] = {
-            translated: false,
-            valid: false,
-            at: new Date().toISOString(),
-          };
-          failed++;
+        if (!cache.results[pid]) cache.results[pid] = {};
+
+        for (const { schema, version } of combos) {
+          if (_cancelRequested) return;
+          try {
+            const result = await translateAndValidate(metadata, schema, version);
+            cache.results[pid][`${schema}:${version}`] = {
+              ...result,
+              at: new Date().toISOString(),
+            };
+            if (result.translated) succeeded++;
+            else failed++;
+          } catch (err) {
+            console.error(`Error testing ${pid} ${schema}:${version}:`, err);
+            cache.results[pid][`${schema}:${version}`] = {
+              translated: false,
+              valid: false,
+              at: new Date().toISOString(),
+            };
+            failed++;
+          }
+          completed++;
         }
 
-        completed++;
         cache.progress = { completed, total };
+        markProgress();
 
-        if (completed % 50 === 0 || completed === total) {
+        if (completed === total || Date.now() - lastFlushAt >= FLUSH_INTERVAL_MS) {
+          lastFlushAt = Date.now();
           cache.log = appendLog(
             cache.log ?? [],
             `${completed}/${total} done (${succeeded} ok, ${failed} failed)`
           );
           try {
-            await writeTestResults({ ...cache, running: true });
+            await flush(cache.log);
           } catch (writeErr) {
             console.error("Progress flush failed:", writeErr);
           }
@@ -495,6 +573,8 @@ export async function runAllTests(): Promise<void> {
     );
 
     await Promise.all(tasks);
+
+    if (!isCurrent()) return;
 
     cache.log = appendLog(
       cache.log ?? [],
@@ -506,7 +586,10 @@ export async function runAllTests(): Promise<void> {
     cache.running = false;
     await writeTestResults(cache);
   } finally {
-    _running = false;
-    _cancelRequested = false;
+    if (isCurrent()) {
+      _running = false;
+      _cancelRequested = false;
+      _abort = null;
+    }
   }
 }
