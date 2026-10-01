@@ -6,7 +6,13 @@ import LinearProgress from "@mui/material/LinearProgress";
 
 import { getDatasetIndex, readTestResults, writeTestResults, clearAllDatasetFiles } from "~/lib/cache.server";
 import { listSchemas } from "~/lib/traser.server";
-import { runAllTests, runSingleDataset, isRefreshRunning, requestCancelRefresh } from "~/lib/refresh.server";
+import {
+  runAllTests,
+  runSingleDataset,
+  isRefreshRunning,
+  abandonStalledRefresh,
+  requestCancelRefresh,
+} from "~/lib/refresh.server";
 import { requireAdmin } from "~/lib/auth.server";
 import { buildColumns } from "~/lib/results/columns";
 import { AUTO_REVALIDATE_INTERVAL_MS } from "~/lib/results/constants";
@@ -36,10 +42,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   ]);
 
   if (cache.running && !isRefreshRunning()) {
+    const stalled = abandonStalledRefresh();
     cache.running = false;
     cache.log = [
       ...(cache.log ?? []),
-      `[${new Date().toTimeString().slice(0, 8)}] Detected stale running flag — reset (server restart or crash)`,
+      `[${new Date().toTimeString().slice(0, 8)}] Detected stale running flag — reset (${stalled ? "refresh stalled with no progress" : "server restart or crash"})`,
     ];
     await writeTestResults(cache);
   }
@@ -72,7 +79,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (intent === ResultsIntent.Cancel) {
-    const cancelled = requestCancelRefresh();
+    const cancelled = await requestCancelRefresh();
     return cancelled ? { cancelled: true } : { error: "No refresh is currently running." };
   }
 

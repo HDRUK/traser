@@ -1,6 +1,7 @@
 import { readFile, writeFile, rename, readdir, unlink } from "fs/promises";
 import { mkdirSync } from "fs";
 import path from "path";
+import pLimit from "p-limit";
 
 // DATA_DIR env var or default ./data relative to repo root (CWD when running).
 const DATA_DIR = process.env.DATA_DIR
@@ -58,6 +59,26 @@ export interface ResultsCache {
 // In-process memo so 584-file reads only happen once per server start
 let _datasetIndex: DatasetEntry[] | null = null;
 
+const INDEX_READ_CONCURRENCY = 25;
+
+function isDatasetFile(filename: string): boolean {
+  return (
+    filename.endsWith(".json") &&
+    filename !== "test-results.json" &&
+    filename !== "datasets-index.json"
+  );
+}
+
+export async function listCachedPids(): Promise<string[]> {
+  try {
+    const files = await readdir(DATA_DIR);
+    return files.filter(isDatasetFile).map((f) => f.replace(".json", ""));
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw err;
+  }
+}
+
 export async function getDatasetIndex(): Promise<DatasetEntry[]> {
   if (_datasetIndex) return _datasetIndex;
 
@@ -72,15 +93,11 @@ export async function getDatasetIndex(): Promise<DatasetEntry[]> {
     }
     throw err;
   }
-  const jsonFiles = files.filter(
-    (f) =>
-      f.endsWith(".json") &&
-      f !== "test-results.json" &&
-      f !== "datasets-index.json"
-  );
+  const jsonFiles = files.filter(isDatasetFile);
 
+  const limit = pLimit(INDEX_READ_CONCURRENCY);
   const datasets = await Promise.all(
-    jsonFiles.map(async (filename): Promise<DatasetEntry> => {
+    jsonFiles.map((filename) => limit(async (): Promise<DatasetEntry> => {
       const pid = filename.replace(".json", "");
       try {
         const content = await readFile(path.join(DATA_DIR, filename), "utf-8");
@@ -94,7 +111,7 @@ export async function getDatasetIndex(): Promise<DatasetEntry[]> {
       } catch {
         return { pid, title: pid };
       }
-    })
+    }))
   );
 
   _datasetIndex = datasets.sort((a, b) => a.title.localeCompare(b.title));
@@ -117,7 +134,7 @@ let _writeChain: Promise<void> = Promise.resolve();
 export function writeTestResults(cache: ResultsCache): Promise<void> {
   // Snapshot the data synchronously before queuing so late mutations don't
   // affect what gets written.
-  const content = JSON.stringify(cache, null, 2);
+  const content = JSON.stringify(cache);
   _writeChain = _writeChain.then(async () => {
     const tmp = RESULTS_FILE + ".tmp";
     await writeFile(tmp, content, "utf-8");
