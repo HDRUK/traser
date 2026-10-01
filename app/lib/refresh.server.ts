@@ -19,8 +19,11 @@ let _abort: AbortController | null = null;
 let _lastProgressAt = 0;
 
 const STALL_TIMEOUT_MS = 10 * 60_000;
+const FETCH_TIMEOUT_MS = 15_000;
+const RECORD_DEADLINE_MS = 45_000;
 const FLUSH_INTERVAL_MS = 5_000;
-const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 40;
+const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 20;
+const PROGRESS_LOG_INTERVAL_MS = 15_000;
 const TEST_CONCURRENCY = Number(process.env.TEST_CONCURRENCY) || 10;
 
 function getGatewayApiUrl(): string {
@@ -53,6 +56,47 @@ function markProgress(): void {
 function requestSignal(timeoutMs: number): AbortSignal {
   const timeout = AbortSignal.timeout(timeoutMs);
   return _abort ? AbortSignal.any([_abort.signal, timeout]) : timeout;
+}
+
+// An undrained error body keeps its keep-alive connection checked out of
+// undici's pool. Ninety of those against one origin exhausted the pool mid-run
+// and left the remaining requests queued behind it, waiting forever.
+async function discardBody(res: Response): Promise<void> {
+  await res.body?.cancel().catch(() => undefined);
+}
+
+type FetchOutcome = { ok: true } | { ok: false; error: string; status?: number };
+
+// Belt and braces around the abort signals: whatever goes wrong inside, every
+// record settles within RECORD_DEADLINE_MS so the phase cannot hang on one of
+// them. The signal is aborted too, so the abandoned work stops rather than
+// lingering on a connection.
+async function withRecordDeadline(
+  work: (signal: AbortSignal) => Promise<FetchOutcome>
+): Promise<FetchOutcome> {
+  const controller = new AbortController();
+  const signal = AbortSignal.any([
+    ...(_abort ? [_abort.signal] : []),
+    controller.signal,
+    AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  ]);
+
+  let abortTimer: NodeJS.Timeout | undefined;
+  let deadlineTimer: NodeJS.Timeout | undefined;
+  const deadline = new Promise<FetchOutcome>((resolve) => {
+    abortTimer = setTimeout(() => controller.abort(), RECORD_DEADLINE_MS);
+    deadlineTimer = setTimeout(
+      () => resolve({ ok: false, error: `No response after ${RECORD_DEADLINE_MS / 1000}s` }),
+      RECORD_DEADLINE_MS + 1_000
+    );
+  });
+
+  try {
+    return await Promise.race([work(signal), deadline]);
+  } finally {
+    clearTimeout(abortTimer);
+    clearTimeout(deadlineTimer);
+  }
 }
 
 // Cooperative cancellation: loops below poll this between iterations so a
@@ -162,7 +206,10 @@ async function enrichFetchFailureTitles(
         `${getGatewayApiUrl()}/datasets?with_metadata=1&status=ACTIVE&per_page=${PER_PAGE}&page=${page}`,
         { signal: requestSignal(30_000) }
       );
-      if (!res.ok) break;
+      if (!res.ok) {
+        await discardBody(res);
+        break;
+      }
       body = await res.json();
     } catch {
       break;
@@ -198,7 +245,10 @@ async function syncDatasetsFromApi(
       `${getGatewayApiUrl()}/datasets?with_metadata=0&status=ACTIVE&per_page=100000`,
       { signal: requestSignal(30_000) }
     );
-    if (!res.ok) throw new Error(`HTTP ${res.status} for status=ACTIVE`);
+    if (!res.ok) {
+      await discardBody(res);
+      throw new Error(`HTTP ${res.status} for status=ACTIVE`);
+    }
     const body = (await res.json()) as { data: ListItem[] };
     activeRecords = body.data;
 
@@ -208,7 +258,10 @@ async function syncDatasetsFromApi(
           `${getGatewayApiUrl()}/datasets?with_metadata=1&status=DRAFT&per_page=100000`,
           { signal: requestSignal(30_000) }
         );
-        if (!res.ok) throw new Error(`HTTP ${res.status} for status=DRAFT`);
+        if (!res.ok) {
+          await discardBody(res);
+          throw new Error(`HTTP ${res.status} for status=DRAFT`);
+        }
         const body = (await res.json()) as { data: ListItem[] };
         return body.data;
       } catch {
@@ -308,9 +361,9 @@ async function syncDatasetsFromApi(
   const limit = pLimit(SYNC_CONCURRENCY);
   let fetched = 0;
   let fetchFailed = 0;
+  let lastLogAt = Date.now();
 
-  const fetchActiveRecord = async (record: ListItem): Promise<void> => {
-    const id = String(record.id);
+  const fetchActiveRecord = async (id: string, signal: AbortSignal): Promise<FetchOutcome> => {
     try {
       // translateAndValidate() assumes every cached {pid}.json is already
       // shaped like REFERENCE_SCHEMA:REFERENCE_VERSION — request the Gateway
@@ -320,22 +373,14 @@ async function syncDatasetsFromApi(
         schema_model: REFERENCE_SCHEMA,
         schema_version: REFERENCE_VERSION,
       });
-      const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, {
-        signal: requestSignal(15_000),
-      });
+      const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, { signal });
       if (!res.ok) {
-        fetchFailed++;
-        recordFetchFailure(fetchFailures, id, `HTTP ${res.status}`, res.status);
-        return;
+        await discardBody(res);
+        return { ok: false, error: `HTTP ${res.status}`, status: res.status };
       }
-      const body = (await res.json()) as { data: { pid?: string } };
-      const dataset = body.data;
+      const dataset = ((await res.json()) as { data: { pid?: string } }).data;
       const pid = dataset?.pid;
-      if (!pid) {
-        fetchFailed++;
-        recordFetchFailure(fetchFailures, id, "Response missing pid", res.status);
-        return;
-      }
+      if (!pid) return { ok: false, error: "Response missing pid", status: res.status };
 
       // Atomic write (tmp + rename) so a process kill mid-write can't leave
       // a truncated {pid}.json that getDatasetIndex() would silently drop.
@@ -345,12 +390,10 @@ async function syncDatasetsFromApi(
       const tmp = `${target}.tmp`;
       await writeFile(tmp, JSON.stringify(dataset), "utf-8");
       await rename(tmp, target);
-      fetched++;
-      delete fetchFailures[id];
+      return { ok: true };
     } catch (err) {
-      fetchFailed++;
-      recordFetchFailure(fetchFailures, id, err instanceof Error ? err.message : String(err));
       console.error(`Failed to fetch dataset ${id}:`, err);
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
     }
   };
 
@@ -358,12 +401,24 @@ async function syncDatasetsFromApi(
     toFetchActive.map((record) =>
       limit(async () => {
         if (!isCurrent()) return;
-        await fetchActiveRecord(record);
+        const id = String(record.id);
+        const outcome = await withRecordDeadline((signal) => fetchActiveRecord(id, signal));
+
+        if (outcome.ok) {
+          fetched++;
+          delete fetchFailures[id];
+        } else {
+          fetchFailed++;
+          recordFetchFailure(fetchFailures, id, outcome.error, outcome.status);
+        }
         markProgress();
 
-        // Log progress every 100 fetches
+        // Time-based, not every N fetches: the tail of a run can slow to a
+        // crawl when the API starts queueing, and a count-based line makes that
+        // indistinguishable from a hang because the next one never arrives.
         const done = fetched + fetchFailed;
-        if (done % 100 === 0 || done === toFetchActive.length) {
+        if (done === toFetchActive.length || Date.now() - lastLogAt >= PROGRESS_LOG_INTERVAL_MS) {
+          lastLogAt = Date.now();
           log = appendLog(
             log,
             `Fetched ${fetched}/${toFetchActive.length} new active datasets${fetchFailed > 0 ? ` (${fetchFailed} failed)` : ""}`
