@@ -140,7 +140,10 @@ function dedupeByPid(records: ListItem[]): ListItem[] {
 // only a modest per_page is safe — with_metadata=1 at very high per_page has
 // been observed to exhaust the API's own PHP memory limit. Paginates at a safe
 // page size and stops as soon as every needed id is found.
-async function enrichFetchFailureTitles(fetchFailures: Record<string, FetchFailure>): Promise<void> {
+async function enrichFetchFailureTitles(
+  fetchFailures: Record<string, FetchFailure>,
+  isCurrent: () => boolean
+): Promise<void> {
   const needed = new Set(
     Object.values(fetchFailures)
       .filter((f) => !f.title)
@@ -151,7 +154,7 @@ async function enrichFetchFailureTitles(fetchFailures: Record<string, FetchFailu
   const PER_PAGE = 200;
   const MAX_PAGES = 10;
   for (let page = 1; page <= MAX_PAGES && needed.size > 0; page++) {
-    if (_cancelRequested) return;
+    if (!isCurrent()) return;
     markProgress();
     let body: { data: ListItem[]; last_page?: number };
     try {
@@ -181,7 +184,8 @@ async function enrichFetchFailureTitles(fetchFailures: Record<string, FetchFailu
 async function syncDatasetsFromApi(
   cacheLog: string[],
   fetchFailures: Record<string, FetchFailure>,
-  flush: (log: string[]) => Promise<void>
+  flush: (log: string[]) => Promise<void>,
+  isCurrent: () => boolean
 ): Promise<string[]> {
   let log = cacheLog;
 
@@ -296,7 +300,7 @@ async function syncDatasetsFromApi(
 
   if (toFetchActive.length === 0) {
     invalidateDatasetIndex();
-    if (Object.keys(fetchFailures).length > 0) await enrichFetchFailureTitles(fetchFailures);
+    if (Object.keys(fetchFailures).length > 0) await enrichFetchFailureTitles(fetchFailures, isCurrent);
     return log;
   }
 
@@ -353,7 +357,7 @@ async function syncDatasetsFromApi(
   await Promise.all(
     toFetchActive.map((record) =>
       limit(async () => {
-        if (_cancelRequested) return;
+        if (!isCurrent()) return;
         await fetchActiveRecord(record);
         markProgress();
 
@@ -370,7 +374,7 @@ async function syncDatasetsFromApi(
     )
   );
 
-  if (_cancelRequested) return log;
+  if (!isCurrent()) return log;
 
   // 5. Bust the index so getDatasetIndex() re-reads all files including new ones
   invalidateDatasetIndex();
@@ -381,7 +385,7 @@ async function syncDatasetsFromApi(
   if (remainingFailures > 0) {
     log = appendLog(log, `Looking up titles for ${remainingFailures} failed dataset(s)…`);
     await flush(log);
-    await enrichFetchFailureTitles(fetchFailures);
+    await enrichFetchFailureTitles(fetchFailures, isCurrent);
   }
 
   log = appendLog(
@@ -394,12 +398,17 @@ async function syncDatasetsFromApi(
   return log;
 }
 
+// A cached file can legitimately disappear between the directory listing and
+// the read — a Deep Refresh clears data/ and the retention sweeper evicts from
+// it — so a missing file is a skip, not an error.
 async function readDatasetMetadata(dataDir: string, pid: string) {
   try {
     const content = await readFile(path.join(dataDir, `${pid}.json`), "utf-8");
     return extractMetadata(JSON.parse(content));
   } catch (err) {
-    console.error(`Error reading dataset ${pid}:`, err);
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error(`Error reading dataset ${pid}:`, err);
+    }
     return null;
   }
 }
@@ -482,7 +491,7 @@ export async function runAllTests(): Promise<void> {
     // syncDatasetsFromApi mutates cache.fetchFailures in place (add on failure,
     // delete on a subsequent success) — flush() picks up the changes because it
     // closes over the same `cache` object.
-    cache.log = await syncDatasetsFromApi(cache.log, cache.fetchFailures, flush);
+    cache.log = await syncDatasetsFromApi(cache.log, cache.fetchFailures, flush, isCurrent);
 
     if (!isCurrent()) return;
 
@@ -525,7 +534,7 @@ export async function runAllTests(): Promise<void> {
 
     const tasks = pending.map(({ pid, combos }) =>
       limit(async () => {
-        if (_cancelRequested) return;
+        if (!isCurrent()) return;
 
         const metadata = await readDatasetMetadata(dataDir, pid);
         if (!metadata) return;
@@ -533,7 +542,7 @@ export async function runAllTests(): Promise<void> {
         if (!cache.results[pid]) cache.results[pid] = {};
 
         for (const { schema, version } of combos) {
-          if (_cancelRequested) return;
+          if (!isCurrent()) return;
           try {
             const result = await translateAndValidate(metadata, schema, version);
             cache.results[pid][`${schema}:${version}`] = {
