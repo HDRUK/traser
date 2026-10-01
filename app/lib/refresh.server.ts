@@ -22,7 +22,8 @@ const STALL_TIMEOUT_MS = 10 * 60_000;
 const FETCH_TIMEOUT_MS = 15_000;
 const RECORD_DEADLINE_MS = 45_000;
 const FLUSH_INTERVAL_MS = 5_000;
-const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 20;
+const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 8;
+const BACKOFF_MS = 5_000;
 const PROGRESS_LOG_INTERVAL_MS = 15_000;
 const TEST_CONCURRENCY = Number(process.env.TEST_CONCURRENCY) || 10;
 
@@ -65,7 +66,14 @@ async function discardBody(res: Response): Promise<void> {
   await res.body?.cancel().catch(() => undefined);
 }
 
-type FetchOutcome = { ok: true } | { ok: false; error: string; status?: number };
+type FetchOutcome =
+  | { ok: true }
+  | { ok: false; error: string; status?: number; timedOut?: boolean };
+
+function isTimeout(err: unknown): boolean {
+  const name = (err as Error)?.name;
+  return name === "TimeoutError" || name === "AbortError";
+}
 
 // Belt and braces around the abort signals: whatever goes wrong inside, every
 // record settles within RECORD_DEADLINE_MS so the phase cannot hang on one of
@@ -86,7 +94,7 @@ async function withRecordDeadline(
   const deadline = new Promise<FetchOutcome>((resolve) => {
     abortTimer = setTimeout(() => controller.abort(), RECORD_DEADLINE_MS);
     deadlineTimer = setTimeout(
-      () => resolve({ ok: false, error: `No response after ${RECORD_DEADLINE_MS / 1000}s` }),
+      () => resolve({ ok: false, error: `No response after ${RECORD_DEADLINE_MS / 1000}s`, timedOut: true }),
       RECORD_DEADLINE_MS + 1_000
     );
   });
@@ -361,7 +369,9 @@ async function syncDatasetsFromApi(
   const limit = pLimit(SYNC_CONCURRENCY);
   let fetched = 0;
   let fetchFailed = 0;
+  let timedOut = 0;
   let lastLogAt = Date.now();
+  let backoffUntil = 0;
 
   const fetchActiveRecord = async (id: string, signal: AbortSignal): Promise<FetchOutcome> => {
     try {
@@ -392,8 +402,12 @@ async function syncDatasetsFromApi(
       await rename(tmp, target);
       return { ok: true };
     } catch (err) {
-      console.error(`Failed to fetch dataset ${id}:`, err);
-      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+      if (!isTimeout(err)) console.error(`Failed to fetch dataset ${id}:`, err);
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+        timedOut: isTimeout(err),
+      };
     }
   };
 
@@ -401,6 +415,14 @@ async function syncDatasetsFromApi(
     toFetchActive.map((record) =>
       limit(async () => {
         if (!isCurrent()) return;
+
+        // A timeout means the API already has more queued than it can serve, so
+        // every slot pauses before adding to that queue rather than replacing
+        // the timed-out request immediately.
+        const wait = backoffUntil - Date.now();
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+        if (!isCurrent()) return;
+
         const id = String(record.id);
         const outcome = await withRecordDeadline((signal) => fetchActiveRecord(id, signal));
 
@@ -410,6 +432,10 @@ async function syncDatasetsFromApi(
         } else {
           fetchFailed++;
           recordFetchFailure(fetchFailures, id, outcome.error, outcome.status);
+          if (outcome.timedOut) {
+            timedOut++;
+            backoffUntil = Date.now() + BACKOFF_MS;
+          }
         }
         markProgress();
 
@@ -421,7 +447,10 @@ async function syncDatasetsFromApi(
           lastLogAt = Date.now();
           log = appendLog(
             log,
-            `Fetched ${fetched}/${toFetchActive.length} new active datasets${fetchFailed > 0 ? ` (${fetchFailed} failed)` : ""}`
+            `Fetched ${fetched}/${toFetchActive.length} new active datasets` +
+              (fetchFailed > 0 ? ` (${fetchFailed} failed` : "") +
+              (timedOut > 0 ? `, ${timedOut} timed out` : "") +
+              (fetchFailed > 0 ? ")" : "")
           );
           await flush(log);
         }
