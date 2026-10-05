@@ -22,7 +22,7 @@ function build(): CoordinationStore {
   }
   const port = Number(process.env.REDIS_PORT) || 6379;
   const prefix = process.env.REDIS_KEY_PREFIX?.trim() || "traser:";
-  return createRedisStore(host, port, prefix);
+  return createRedisStore(host, port, prefix, process.env.REDIS_PASSWORD || undefined);
 }
 
 let _store: CoordinationStore | null = null;

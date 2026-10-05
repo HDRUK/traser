@@ -18,19 +18,28 @@ redis.call('DEL', KEYS[1])
 return 1
 `;
 
-export function createRedisStore(host: string, port: number, keyPrefix: string): CoordinationStore {
+export function createRedisStore(
+  host: string,
+  port: number,
+  keyPrefix: string,
+  password?: string
+): CoordinationStore {
+  // Keys are prefixed here rather than through ioredis's own keyPrefix option,
+  // which is applied to ordinary commands but also to the KEYS passed to eval —
+  // so a pre-prefixed key would be prefixed twice and every Lua lookup would
+  // miss, silently turning renew and release into no-ops.
   const redis = new Redis({
     host,
     port,
-    keyPrefix,
+    password,
     lazyConnect: true,
     maxRetriesPerRequest: 2,
     enableReadyCheck: true,
   });
   redis.on("error", (err) => console.error("[coordination] redis error:", err.message));
 
-  const leaseKey = (name: string) => `lease:${name}`;
-  const counterKey = (name: string) => `counter:${name}`;
+  const leaseKey = (name: string) => `${keyPrefix}lease:${name}`;
+  const counterKey = (name: string) => `${keyPrefix}counter:${name}`;
 
   return {
     describe: `redis:${host}:${port}/${keyPrefix}`,
@@ -52,7 +61,7 @@ export function createRedisStore(host: string, port: number, keyPrefix: string):
       const held = await redis.eval(
         RENEW_SCRIPT,
         1,
-        `${keyPrefix}${leaseKey(name)}`,
+        leaseKey(name),
         lease.owner,
         String(lease.generation),
         JSON.stringify(lease),
@@ -70,7 +79,7 @@ export function createRedisStore(host: string, port: number, keyPrefix: string):
       const released = await redis.eval(
         RELEASE_SCRIPT,
         1,
-        `${keyPrefix}${leaseKey(name)}`,
+        leaseKey(name),
         owner ?? ""
       );
       return released === 1;
