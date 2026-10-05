@@ -19,6 +19,7 @@ import {
 import {
   startBenchmark,
   buildInitialRun,
+  acquireBenchmarkLease,
   isBenchmarkRunning,
   requestCancel,
   buildComparison,
@@ -54,10 +55,17 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const index = await readIndex();
 
-  // Stale-running-flag reset (server restart/crash), mirrors results.tsx.
+  // The lease is the only source of truth for "a run is in progress" — a run
+  // whose owner died leaves a running:true record behind, and the lapsed lease
+  // is what tells us to clear it, on whichever instance serves this request.
+  const leaseHeld = await isBenchmarkRunning().catch((err) => {
+    console.error("[benchmark] could not read the benchmark lease:", err);
+    return true;
+  });
+
   let indexChanged = false;
   for (const entry of index) {
-    if (entry.running && !isBenchmarkRunning()) {
+    if (entry.running && !leaseHeld) {
       entry.running = false;
       indexChanged = true;
       const run = await readRun(entry.id);
@@ -111,7 +119,6 @@ export async function action({ request }: Route.ActionArgs) {
   const intent = formData.get("intent");
 
   if (intent === BenchmarkIntent.Start) {
-    if (isBenchmarkRunning()) return { error: "A benchmark is already running." };
 
     const label = String(formData.get("label") ?? "").trim();
     const baseUrl = String(formData.get("baseUrl") ?? "").trim();
@@ -149,6 +156,11 @@ export async function action({ request }: Route.ActionArgs) {
     const runId = randomUUID();
     const opts = { runId, label, baseUrl, schemaModel, schemaVersion, start, end, repeat, concurrency };
 
+    // Claim the slot before anything is persisted, so a second instance taking
+    // the same click cannot also write a running record.
+    const lease = await acquireBenchmarkLease();
+    if (!lease) return { error: "A benchmark is already running." };
+
     // Persist the "running" record BEFORE firing the background job — startBenchmark()
     // itself starts with a real network call (id discovery) that can take a moment,
     // and this action returns immediately without awaiting it. Without this, the
@@ -163,7 +175,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   if (intent === BenchmarkIntent.Cancel) {
-    const cancelled = requestCancel();
+    const cancelled = await requestCancel();
     return cancelled ? { cancelled: true } : { error: "No benchmark is currently running." };
   }
 

@@ -16,3 +16,15 @@ export function envBoolean(name: string, fallback: boolean): boolean {
   }
   return parsed;
 }
+
+export function envEnum<T extends string>(name: string, allowed: readonly T[], fallback: T): T {
+  const raw = process.env[name];
+  const value = raw?.trim().toLowerCase();
+  if (!value) return fallback;
+
+  const match = allowed.find((option) => option === value);
+  if (!match) {
+    throw new Error(`${name} must be one of ${allowed.join(", ")} — got "${raw}"`);
+  }
+  return match;
+}

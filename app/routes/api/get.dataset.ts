@@ -1,7 +1,5 @@
 // Internal endpoint — intentionally undocumented (omitted from the OpenAPI/Swagger spec).
-import { readFile } from "fs/promises";
-import path from "path";
-import { extractMetadata, getDataDir } from "~/lib/cache.server";
+import { extractMetadata, readDataset } from "~/lib/cache.server";
 
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -16,8 +14,7 @@ export async function loader({ request }: { request: Request }) {
   }
 
   try {
-    const content = await readFile(path.join(getDataDir(), `${pid}.json`), "utf-8");
-    const data = JSON.parse(content);
+    const data = await readDataset(pid);
     const metadata = extractMetadata(data);
 
     if (!metadata) {
