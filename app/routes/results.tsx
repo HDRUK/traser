@@ -4,13 +4,19 @@ import Box from "@mui/material/Box";
 import ErrorOutlineIcon from "@mui/icons-material/Error";
 import LinearProgress from "@mui/material/LinearProgress";
 
-import { getDatasetIndex, readTestResults, writeTestResults, clearAllDatasetFiles } from "~/lib/cache.server";
+import {
+  getDatasetIndex,
+  readTestResults,
+  readResultsControl,
+  writeResultsControl,
+  writeTestResults,
+  clearAllDatasetFiles,
+} from "~/lib/cache.server";
 import { listSchemas } from "~/lib/traser.server";
 import {
   runAllTests,
   runSingleDataset,
   isRefreshRunning,
-  abandonStalledRefresh,
   requestCancelRefresh,
 } from "~/lib/refresh.server";
 import { requireAdmin } from "~/lib/auth.server";
@@ -35,21 +41,15 @@ export { RouteErrorBoundary as ErrorBoundary } from "~/components/RouteError";
 
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
-  const [datasets, schemas, cache] = await Promise.all([
+  const [datasets, schemas, cache, running] = await Promise.all([
     getDatasetIndex(),
     listSchemas(),
     readTestResults(),
+    isRefreshRunning().catch((err) => {
+      console.error("[results] could not read the refresh lease:", err);
+      return false;
+    }),
   ]);
-
-  if (cache.running && !isRefreshRunning()) {
-    const stalled = abandonStalledRefresh();
-    cache.running = false;
-    cache.log = [
-      ...(cache.log ?? []),
-      `[${new Date().toTimeString().slice(0, 8)}] Detected stale running flag — reset (${stalled ? "refresh stalled with no progress" : "server restart or crash"})`,
-    ];
-    await writeTestResults(cache);
-  }
 
   const fetchFailures = Object.values(cache.fetchFailures ?? {}).sort(
     (a, b) => (a.lastFailedAt < b.lastFailedAt ? 1 : -1)
@@ -60,7 +60,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     schemas,
     results: stripHeavyResultBodies(cache.results ?? {}),
     lastUpdated: cache.lastUpdated ?? null,
-    running: cache.running ?? false,
+    running,
     progress: cache.progress ?? null,
     log: cache.log ?? [],
     fetchFailures,
@@ -89,21 +89,19 @@ export async function action({ request }: Route.ActionArgs) {
     // runAllTests() below isn't refused for a run that is already going.
     await requestCancelRefresh();
     await clearAllDatasetFiles();
-    const cache = await readTestResults();
-    cache.running = true;
-    cache.results = {};
-    cache.fetchFailures = {};
-    cache.log = [];
-    cache.progress = { completed: 0, total: 0 };
-    await writeTestResults(cache);
+    await writeTestResults({
+      results: {},
+      fetchFailures: {},
+      log: [],
+      progress: { completed: 0, total: 0 },
+    });
     runAllTests().catch((err) => console.error("runAllTests deep error:", err));
     return { started: true };
   }
 
-  const cache = await readTestResults();
-  cache.running = true;
-  cache.results ??= {};
-  await writeTestResults(cache);
+  const control = await readResultsControl();
+  control.progress = { completed: 0, total: 0 };
+  await writeResultsControl(control);
 
   runAllTests().catch((err) => console.error("runAllTests error:", err));
   return { started: true };

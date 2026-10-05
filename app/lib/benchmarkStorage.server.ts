@@ -1,10 +1,8 @@
-import { readFile, writeFile, rename, unlink, mkdir } from "fs/promises";
 import { createHash } from "crypto";
-import path from "path";
-import { getDataDir } from "./cache.server";
+import { getStorage } from "./storage/index.server";
 
-const BENCHMARK_DIR = path.join(getDataDir(), "benchmark");
-const INDEX_FILE = path.join(BENCHMARK_DIR, "index.json");
+const BENCHMARK_PREFIX = "benchmark/";
+const INDEX_KEY = `${BENCHMARK_PREFIX}index.json`;
 
 export interface BenchmarkAttempt {
   id: number;
@@ -56,33 +54,22 @@ export interface BenchmarkRun extends BenchmarkRunSummary {
   datasets: Record<string, DatasetSnapshot>;
 }
 
-async function ensureBenchmarkDir(): Promise<void> {
-  await mkdir(BENCHMARK_DIR, { recursive: true });
-}
-
 export async function readIndex(): Promise<BenchmarkRunSummary[]> {
-  try {
-    const content = await readFile(INDEX_FILE, "utf-8");
-    return JSON.parse(content) as BenchmarkRunSummary[];
-  } catch {
-    return [];
-  }
+  return (await getStorage().readJson<BenchmarkRunSummary[]>(INDEX_KEY)) ?? [];
 }
 
-// Serialise writes through a single promise chain + atomic tmp-write + rename,
-// same technique as writeTestResults() in cache.server.ts.
+// Serialise writes through a single promise chain, same technique as
+// writeTestResults() in cache.server.ts. Across instances the benchmark lease
+// is what keeps a single writer in play.
 let _indexWriteChain: Promise<void> = Promise.resolve();
 
 export function writeIndex(entries: BenchmarkRunSummary[]): Promise<void> {
-  const content = JSON.stringify(entries, null, 2);
-  _indexWriteChain = _indexWriteChain.then(async () => {
-    await ensureBenchmarkDir();
-    const tmp = INDEX_FILE + ".tmp";
-    await writeFile(tmp, content, "utf-8");
-    await rename(tmp, INDEX_FILE);
-  }).catch((err) => {
-    console.error("writeIndex failed:", err);
-  });
+  const snapshot = [...entries];
+  _indexWriteChain = _indexWriteChain
+    .then(() => getStorage().writeJson(INDEX_KEY, snapshot))
+    .catch((err) => {
+      console.error("writeIndex failed:", err);
+    });
   return _indexWriteChain;
 }
 
@@ -99,17 +86,12 @@ export async function removeIndexEntry(runId: string): Promise<void> {
   await writeIndex(entries.filter((e) => e.id !== runId));
 }
 
-function runFile(runId: string): string {
-  return path.join(BENCHMARK_DIR, `${runId}.json`);
+function runKey(runId: string): string {
+  return `${BENCHMARK_PREFIX}${runId}.json`;
 }
 
 export async function readRun(runId: string): Promise<BenchmarkRun | null> {
-  try {
-    const content = await readFile(runFile(runId), "utf-8");
-    return JSON.parse(content) as BenchmarkRun;
-  } catch {
-    return null;
-  }
+  return getStorage().readJson<BenchmarkRun>(runKey(runId));
 }
 
 // One write chain is sufficient since only a single benchmark run is active
@@ -117,26 +99,18 @@ export async function readRun(runId: string): Promise<BenchmarkRun | null> {
 let _runWriteChain: Promise<void> = Promise.resolve();
 
 export function writeRun(run: BenchmarkRun): Promise<void> {
-  const content = JSON.stringify(run, null, 2);
-  const file = runFile(run.id);
-  _runWriteChain = _runWriteChain.then(async () => {
-    await ensureBenchmarkDir();
-    const tmp = file + ".tmp";
-    await writeFile(tmp, content, "utf-8");
-    await rename(tmp, file);
-  }).catch((err) => {
-    console.error("writeRun failed:", err);
-  });
+  const snapshot = structuredClone(run);
+  _runWriteChain = _runWriteChain
+    .then(() => getStorage().writeJson(runKey(run.id), snapshot))
+    .catch((err) => {
+      console.error("writeRun failed:", err);
+    });
   return _runWriteChain;
 }
 
 export async function deleteRun(runId: string): Promise<void> {
   await removeIndexEntry(runId);
-  try {
-    await unlink(runFile(runId));
-  } catch {
-    // already gone
-  }
+  await getStorage().remove(runKey(runId));
 }
 
 export function toSummary(run: BenchmarkRun): BenchmarkRunSummary {

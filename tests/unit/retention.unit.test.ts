@@ -14,13 +14,15 @@ import path from "path";
 const DAY = 24 * 60 * 60 * 1000;
 
 let dataDir: string;
+let datasetDir: string;
 let benchmarkDir: string;
 // Imported dynamically AFTER env is set, because the module reads DATA_DIR and
 // the TTL knobs into constants at load time.
 let retention: typeof import("../../app/lib/retention.server");
 
 function writeDataset(pid: string, ageDays: number) {
-  const file = path.join(dataDir, `${pid}.json`);
+  mkdirSync(datasetDir, { recursive: true });
+  const file = path.join(datasetDir, `${pid}.json`);
   writeFileSync(
     file,
     JSON.stringify({ status: "ACTIVE", versions: [{ metadata: { metadata: {} } }] })
@@ -40,6 +42,7 @@ function clearDir(dir: string) {
 
 beforeAll(async () => {
   dataDir = mkdtempSync(path.join(os.tmpdir(), "traser-retention-"));
+  datasetDir = path.join(dataDir, "datasets");
   benchmarkDir = path.join(dataDir, "benchmark");
   process.env.DATA_DIR = dataDir;
   process.env.DATA_CACHE_TTL_DAYS = "7";
@@ -65,16 +68,16 @@ describe("sweepDatasetFiles", () => {
     const { deleted } = await retention.sweepDatasetFiles();
 
     expect(deleted).toBe(2);
-    expect(existsSync(path.join(dataDir, "old-1.json"))).toBe(false);
-    expect(existsSync(path.join(dataDir, "old-2.json"))).toBe(false);
-    expect(existsSync(path.join(dataDir, "fresh.json"))).toBe(true);
+    expect(existsSync(path.join(datasetDir, "old-1.json"))).toBe(false);
+    expect(existsSync(path.join(datasetDir, "old-2.json"))).toBe(false);
+    expect(existsSync(path.join(datasetDir, "fresh.json"))).toBe(true);
   });
 
-  it("never deletes protected files (test-results.json / datasets-index.json)", async () => {
+  it("leaves the root control objects alone, however old they are", async () => {
     const results = path.join(dataDir, "test-results.json");
-    const index = path.join(dataDir, "datasets-index.json");
+    const index = path.join(dataDir, "test-results-control.json");
     writeFileSync(results, JSON.stringify({ results: {} }));
-    writeFileSync(index, JSON.stringify([]));
+    writeFileSync(index, JSON.stringify({}));
     // Backdate them well beyond the TTL.
     const t = (Date.now() - 30 * DAY) / 1000;
     utimesSync(results, t, t);
@@ -85,7 +88,7 @@ describe("sweepDatasetFiles", () => {
 
     expect(existsSync(results)).toBe(true);
     expect(existsSync(index)).toBe(true);
-    expect(existsSync(path.join(dataDir, "old.json"))).toBe(false);
+    expect(existsSync(path.join(datasetDir, "old.json"))).toBe(false);
   });
 });
 
