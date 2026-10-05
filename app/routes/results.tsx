@@ -205,7 +205,7 @@ export default function ResultsPage() {
         {
           value: ResultsTab.Overview,
           label: "Overview",
-          content: <OverviewTab columns={visibleLiveColumns} datasets={datasets} results={results} />,
+          content: <OverviewTab columns={visibleLiveColumns} datasets={liveDatasets} results={results} />,
         },
         {
           value: ResultsTab.Live,

@@ -389,6 +389,7 @@ async function syncDatasetsFromApi(
       const qs = new URLSearchParams({
         schema_model: REFERENCE_SCHEMA,
         schema_version: REFERENCE_VERSION,
+        validate_input: "0",
       });
       const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, { signal });
       if (!res.ok) {
