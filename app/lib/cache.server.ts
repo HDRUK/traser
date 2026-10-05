@@ -169,7 +169,8 @@ function enqueueWrite(key: string, value: unknown): Promise<void> {
 }
 
 export function writeResultsControl(control: ResultsControl): Promise<void> {
-  return enqueueWrite(CONTROL_KEY, { ...control });
+  const { lastUpdated, progress, log, fetchFailures } = control;
+  return enqueueWrite(CONTROL_KEY, { lastUpdated, progress, log, fetchFailures });
 }
 
 export function writeTestResults(cache: ResultsCache): Promise<void> {
