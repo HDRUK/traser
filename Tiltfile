@@ -11,7 +11,8 @@ docker_build(
     live_update=[
         sync('.', '/app'),
         run('npm install', trigger='./package.json'),
-    ]
+    ],
+    dockerfile='./Dockerfile.dev'
 )
 
 k8s_yaml('chart/' + cfg.get('name') + '/deployment.yaml')

@@ -1,0 +1,257 @@
+{
+  "omics": null,
+  "linkage": {
+    "tools": null,
+    "dataUses": null,
+    "isReferenceIn": null,
+    "datasetLinkage": {
+      "isPartOf": null,
+      "isMemberOf": null,
+      "isDerivedFrom": null,
+      "linkedDatasets": null
+    },
+    "investigations": null,
+    "associatedMedia": "https://saildatabank.com/about-us/, https://popdatasci.swan.ac.uk/centres-of-excellence/sail/, https://saildatabank.com/, https://ijpds.org/article/view/2383/",
+    "isGeneratedUsing": null,
+    "syntheticDataWebLink": null,
+    "publicationAboutDataset": [],
+    "publicationUsingDataset": []
+  },
+  "summary": {
+    "title": "My Example Dataset \u2014 full descriptive long-form title",
+    "doiName": null,
+    "abstract": "A short description of this dataset.",
+    "keywords": "Children;,;Care;,;SAIL;,;Health & Wellbeing;,;Children & Young People;,;Inequality & Social Inclusion;,;Welsh Government",
+    "publisher": {
+      "name": "Example Organisation",
+      "gatewayId": "42",
+      "rorId": null
+    },
+    "inPipeline": "Available",
+    "shortTitle": "My Example Dataset",
+    "datasetType": "Health and disease",
+    "description": "A longer narrative description of the dataset.",
+    "contactPoint": "contact@example.com",
+    "datasetAliases": null,
+    "datasetSubType": null,
+    "populationSize": -1,
+    "controlledKeywords": null
+  },
+  "coverage": {
+    "pathway": "Administrative. Linkable to health datasets across patient pathway.",
+    "spatial": "United Kingdom,Wales",
+    "followUp": "Other",
+    "typicalAgeRange": "0-19",
+    "datasetCompleteness": null
+  },
+  "required": {
+    "gatewayId": "1234",
+    "gatewayPid": "9e798632-442a-427b-8d0e-456f754d28dc",
+    "issued": "2024-01-01T00:00:00Z",
+    "modified": "2024-06-01T00:00:00Z",
+    "version": "1.0.0",
+    "revisions": [
+      {
+        "version": "1.0.0",
+        "url": "https://example.com/dataset/1"
+      }
+    ]
+  },
+  "provenance": {
+    "origin": {
+      "source": "EPR",
+      "purpose": "Administrative",
+      "imageContrast": "Not stated",
+      "collectionSituation": "Community"
+    },
+    "temporal": {
+      "endDate": "2021-05-30T23:00:00.000Z",
+      "timeLag": "2-6 months",
+      "startDate": "1999-06-20T23:00:00.000Z",
+      "accrualPeriodicity": "Annual",
+      "distributionReleaseDate": "2021-09-22T23:00:00.000Z"
+    }
+  },
+  "observations": [
+    {
+      "observedNode": "Events",
+      "measuredValue": 3000000,
+      "observationDate": "2021-08-31T23:00:00.000Z",
+      "measuredProperty": "Count",
+      "disambiguatingDescription": "Approx 70-80% coverage of Welsh population through GP registrations."
+    }
+  ],
+  "accessibility": {
+    "usage": {
+      "resourceCreator": {
+        "name": "Welsh Government",
+        "rorId": null,
+        "gatewayId": null
+      },
+      "dataUseLimitation": "General research use",
+      "dataUseRequirement": "Project-specific restrictions;,;Time limit on use;,;User-specific restriction;,;Institution-specific restrictions"
+    },
+    "access": {
+      "accessRights": "https://saildatabank.com/data/apply-to-work-with-the-data/",
+      "jurisdiction": "GB-WLS",
+      "accessService": "The SAIL Databank is powered by the UK Secure e-Research Platform (UKSeRP). Following approval through safeguard processes, access to project-specific data within the secure environment is permitted using two-factor authentication.",
+      "dataProcessor": "SAIL Databank",
+      "dataController": "SAIL Databank",
+      "deliveryLeadTime": "2-6 months",
+      "accessRequestCost": "Data provision is free from SAIL. Overall project costing depends on the number of people that require access to the SAIL Gateway, the activities that SAIL needs to complete (e.g. loading non-standard datasets), data refreshes, analytical work required, disclosure control process, and special case technological requirements.",
+      "accessServiceCategory": "TRE/SDE"
+    },
+    "formatAndStandards": {
+      "formats": "SQL Database Table",
+      "languages": "en",
+      "conformsTo": "LOCAL",
+      "vocabularyEncodingSchemes": "LOCAL"
+    }
+  },
+  "structuralMetadata": [
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "ACCOMMODATION_CODE",
+          "values": null,
+          "dataType": "VARCHAR",
+          "sensitive": false,
+          "description": "Accomodation code"
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "AVAIL_FROM_DT",
+          "values": null,
+          "dataType": "DATE",
+          "sensitive": false,
+          "description": "Date when the data made available i.e. date of loading"
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "DATE_CARE_CEASED",
+          "values": null,
+          "dataType": "DATE",
+          "sensitive": false,
+          "description": "The date that care ceased"
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "DATE_OF_LATEST_CARE_PERIOD",
+          "values": null,
+          "dataType": "DATE",
+          "sensitive": false,
+          "description": "This item records the date that the latest episode of care began and is 10 character spaces in   \nlength."
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "LOCAL_AUTHORITY_CODE",
+          "values": null,
+          "dataType": "INTEGER",
+          "sensitive": false,
+          "description": "Local Authority Code"
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "PATHWAY_PLAN",
+          "values": null,
+          "dataType": "INTEGER",
+          "sensitive": false,
+          "description": "Record whether a category 2, 3 or 4 care leaver had a Pathway Plan."
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "PERSONAL_ADVISER",
+          "values": null,
+          "dataType": "INTEGER",
+          "sensitive": false,
+          "description": "Record whether a category 2, 3, or 4 care leaver had been appointed a Personal Adviser."
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "REASON_CARE_CEASED",
+          "values": null,
+          "dataType": "VARCHAR",
+          "sensitive": false,
+          "description": "Record the most appropriate code from the Reason Episode Ceased data item in the Episodes of   \ncare section. Please use a capital letter for the alpha part of the code."
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "SYSTEM_ID_E",
+          "values": null,
+          "dataType": "BIGINT",
+          "sensitive": false,
+          "description": "Encrypted Unique SWAC ID reference number for data linkage."
+        }
+      ],
+      "description": null
+    },
+    {
+      "name": "CARE_LEAVER",
+      "columns": [
+        {
+          "name": "YEAR_CODE",
+          "values": null,
+          "dataType": "INTEGER",
+          "sensitive": false,
+          "description": "-"
+        }
+      ],
+      "description": null
+    }
+  ],
+  "demographicFrequency": null,
+  "tissuesSampleCollection": [
+    {
+      "id": null,
+      "disease": null,
+      "materialType": "None/not available",
+      "collectionType": null,
+      "dataCategories": null,
+      "sampleAgeRange": null,
+      "accessConditions": null,
+      "storageTemperature": null,
+      "tissueSampleMetadata": null
+    }
+  ]
+}
