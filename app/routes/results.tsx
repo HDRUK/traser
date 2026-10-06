@@ -99,6 +99,22 @@ export async function action({ request }: Route.ActionArgs) {
     return { started: true };
   }
 
+  if (intent === ResultsIntent.Retest) {
+    // Same reason as Deep: stand the in-flight run down before clearing the
+    // matrix, so it can't flush its half-finished results back over the reset.
+    // The dataset files are left alone — only the computed cells are dropped.
+    await requestCancelRefresh();
+    const existing = await readResultsControl();
+    await writeTestResults({
+      results: {},
+      fetchFailures: existing.fetchFailures ?? {},
+      log: existing.log ?? [],
+      progress: { completed: 0, total: 0 },
+    });
+    runAllTests({ skipSync: true }).catch((err) => console.error("runAllTests retest error:", err));
+    return { started: true };
+  }
+
   const control = await readResultsControl();
   control.progress = { completed: 0, total: 0 };
   await writeResultsControl(control);

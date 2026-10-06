@@ -13,7 +13,8 @@ import {
   type FetchFailure,
 } from "./cache.server";
 import { getCoordination, REFRESH_LEASE, type LeaseState } from "./coordination/index.server";
-import { listSchemas, translateAndValidate, REFERENCE_SCHEMA, REFERENCE_VERSION } from "./traser.server";
+import { formatErrorBody } from "./errorBody";
+import { listSchemas, translateAndValidate, getDefaultModelAndVersion } from "./traser.server";
 
 const OWNER_ID = randomUUID();
 
@@ -36,6 +37,7 @@ const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 8;
 const BACKOFF_MS = 5_000;
 const PROGRESS_LOG_INTERVAL_MS = 15_000;
 const TEST_CONCURRENCY = Number(process.env.TEST_CONCURRENCY) || 10;
+const FETCH_ERROR_DETAIL_MAX = 2_000;
 
 function getGatewayApiUrl(): string {
   const url = process.env.GATEWAY_API_URL;
@@ -93,9 +95,30 @@ async function discardBody(res: Response): Promise<void> {
   await res.body?.cancel().catch(() => undefined);
 }
 
+// Same pool obligation as discardBody — reading to the end releases the
+// connection just as cancelling does — but keeps the payload, which is the
+// only place the Gateway says why it rejected the dataset. Truncated so a run
+// with many failures can't bloat the control object.
+async function readErrorBody(res: Response): Promise<string | undefined> {
+  try {
+    const text = await res.text();
+    if (!text) return undefined;
+    // Formatted before truncating: the Gateway nests its real error as an
+    // escaped JSON string, and clipping the raw body leaves that unparseable.
+    // Expanding first puts the validation errors at the head, so the cut falls
+    // on the echoed metadata at the tail.
+    const formatted = formatErrorBody(text);
+    return formatted.length > FETCH_ERROR_DETAIL_MAX
+      ? `${formatted.slice(0, FETCH_ERROR_DETAIL_MAX)}\n… [truncated]`
+      : formatted;
+  } catch {
+    return undefined;
+  }
+}
+
 type FetchOutcome =
   | { ok: true }
-  | { ok: false; error: string; status?: number; timedOut?: boolean };
+  | { ok: false; error: string; status?: number; timedOut?: boolean; details?: string };
 
 function isTimeout(err: unknown): boolean {
   const name = (err as Error)?.name;
@@ -153,7 +176,8 @@ function recordFetchFailure(
   fetchFailures: Record<string, FetchFailure>,
   id: string,
   error: string,
-  status?: number
+  status?: number,
+  details?: string
 ): void {
   const now = new Date().toISOString();
   const existing = fetchFailures[id];
@@ -164,6 +188,7 @@ function recordFetchFailure(
     attempts: (existing?.attempts ?? 0) + 1,
     firstFailedAt: existing?.firstFailedAt ?? now,
     lastFailedAt: now,
+    details,
   };
 }
 
@@ -380,21 +405,31 @@ async function syncDatasetsFromApi(
   let lastLogAt = Date.now();
   let backoffUntil = 0;
 
+  // translateAndValidate() assumes every cached {pid}.json is already shaped
+  // as the latest GWDM version — request the Gateway API's own translation
+  // into that version so that assumption holds, instead of caching whichever
+  // schema the dataset happens to be natively stored as. Resolved once per
+  // run since it doesn't change mid-refresh.
+  const reference = await getDefaultModelAndVersion();
+  if (reference.error) {
+    log = appendLog(log, `Dataset fetch skipped — could not resolve reference schema: ${reference.error.message}`);
+    await flush(log);
+    return log;
+  }
+  const referenceSchema = reference.name!;
+  const referenceVersion = reference.version!;
+
   const fetchActiveRecord = async (id: string, signal: AbortSignal): Promise<FetchOutcome> => {
     try {
-      // translateAndValidate() assumes every cached {pid}.json is already
-      // shaped like REFERENCE_SCHEMA:REFERENCE_VERSION — request the Gateway
-      // API's own translation so that assumption holds, instead of caching
-      // whichever schema the dataset happens to be natively stored as.
       const qs = new URLSearchParams({
-        schema_model: REFERENCE_SCHEMA,
-        schema_version: REFERENCE_VERSION,
+        schema_model: referenceSchema,
+        schema_version: referenceVersion,
         validate_input: "0",
       });
       const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, { signal });
       if (!res.ok) {
-        await discardBody(res);
-        return { ok: false, error: `HTTP ${res.status}`, status: res.status };
+        const details = await readErrorBody(res);
+        return { ok: false, error: `HTTP ${res.status}`, status: res.status, details };
       }
       const dataset = ((await res.json()) as { data: { pid?: string } }).data;
       const pid = dataset?.pid;
@@ -432,7 +467,7 @@ async function syncDatasetsFromApi(
           delete fetchFailures[id];
         } else {
           fetchFailed++;
-          recordFetchFailure(fetchFailures, id, outcome.error, outcome.status);
+          recordFetchFailure(fetchFailures, id, outcome.error, outcome.status, outcome.details);
           if (outcome.timedOut) {
             timedOut++;
             backoffUntil = Date.now() + BACKOFF_MS;
@@ -537,7 +572,7 @@ export async function runSingleDataset(pid: string): Promise<void> {
 
 // ─── Full refresh (background job) ────────────────────────────────────────
 
-export async function runAllTests(): Promise<void> {
+export async function runAllTests(options: { skipSync?: boolean } = {}): Promise<void> {
   const coordination = getCoordination();
   const lease = await coordination.acquire(REFRESH_LEASE, OWNER_ID, LEASE_TTL_MS);
   if (!lease) return;
@@ -566,13 +601,18 @@ export async function runAllTests(): Promise<void> {
     };
 
     // ── Phase 1: sync dataset files from the API ──────────────────────────
-    cache.log = appendLog(cache.log, "Phase 1: syncing datasets from API…");
-    await flush(cache.log);
+    if (options.skipSync) {
+      cache.log = appendLog(cache.log, "Phase 1 skipped — retesting cached datasets without contacting the API");
+      await flush(cache.log);
+    } else {
+      cache.log = appendLog(cache.log, "Phase 1: syncing datasets from API…");
+      await flush(cache.log);
 
-    // syncDatasetsFromApi mutates cache.fetchFailures in place (add on failure,
-    // delete on a subsequent success) — flush() picks up the changes because it
-    // closes over the same `cache` object.
-    cache.log = await syncDatasetsFromApi(cache.log, cache.fetchFailures, flush, isCurrent);
+      // syncDatasetsFromApi mutates cache.fetchFailures in place (add on failure,
+      // delete on a subsequent success) — flush() picks up the changes because it
+      // closes over the same `cache` object.
+      cache.log = await syncDatasetsFromApi(cache.log, cache.fetchFailures, flush, isCurrent);
+    }
 
     if (!isCurrent()) return;
 
