@@ -14,6 +14,7 @@ export interface DatasetEntry {
   title: string;
   gatewayId?: string;
   status?: string;  // "ACTIVE" | "DRAFT" — from the saved gateway data
+  gwdmVersion?: string;  // versions[0].gwdm_version — the GWDM version this dataset's metadata natively started as
 }
 
 export interface TestResult {
@@ -37,6 +38,10 @@ export interface FetchFailure {
   attempts: number;
   firstFailedAt: string;
   lastFailedAt: string;
+  // Truncated response body from the failed fetch — the Gateway's own error
+  // payload, which is where the actual reason lives (`error` only ever holds
+  // the status line). Capped because this object is reflushed every 5s.
+  details?: string;
   // Best-effort title looked up from the Gateway's list endpoint (which returns
   // it even for datasets whose individual /datasets/{id} fetch errors out) —
   // undefined until enrichFetchFailureTitles() fills it in.
@@ -119,7 +124,8 @@ export async function getDatasetIndex(): Promise<DatasetEntry[]> {
         const title: string = typeof rawTitle === "string" ? rawTitle : pid;
         const gatewayId: string | undefined = meta?.required?.gatewayId ?? undefined;
         const status: string | undefined = (data?.status as string) ?? undefined;
-        return { pid, title, gatewayId, status };
+        const gwdmVersion: string | undefined = (data as { versions?: Array<{ gwdm_version?: string }> })?.versions?.[0]?.gwdm_version ?? undefined;
+        return { pid, title, gatewayId, status, gwdmVersion };
       } catch {
         return { pid, title: pid };
       }
