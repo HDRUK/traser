@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import pLimit from "p-limit";
 import { extractMetadata } from "./cache.server";
+import { getCoordination, BENCHMARK_LEASE, type LeaseState } from "./coordination/index.server";
 import { diffValues, type DiffEntry } from "./diff.server";
 import {
   writeRun,
@@ -10,23 +12,61 @@ import {
   type RunStats,
 } from "./benchmarkStorage.server";
 
-let _running = false;
+const OWNER_ID = randomUUID();
+const LEASE_TTL_MS = 10 * 60_000;
+const RENEW_INTERVAL_MS = 30_000;
+
+let _lease: LeaseState | null = null;
 let _cancelRequested = false;
+let _lastRenewAt = 0;
 
 export const MAX_WORK_ITEMS = 5000;
 
-export function isBenchmarkRunning(): boolean {
-  return _running;
+export async function isBenchmarkRunning(): Promise<boolean> {
+  return (await getCoordination().read(BENCHMARK_LEASE)) !== null;
+}
+
+// Claimed by the route action before it writes the initial run record, so two
+// instances can't both decide the slot is free.
+export async function acquireBenchmarkLease(): Promise<LeaseState | null> {
+  const lease = await getCoordination().acquire(BENCHMARK_LEASE, OWNER_ID, LEASE_TTL_MS);
+  if (lease) {
+    _lease = lease;
+    _cancelRequested = false;
+    _lastRenewAt = Date.now();
+  }
+  return lease;
+}
+
+async function renewLease(): Promise<void> {
+  if (!_lease) return;
+  const now = Date.now();
+  if (now - _lastRenewAt < RENEW_INTERVAL_MS) return;
+  _lastRenewAt = now;
+
+  const held = await getCoordination()
+    .renew(BENCHMARK_LEASE, _lease, LEASE_TTL_MS)
+    .catch((err) => {
+      console.error("[benchmark] lease renewal failed:", err);
+      return false;
+    });
+  if (!held) {
+    _cancelRequested = true;
+    _lease = null;
+  }
 }
 
 // Cooperative cancellation: a hung/slow run (e.g. a local endpoint that never
 // responds, or an unbounded discovery scan) can't be killed outright since we
 // don't hold a reference to every in-flight fetch, but every loop below polls
 // this between iterations so a stuck run can be un-stuck without restarting
-// the whole dev server.
-export function requestCancel(): boolean {
-  if (!_running) return false;
+// the whole dev server. Releasing the lease is what reaches a run owned by
+// another instance.
+export async function requestCancel(): Promise<boolean> {
+  const released = await getCoordination().release(BENCHMARK_LEASE);
+  if (!released) return false;
   _cancelRequested = true;
+  _lease = null;
   return true;
 }
 
@@ -188,9 +228,8 @@ export function buildInitialRun(opts: StartBenchmarkOpts): BenchmarkRun {
 }
 
 export async function startBenchmark(run: BenchmarkRun, opts: StartBenchmarkOpts): Promise<void> {
-  if (_running) return;
-  _running = true;
-  _cancelRequested = false;
+  if (!_lease) return;
+  const lease = _lease;
 
   try {
     const flush = async () => {
@@ -283,6 +322,7 @@ export async function startBenchmark(run: BenchmarkRun, opts: StartBenchmarkOpts
 
           completed++;
           run.progress = { completed, total };
+          await renewLease();
 
           if (completed % 25 === 0 || completed === total) {
             const failed = run.attempts.filter((a) => !a.success).length;
@@ -310,7 +350,12 @@ export async function startBenchmark(run: BenchmarkRun, opts: StartBenchmarkOpts
     );
     await flush();
   } finally {
-    _running = false;
+    if (_lease?.generation === lease.generation) {
+      await getCoordination().release(BENCHMARK_LEASE, OWNER_ID).catch((err) => {
+        console.error("[benchmark] lease release failed:", err);
+      });
+      _lease = null;
+    }
     _cancelRequested = false;
   }
 }

@@ -17,6 +17,7 @@ export enum ResultsIntent {
   Single = "single",
   Cancel = "cancel",
   Deep = "deep",
+  Retest = "retest",
   All = "all",
 }
 

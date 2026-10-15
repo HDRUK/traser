@@ -1,27 +1,43 @@
-import { readFile, writeFile, rename } from "fs/promises";
-import path from "path";
+import { randomUUID } from "node:crypto";
 import pLimit from "p-limit";
 import {
   listCachedPids,
-  getDataDir,
   extractMetadata,
   invalidateDatasetIndex,
+  readDataset,
+  writeDataset,
+  readResultsControl,
   readTestResults,
+  writeResultsControl,
   writeTestResults,
   type FetchFailure,
 } from "./cache.server";
-import { listSchemas, translateAndValidate, REFERENCE_SCHEMA, REFERENCE_VERSION } from "./traser.server";
+import { getCoordination, REFRESH_LEASE, type LeaseState } from "./coordination/index.server";
+import { formatErrorBody } from "./errorBody";
+import { listSchemas, translateAndValidate, getDefaultModelAndVersion } from "./traser.server";
 
-let _running = false;
+const OWNER_ID = randomUUID();
+
+let _lease: LeaseState | null = null;
 let _cancelRequested = false;
-let _generation = 0;
 let _abort: AbortController | null = null;
-let _lastProgressAt = 0;
+let _lastRenewAt = 0;
 
-const STALL_TIMEOUT_MS = 10 * 60_000;
+// A run that stops renewing — because the process died, or the instance was
+// scaled away — loses the lease once the TTL lapses, and the next refresh can
+// start. That replaces the old in-process stall detector, which could not see
+// runs owned by another instance.
+const LEASE_TTL_MS = 5 * 60_000;
+const RENEW_INTERVAL_MS = 10_000;
+const FETCH_TIMEOUT_MS = 15_000;
+const RECORD_DEADLINE_MS = 45_000;
 const FLUSH_INTERVAL_MS = 5_000;
-const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 40;
+const RESULTS_FLUSH_INTERVAL_MS = 60_000;
+const SYNC_CONCURRENCY = Number(process.env.SYNC_CONCURRENCY) || 8;
+const BACKOFF_MS = 5_000;
+const PROGRESS_LOG_INTERVAL_MS = 15_000;
 const TEST_CONCURRENCY = Number(process.env.TEST_CONCURRENCY) || 10;
+const FETCH_ERROR_DETAIL_MAX = 2_000;
 
 function getGatewayApiUrl(): string {
   const url = process.env.GATEWAY_API_URL;
@@ -38,16 +54,33 @@ function appendLog(log: string[], entry: string): string[] {
   return next.length > 50 ? next.slice(next.length - 50) : next;
 }
 
-function isRefreshStalled(): boolean {
-  return _running && Date.now() - _lastProgressAt > STALL_TIMEOUT_MS;
+export async function isRefreshRunning(): Promise<boolean> {
+  return (await getCoordination().read(REFRESH_LEASE)) !== null;
 }
 
-export function isRefreshRunning(): boolean {
-  return _running && !isRefreshStalled();
+// Renewing is throttled rather than done on every tick so the hot loops do not
+// turn into one Redis round trip per dataset. Losing the lease here means some
+// other instance took over, so the run stands down.
+async function markProgress(): Promise<void> {
+  if (!_lease) return;
+  const now = Date.now();
+  if (now - _lastRenewAt < RENEW_INTERVAL_MS) return;
+  _lastRenewAt = now;
+
+  const held = await getCoordination()
+    .renew(REFRESH_LEASE, _lease, LEASE_TTL_MS)
+    .catch((err) => {
+      console.error("[refresh] lease renewal failed:", err);
+      return false;
+    });
+  if (!held) standDown();
 }
 
-function markProgress(): void {
-  _lastProgressAt = Date.now();
+function standDown(): void {
+  _cancelRequested = true;
+  _abort?.abort();
+  _abort = null;
+  _lease = null;
 }
 
 function requestSignal(timeoutMs: number): AbortSignal {
@@ -55,31 +88,85 @@ function requestSignal(timeoutMs: number): AbortSignal {
   return _abort ? AbortSignal.any([_abort.signal, timeout]) : timeout;
 }
 
-// Cooperative cancellation: loops below poll this between iterations so a
-// long-running (or stuck, e.g. slow API) refresh can be stopped without
-// restarting the dev server, and a new refresh started right after. Bumping the
-// generation also orphans a run wedged somewhere unpollable.
-function abandonCurrentRun(): void {
-  _generation++;
-  _cancelRequested = true;
-  _abort?.abort();
-  _abort = null;
-  _running = false;
+// An undrained error body keeps its keep-alive connection checked out of
+// undici's pool. Ninety of those against one origin exhausted the pool mid-run
+// and left the remaining requests queued behind it, waiting forever.
+async function discardBody(res: Response): Promise<void> {
+  await res.body?.cancel().catch(() => undefined);
 }
 
-export function abandonStalledRefresh(): boolean {
-  if (!isRefreshStalled()) return false;
-  abandonCurrentRun();
-  return true;
+// Same pool obligation as discardBody — reading to the end releases the
+// connection just as cancelling does — but keeps the payload, which is the
+// only place the Gateway says why it rejected the dataset. Truncated so a run
+// with many failures can't bloat the control object.
+async function readErrorBody(res: Response): Promise<string | undefined> {
+  try {
+    const text = await res.text();
+    if (!text) return undefined;
+    // Formatted before truncating: the Gateway nests its real error as an
+    // escaped JSON string, and clipping the raw body leaves that unparseable.
+    // Expanding first puts the validation errors at the head, so the cut falls
+    // on the echoed metadata at the tail.
+    const formatted = formatErrorBody(text);
+    return formatted.length > FETCH_ERROR_DETAIL_MAX
+      ? `${formatted.slice(0, FETCH_ERROR_DETAIL_MAX)}\n… [truncated]`
+      : formatted;
+  } catch {
+    return undefined;
+  }
 }
 
+type FetchOutcome =
+  | { ok: true }
+  | { ok: false; error: string; status?: number; timedOut?: boolean; details?: string };
+
+function isTimeout(err: unknown): boolean {
+  const name = (err as Error)?.name;
+  return name === "TimeoutError" || name === "AbortError";
+}
+
+// Belt and braces around the abort signals: whatever goes wrong inside, every
+// record settles within RECORD_DEADLINE_MS so the phase cannot hang on one of
+// them. The signal is aborted too, so the abandoned work stops rather than
+// lingering on a connection.
+async function withRecordDeadline(
+  work: (signal: AbortSignal) => Promise<FetchOutcome>
+): Promise<FetchOutcome> {
+  const controller = new AbortController();
+  const signal = AbortSignal.any([
+    ...(_abort ? [_abort.signal] : []),
+    controller.signal,
+    AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  ]);
+
+  let abortTimer: NodeJS.Timeout | undefined;
+  let deadlineTimer: NodeJS.Timeout | undefined;
+  const deadline = new Promise<FetchOutcome>((resolve) => {
+    abortTimer = setTimeout(() => controller.abort(), RECORD_DEADLINE_MS);
+    deadlineTimer = setTimeout(
+      () => resolve({ ok: false, error: `No response after ${RECORD_DEADLINE_MS / 1000}s`, timedOut: true }),
+      RECORD_DEADLINE_MS + 1_000
+    );
+  });
+
+  try {
+    return await Promise.race([work(signal), deadline]);
+  } finally {
+    clearTimeout(abortTimer);
+    clearTimeout(deadlineTimer);
+  }
+}
+
+// Releasing the lease is what cancels: the owning instance — this one or
+// another — sees the renewal fail and winds down cooperatively.
 export async function requestCancelRefresh(): Promise<boolean> {
-  if (!_running) return false;
-  abandonCurrentRun();
-  const cache = await readTestResults();
-  cache.running = false;
-  cache.log = appendLog(cache.log ?? [], "Cancelled by user");
-  await writeTestResults(cache);
+  const released = await getCoordination().release(REFRESH_LEASE);
+  if (!released) return false;
+  if (_lease) standDown();
+
+  const control = await readResultsControl();
+  control.log = appendLog(control.log ?? [], "Cancelled by user");
+  await writeResultsControl(control);
   return true;
 }
 
@@ -89,7 +176,8 @@ function recordFetchFailure(
   fetchFailures: Record<string, FetchFailure>,
   id: string,
   error: string,
-  status?: number
+  status?: number,
+  details?: string
 ): void {
   const now = new Date().toISOString();
   const existing = fetchFailures[id];
@@ -100,6 +188,7 @@ function recordFetchFailure(
     attempts: (existing?.attempts ?? 0) + 1,
     firstFailedAt: existing?.firstFailedAt ?? now,
     lastFailedAt: now,
+    details,
   };
 }
 
@@ -140,7 +229,10 @@ function dedupeByPid(records: ListItem[]): ListItem[] {
 // only a modest per_page is safe — with_metadata=1 at very high per_page has
 // been observed to exhaust the API's own PHP memory limit. Paginates at a safe
 // page size and stops as soon as every needed id is found.
-async function enrichFetchFailureTitles(fetchFailures: Record<string, FetchFailure>): Promise<void> {
+async function enrichFetchFailureTitles(
+  fetchFailures: Record<string, FetchFailure>,
+  isCurrent: () => boolean
+): Promise<void> {
   const needed = new Set(
     Object.values(fetchFailures)
       .filter((f) => !f.title)
@@ -151,15 +243,18 @@ async function enrichFetchFailureTitles(fetchFailures: Record<string, FetchFailu
   const PER_PAGE = 200;
   const MAX_PAGES = 10;
   for (let page = 1; page <= MAX_PAGES && needed.size > 0; page++) {
-    if (_cancelRequested) return;
-    markProgress();
+    if (!isCurrent()) return;
+    await markProgress();
     let body: { data: ListItem[]; last_page?: number };
     try {
       const res = await fetch(
         `${getGatewayApiUrl()}/datasets?with_metadata=1&status=ACTIVE&per_page=${PER_PAGE}&page=${page}`,
         { signal: requestSignal(30_000) }
       );
-      if (!res.ok) break;
+      if (!res.ok) {
+        await discardBody(res);
+        break;
+      }
       body = await res.json();
     } catch {
       break;
@@ -181,7 +276,8 @@ async function enrichFetchFailureTitles(fetchFailures: Record<string, FetchFailu
 async function syncDatasetsFromApi(
   cacheLog: string[],
   fetchFailures: Record<string, FetchFailure>,
-  flush: (log: string[]) => Promise<void>
+  flush: (log: string[]) => Promise<void>,
+  isCurrent: () => boolean
 ): Promise<string[]> {
   let log = cacheLog;
 
@@ -194,7 +290,10 @@ async function syncDatasetsFromApi(
       `${getGatewayApiUrl()}/datasets?with_metadata=0&status=ACTIVE&per_page=100000`,
       { signal: requestSignal(30_000) }
     );
-    if (!res.ok) throw new Error(`HTTP ${res.status} for status=ACTIVE`);
+    if (!res.ok) {
+      await discardBody(res);
+      throw new Error(`HTTP ${res.status} for status=ACTIVE`);
+    }
     const body = (await res.json()) as { data: ListItem[] };
     activeRecords = body.data;
 
@@ -204,7 +303,10 @@ async function syncDatasetsFromApi(
           `${getGatewayApiUrl()}/datasets?with_metadata=1&status=DRAFT&per_page=100000`,
           { signal: requestSignal(30_000) }
         );
-        if (!res.ok) throw new Error(`HTTP ${res.status} for status=DRAFT`);
+        if (!res.ok) {
+          await discardBody(res);
+          throw new Error(`HTTP ${res.status} for status=DRAFT`);
+        }
         const body = (await res.json()) as { data: ListItem[] };
         return body.data;
       } catch {
@@ -261,8 +363,6 @@ async function syncDatasetsFromApi(
   );
   await flush(log);
 
-  const dataDir = getDataDir();
-
   // 3. Write DRAFT datasets straight from the list response — no per-ID
   //    fetch needed (and none would succeed anyway).
   let draftsWritten = 0;
@@ -278,10 +378,7 @@ async function syncDatasetsFromApi(
     }
     try {
       const dataset = { id: record.id, pid: record.pid, status: "DRAFT", versions: [record.latest_metadata] };
-      const target = path.join(dataDir, `${record.pid}.json`);
-      const tmp = `${target}.tmp`;
-      await writeFile(tmp, JSON.stringify(dataset), "utf-8");
-      await rename(tmp, target);
+      await writeDataset(record.pid, dataset);
       draftsWritten++;
       delete fetchFailures[id];
     } catch (err) {
@@ -295,8 +392,8 @@ async function syncDatasetsFromApi(
   }
 
   if (toFetchActive.length === 0) {
-    invalidateDatasetIndex();
-    if (Object.keys(fetchFailures).length > 0) await enrichFetchFailureTitles(fetchFailures);
+    await invalidateDatasetIndex();
+    if (Object.keys(fetchFailures).length > 0) await enrichFetchFailureTitles(fetchFailures, isCurrent);
     return log;
   }
 
@@ -304,65 +401,92 @@ async function syncDatasetsFromApi(
   const limit = pLimit(SYNC_CONCURRENCY);
   let fetched = 0;
   let fetchFailed = 0;
+  let timedOut = 0;
+  let lastLogAt = Date.now();
+  let backoffUntil = 0;
 
-  const fetchActiveRecord = async (record: ListItem): Promise<void> => {
-    const id = String(record.id);
+  // translateAndValidate() assumes every cached {pid}.json is already shaped
+  // as the latest GWDM version — request the Gateway API's own translation
+  // into that version so that assumption holds, instead of caching whichever
+  // schema the dataset happens to be natively stored as. Resolved once per
+  // run since it doesn't change mid-refresh.
+  const reference = await getDefaultModelAndVersion();
+  if (reference.error) {
+    log = appendLog(log, `Dataset fetch skipped — could not resolve reference schema: ${reference.error.message}`);
+    await flush(log);
+    return log;
+  }
+  const referenceSchema = reference.name!;
+  const referenceVersion = reference.version!;
+
+  const fetchActiveRecord = async (id: string, signal: AbortSignal): Promise<FetchOutcome> => {
     try {
-      // translateAndValidate() assumes every cached {pid}.json is already
-      // shaped like REFERENCE_SCHEMA:REFERENCE_VERSION — request the Gateway
-      // API's own translation so that assumption holds, instead of caching
-      // whichever schema the dataset happens to be natively stored as.
       const qs = new URLSearchParams({
-        schema_model: REFERENCE_SCHEMA,
-        schema_version: REFERENCE_VERSION,
+        schema_model: referenceSchema,
+        schema_version: referenceVersion,
+        validate_input: "0",
       });
-      const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, {
-        signal: requestSignal(15_000),
-      });
+      const res = await fetch(`${getGatewayApiUrl()}/datasets/${id}?${qs}`, { signal });
       if (!res.ok) {
-        fetchFailed++;
-        recordFetchFailure(fetchFailures, id, `HTTP ${res.status}`, res.status);
-        return;
+        const details = await readErrorBody(res);
+        return { ok: false, error: `HTTP ${res.status}`, status: res.status, details };
       }
-      const body = (await res.json()) as { data: { pid?: string } };
-      const dataset = body.data;
+      const dataset = ((await res.json()) as { data: { pid?: string } }).data;
       const pid = dataset?.pid;
-      if (!pid) {
-        fetchFailed++;
-        recordFetchFailure(fetchFailures, id, "Response missing pid", res.status);
-        return;
-      }
+      if (!pid) return { ok: false, error: "Response missing pid", status: res.status };
 
-      // Atomic write (tmp + rename) so a process kill mid-write can't leave
-      // a truncated {pid}.json that getDatasetIndex() would silently drop.
-      // The pid is unique and toFetchActive is deduplicated, so the tmp
-      // name won't collide within a run.
-      const target = path.join(dataDir, `${pid}.json`);
-      const tmp = `${target}.tmp`;
-      await writeFile(tmp, JSON.stringify(dataset), "utf-8");
-      await rename(tmp, target);
-      fetched++;
-      delete fetchFailures[id];
+      await writeDataset(pid, dataset);
+      return { ok: true };
     } catch (err) {
-      fetchFailed++;
-      recordFetchFailure(fetchFailures, id, err instanceof Error ? err.message : String(err));
-      console.error(`Failed to fetch dataset ${id}:`, err);
+      if (!isTimeout(err)) console.error(`Failed to fetch dataset ${id}:`, err);
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+        timedOut: isTimeout(err),
+      };
     }
   };
 
   await Promise.all(
     toFetchActive.map((record) =>
       limit(async () => {
-        if (_cancelRequested) return;
-        await fetchActiveRecord(record);
-        markProgress();
+        if (!isCurrent()) return;
 
-        // Log progress every 100 fetches
+        // A timeout means the API already has more queued than it can serve, so
+        // every slot pauses before adding to that queue rather than replacing
+        // the timed-out request immediately.
+        const wait = backoffUntil - Date.now();
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+        if (!isCurrent()) return;
+
+        const id = String(record.id);
+        const outcome = await withRecordDeadline((signal) => fetchActiveRecord(id, signal));
+
+        if (outcome.ok) {
+          fetched++;
+          delete fetchFailures[id];
+        } else {
+          fetchFailed++;
+          recordFetchFailure(fetchFailures, id, outcome.error, outcome.status, outcome.details);
+          if (outcome.timedOut) {
+            timedOut++;
+            backoffUntil = Date.now() + BACKOFF_MS;
+          }
+        }
+        await markProgress();
+
+        // Time-based, not every N fetches: the tail of a run can slow to a
+        // crawl when the API starts queueing, and a count-based line makes that
+        // indistinguishable from a hang because the next one never arrives.
         const done = fetched + fetchFailed;
-        if (done % 100 === 0 || done === toFetchActive.length) {
+        if (done === toFetchActive.length || Date.now() - lastLogAt >= PROGRESS_LOG_INTERVAL_MS) {
+          lastLogAt = Date.now();
           log = appendLog(
             log,
-            `Fetched ${fetched}/${toFetchActive.length} new active datasets${fetchFailed > 0 ? ` (${fetchFailed} failed)` : ""}`
+            `Fetched ${fetched}/${toFetchActive.length} new active datasets` +
+              (fetchFailed > 0 ? ` (${fetchFailed} failed` : "") +
+              (timedOut > 0 ? `, ${timedOut} timed out` : "") +
+              (fetchFailed > 0 ? ")" : "")
           );
           await flush(log);
         }
@@ -370,10 +494,10 @@ async function syncDatasetsFromApi(
     )
   );
 
-  if (_cancelRequested) return log;
+  if (!isCurrent()) return log;
 
   // 5. Bust the index so getDatasetIndex() re-reads all files including new ones
-  invalidateDatasetIndex();
+  await invalidateDatasetIndex();
 
   const total = existingPids.size + fetched + draftsWritten;
   const remainingFailures = Object.keys(fetchFailures).length;
@@ -381,7 +505,7 @@ async function syncDatasetsFromApi(
   if (remainingFailures > 0) {
     log = appendLog(log, `Looking up titles for ${remainingFailures} failed dataset(s)…`);
     await flush(log);
-    await enrichFetchFailureTitles(fetchFailures);
+    await enrichFetchFailureTitles(fetchFailures, isCurrent);
   }
 
   log = appendLog(
@@ -394,10 +518,12 @@ async function syncDatasetsFromApi(
   return log;
 }
 
-async function readDatasetMetadata(dataDir: string, pid: string) {
+// A cached file can legitimately disappear between the directory listing and
+// the read — a Deep Refresh clears data/ and the retention sweeper evicts from
+// it — so a missing file is a skip, not an error.
+async function readDatasetMetadata(pid: string) {
   try {
-    const content = await readFile(path.join(dataDir, `${pid}.json`), "utf-8");
-    return extractMetadata(JSON.parse(content));
+    return extractMetadata(await readDataset(pid));
   } catch (err) {
     console.error(`Error reading dataset ${pid}:`, err);
     return null;
@@ -409,15 +535,12 @@ async function readDatasetMetadata(dataDir: string, pid: string) {
 export async function runSingleDataset(pid: string): Promise<void> {
   const [schemas, cache] = await Promise.all([listSchemas(), readTestResults()]);
 
-  let content: string;
-  try {
-    content = await readFile(path.join(getDataDir(), `${pid}.json`), "utf-8");
-  } catch {
-    console.error(`runSingleDataset: file not found for pid ${pid}`);
+  const parsed = await readDataset(pid);
+  if (!parsed) {
+    console.error(`runSingleDataset: no cached dataset for pid ${pid}`);
     return;
   }
 
-  const parsed = JSON.parse(content);
   const metadata = extractMetadata(parsed);
   if (!metadata) return;
 
@@ -449,40 +572,47 @@ export async function runSingleDataset(pid: string): Promise<void> {
 
 // ─── Full refresh (background job) ────────────────────────────────────────
 
-export async function runAllTests(): Promise<void> {
-  if (isRefreshRunning()) return;
-  if (_running) abandonCurrentRun();
-  _running = true;
+export async function runAllTests(options: { skipSync?: boolean } = {}): Promise<void> {
+  const coordination = getCoordination();
+  const lease = await coordination.acquire(REFRESH_LEASE, OWNER_ID, LEASE_TTL_MS);
+  if (!lease) return;
+
+  _lease = lease;
   _cancelRequested = false;
   _abort = new AbortController();
-  const generation = ++_generation;
-  markProgress();
+  _lastRenewAt = Date.now();
 
-  const isCurrent = () => generation === _generation;
+  const isCurrent = () => _lease?.generation === lease.generation;
 
   try {
     const cache = await readTestResults();
-    cache.running = true;
     cache.results = cache.results ?? {};
     cache.fetchFailures = cache.fetchFailures ?? {};
     cache.log = cache.log ?? [];
     cache.progress = { completed: 0, total: 0 };
 
-    // Flush helper — writes intermediate state to disk
+    // Two cadences: the control document is small enough to write on every
+    // progress tick, the results matrix is tens of megabytes and is only
+    // written periodically and at the end.
     const flush = async (log: string[]) => {
       if (!isCurrent()) return;
       cache.log = log;
-      await writeTestResults({ ...cache, running: true });
+      await writeResultsControl(cache);
     };
 
     // ── Phase 1: sync dataset files from the API ──────────────────────────
-    cache.log = appendLog(cache.log, "Phase 1: syncing datasets from API…");
-    await writeTestResults(cache);
+    if (options.skipSync) {
+      cache.log = appendLog(cache.log, "Phase 1 skipped — retesting cached datasets without contacting the API");
+      await flush(cache.log);
+    } else {
+      cache.log = appendLog(cache.log, "Phase 1: syncing datasets from API…");
+      await flush(cache.log);
 
-    // syncDatasetsFromApi mutates cache.fetchFailures in place (add on failure,
-    // delete on a subsequent success) — flush() picks up the changes because it
-    // closes over the same `cache` object.
-    cache.log = await syncDatasetsFromApi(cache.log, cache.fetchFailures, flush);
+      // syncDatasetsFromApi mutates cache.fetchFailures in place (add on failure,
+      // delete on a subsequent success) — flush() picks up the changes because it
+      // closes over the same `cache` object.
+      cache.log = await syncDatasetsFromApi(cache.log, cache.fetchFailures, flush, isCurrent);
+    }
 
     if (!isCurrent()) return;
 
@@ -521,19 +651,19 @@ export async function runAllTests(): Promise<void> {
     let succeeded = 0;
     let failed = 0;
     let lastFlushAt = Date.now();
-    const dataDir = getDataDir();
+    let lastResultsFlushAt = Date.now();
 
     const tasks = pending.map(({ pid, combos }) =>
       limit(async () => {
-        if (_cancelRequested) return;
+        if (!isCurrent()) return;
 
-        const metadata = await readDatasetMetadata(dataDir, pid);
+        const metadata = await readDatasetMetadata(pid);
         if (!metadata) return;
 
         if (!cache.results[pid]) cache.results[pid] = {};
 
         for (const { schema, version } of combos) {
-          if (_cancelRequested) return;
+          if (!isCurrent()) return;
           try {
             const result = await translateAndValidate(metadata, schema, version);
             cache.results[pid][`${schema}:${version}`] = {
@@ -555,7 +685,7 @@ export async function runAllTests(): Promise<void> {
         }
 
         cache.progress = { completed, total };
-        markProgress();
+        await markProgress();
 
         if (completed === total || Date.now() - lastFlushAt >= FLUSH_INTERVAL_MS) {
           lastFlushAt = Date.now();
@@ -565,6 +695,10 @@ export async function runAllTests(): Promise<void> {
           );
           try {
             await flush(cache.log);
+            if (Date.now() - lastResultsFlushAt >= RESULTS_FLUSH_INTERVAL_MS) {
+              lastResultsFlushAt = Date.now();
+              await writeTestResults(cache);
+            }
           } catch (writeErr) {
             console.error("Progress flush failed:", writeErr);
           }
@@ -583,11 +717,13 @@ export async function runAllTests(): Promise<void> {
         : `Finished — ${succeeded} translated ok, ${failed} failed`
     );
     cache.lastUpdated = new Date().toISOString();
-    cache.running = false;
     await writeTestResults(cache);
   } finally {
     if (isCurrent()) {
-      _running = false;
+      await coordination.release(REFRESH_LEASE, OWNER_ID).catch((err) => {
+        console.error("[refresh] lease release failed:", err);
+      });
+      _lease = null;
       _cancelRequested = false;
       _abort = null;
     }

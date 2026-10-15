@@ -26,7 +26,7 @@ import { ensureLoaded, getAvailableSchemas } from "~/lib/schema.server";
 import { MAX_SHARED_TEMPLATE_CHARS, type DatasetOption, type TemplateOption, type FindMatch, type ValidationState } from "~/lib/playground/types";
 import { useDebounce } from "~/lib/playground/useDebounce";
 import { buildValidationDecorations } from "~/lib/playground/monacoDecorations";
-import { EditorSkeleton } from "~/components/playground/EditorSkeleton";
+import { EditorSkeleton } from "~/components/EditorSkeleton";
 import { LockedPanel } from "~/components/playground/LockedPanel";
 import { InputBadge } from "~/components/playground/InputBadge";
 import { OutputBadge } from "~/components/playground/OutputBadge";

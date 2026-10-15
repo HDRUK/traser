@@ -1,20 +1,23 @@
-import { readdir, stat, unlink } from "fs/promises";
-import path from "path";
+import { randomUUID } from "node:crypto";
 import {
-  getDataDir,
   invalidateDatasetIndex,
   readTestResults,
   writeTestResults,
 } from "./cache.server";
+import { getStorage } from "./storage/index.server";
+import { getCoordination, RETENTION_LEASE } from "./coordination/index.server";
 import { isRefreshRunning } from "./refresh.server";
 import { readIndex, deleteRun } from "./benchmarkStorage.server";
 
+const OWNER_ID = randomUUID();
+const LEASE_TTL_MS = 10 * 60_000;
+
 // ─── Configuration (all env-driven, all optional) ─────────────────────────
 //
-// The disk cache under DATA_DIR is a derived, re-fetchable cache: deleting a
-// {pid}.json just means the next "Refresh All" re-downloads it. These knobs
-// bound its growth on the VM. Set a TTL to 0 (or negative) to disable that
-// particular sweep; leave DATA_MAX_* unset to disable the size guardrails.
+// The cache is derived and re-fetchable: deleting a dataset record just means
+// the next "Refresh All" re-downloads it. These knobs bound its growth. Set a
+// TTL to 0 (or negative) to disable that particular sweep; leave DATA_MAX_*
+// unset to disable the size guardrails.
 
 function intEnv(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -25,7 +28,7 @@ function intEnv(name: string, fallback: number): number {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// Delete {pid}.json dataset files older than this many days (by mtime).
+// Delete datasets/{pid}.json records older than this many days.
 const DATA_CACHE_TTL_DAYS = intEnv("DATA_CACHE_TTL_DAYS", 7);
 // Delete completed benchmark runs older than this many days (by completedAt).
 const BENCHMARK_TTL_DAYS = intEnv("BENCHMARK_TTL_DAYS", 30);
@@ -38,58 +41,46 @@ const DATA_MAX_FILES = intEnv("DATA_MAX_FILES", 0);
 
 const SWEEP_INTERVAL_MS = DAY_MS; // re-check once a day
 
-// Never touch these top-level files (they are not dataset caches).
-const PROTECTED_FILES = new Set(["test-results.json", "datasets-index.json"]);
-
-function isDatasetFile(name: string): boolean {
-  return name.endsWith(".json") && !name.endsWith(".tmp") && !PROTECTED_FILES.has(name);
-}
+// Scoped to the dataset prefix, so test-results.json and its control document
+// — which live at the root — are out of reach by construction rather than by
+// an exclusion list that has to be kept in step.
+const DATASET_PREFIX = "datasets/";
 
 interface FileInfo {
-  name: string;
-  full: string;
+  key: string;
+  pid: string;
   mtimeMs: number;
   size: number;
 }
 
-async function listDatasetFiles(dataDir: string): Promise<FileInfo[]> {
-  let names: string[];
-  try {
-    names = await readdir(dataDir);
-  } catch {
-    return [];
-  }
-  const infos: FileInfo[] = [];
-  for (const name of names.filter(isDatasetFile)) {
-    const full = path.join(dataDir, name);
-    try {
-      const info = await stat(full);
-      if (info.isFile()) {
-        infos.push({ name, full, mtimeMs: info.mtimeMs, size: info.size });
-      }
-    } catch {
-      // vanished between readdir and stat — ignore
-    }
-  }
-  return infos;
+async function listDatasetFiles(): Promise<FileInfo[]> {
+  const objects = await getStorage().list(DATASET_PREFIX);
+  return objects
+    .filter((object) => object.key.endsWith(".json"))
+    .map((object) => ({
+      key: object.key,
+      pid: object.key.slice(DATASET_PREFIX.length).replace(/\.json$/, ""),
+      mtimeMs: object.updatedAtMs,
+      size: object.size,
+    }));
 }
 
 // ─── {pid}.json TTL sweep + size guardrails ───────────────────────────────
 
 export async function sweepDatasetFiles(): Promise<{ deleted: number; freedBytes: number }> {
-  const dataDir = getDataDir();
-  let files = await listDatasetFiles(dataDir);
+  const storage = getStorage();
+  let files = await listDatasetFiles();
   let deleted = 0;
   let freedBytes = 0;
 
   const remove = async (f: FileInfo) => {
     try {
-      await unlink(f.full);
+      await storage.remove(f.key);
       deleted++;
       freedBytes += f.size;
       return true;
     } catch (err) {
-      console.error(`[retention] failed to delete ${f.name}:`, err);
+      console.error(`[retention] failed to delete ${f.key}:`, err);
       return false;
     }
   };
@@ -125,7 +116,7 @@ export async function sweepDatasetFiles(): Promise<{ deleted: number; freedBytes
   }
 
   if (deleted > 0) {
-    invalidateDatasetIndex();
+    await invalidateDatasetIndex();
     console.log(
       `[retention] deleted ${deleted} dataset file(s), freed ${(freedBytes / 1e6).toFixed(1)} MB`
     );
@@ -139,10 +130,8 @@ export async function trimTestResults(): Promise<{ trimmed: number; prunedPids: 
   const cache = await readTestResults();
   if (!cache.results) return { trimmed: 0, prunedPids: 0 };
 
-  // Current on-disk pid set (post dataset sweep) for orphan pruning.
-  const onDisk = new Set(
-    (await listDatasetFiles(getDataDir())).map((f) => f.name.replace(/\.json$/, ""))
-  );
+  // Current cached pid set (post dataset sweep) for orphan pruning.
+  const onDisk = new Set((await listDatasetFiles()).map((f) => f.pid));
 
   const bodyCutoff =
     RESULT_BODY_TTL_DAYS > 0 ? Date.now() - RESULT_BODY_TTL_DAYS * DAY_MS : null;
@@ -214,18 +203,32 @@ function allDisabled(): boolean {
 }
 
 export async function runRetentionSweep(): Promise<void> {
-  // A refresh actively reads/writes these same files (and phase 1 relies on
+  // A refresh actively reads/writes these same objects (and phase 1 relies on
   // {pid}.json presence to decide what to re-fetch), so never sweep during one.
-  if (isRefreshRunning()) {
+  if (await isRefreshRunning()) {
     console.log("[retention] skipped — refresh in progress");
     return;
   }
+
+  // One sweeper at a time across every instance, or they race each other's
+  // deletions and each rewrite the results cache from a stale read.
+  const coordination = getCoordination();
+  const lease = await coordination.acquire(RETENTION_LEASE, OWNER_ID, LEASE_TTL_MS);
+  if (!lease) {
+    console.log("[retention] skipped — another instance is sweeping");
+    return;
+  }
+
   try {
     await sweepDatasetFiles();
     await trimTestResults(); // runs after dataset sweep so orphan pruning sees deletions
     await sweepBenchmarkRuns();
   } catch (err) {
     console.error("[retention] sweep failed:", err);
+  } finally {
+    await coordination.release(RETENTION_LEASE, OWNER_ID).catch((err) => {
+      console.error("[retention] lease release failed:", err);
+    });
   }
 }
 

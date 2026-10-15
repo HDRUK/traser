@@ -57,10 +57,15 @@ export function ResultsTableView({
 
   useEffect(() => { setPage(0); }, [searchTerm, columnFilters]);
 
+  const referenceKey = visibleColumns.find((c) => c.isReference)?.key;
+
   const handleCellClick = useCallback(
-    (pid: string, colKey: string) =>
-      navigate(`/playground?pid=${encodeURIComponent(pid)}&in=GWDM:2.0&out=${encodeURIComponent(colKey)}`),
-    [navigate]
+    (pid: string, colKey: string) => {
+      const params = new URLSearchParams({ pid, out: colKey });
+      if (referenceKey) params.set("in", referenceKey);
+      navigate(`/playground?${params}`);
+    },
+    [navigate, referenceKey]
   );
 
   if (datasets.length === 0) {
@@ -146,8 +151,9 @@ export function ResultsTableView({
               </TableRow>
             </TableHead>
             <TableBody>
-              {pageRows.map(({ pid, title, gatewayId, status: dStatus }: Dataset) => (
+              {pageRows.map(({ pid, title, gatewayId, status: dStatus, gwdmVersion }: Dataset) => (
                 <DatasetRow key={pid} pid={pid} title={title} gatewayId={gatewayId} datasetStatus={dStatus}
+                  gwdmVersion={gwdmVersion}
                   columns={visibleColumns} results={results}
                   onCellClick={handleCellClick} />
               ))}

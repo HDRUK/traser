@@ -140,9 +140,6 @@ export async function translate(
   return { translatedMetadata };
 }
 
-export const REFERENCE_SCHEMA = "GWDM";
-export const REFERENCE_VERSION = "2.0";
-
 export async function translateAndValidate(
   metadata: unknown,
   targetSchema: string,
@@ -154,8 +151,12 @@ export async function translateAndValidate(
   translateBody?: unknown;
   validateBody?: unknown;
 }> {
-  const inputSchema = REFERENCE_SCHEMA;
-  const inputVersion = REFERENCE_VERSION;
+  const reference = await getDefaultModelAndVersion();
+  if (reference.error) {
+    return { translated: false, valid: false, reason: reference.error.message };
+  }
+  const inputSchema = reference.name!;
+  const inputVersion = reference.version!;
 
   const graph = await TranslationGraph.create();
 

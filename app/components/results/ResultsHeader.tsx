@@ -6,6 +6,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { Button } from "@hdruk/ui";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import ReplayIcon from "@mui/icons-material/Replay";
 import ViewColumnIcon from "@mui/icons-material/ViewColumn";
 import { ResultsIntent } from "~/lib/results/enums";
 import type { Column } from "~/lib/results/types";
@@ -83,6 +84,18 @@ export function ResultsHeader({
                 startIcon={isRefreshAllBusy ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon />}
                 disabled={isRefreshAllBusy} size="small">
                 Sync New
+              </Button>
+            </span>
+          </Tooltip>
+        </fetcher.Form>
+        <fetcher.Form method="post">
+          <input type="hidden" name="intent" value={ResultsIntent.Retest} />
+          <Tooltip title="Keep every cached dataset and re-test all of them against all schemas. Makes no API calls — use after a schema, template or reference-version change has made the existing results stale">
+            <span>
+              <Button type="submit" variant="outlined"
+                startIcon={isRefreshAllBusy ? <CircularProgress size={14} color="inherit" /> : <ReplayIcon />}
+                disabled={isRefreshAllBusy} size="small">
+                Retest All
               </Button>
             </span>
           </Tooltip>

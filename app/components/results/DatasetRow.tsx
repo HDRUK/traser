@@ -23,13 +23,14 @@ interface DatasetRowProps {
   title: string;
   gatewayId?: string;
   datasetStatus?: string;
+  gwdmVersion?: string;
   columns: Column[];
   results: ResultsMap;
   onCellClick: (pid: string, colKey: string) => void;
 }
 
 export const DatasetRow = memo(function DatasetRow({
-  pid, title, gatewayId, datasetStatus, columns, results, onCellClick,
+  pid, title, gatewayId, datasetStatus, gwdmVersion, columns, results, onCellClick,
 }: DatasetRowProps) {
   const fetcher = useFetcher();
   const isLoading = fetcher.state !== "idle";
@@ -71,7 +72,7 @@ export const DatasetRow = memo(function DatasetRow({
         </Box>
       </TableCell>
 
-      {columns.map(({ key, schema, isReference }, idx) => {
+      {columns.map(({ key, schema, version, isReference }, idx) => {
         const status = cellStatus(pid, key, results);
         const r = results[pid]?.[key];
         const tooltipLabel =
@@ -79,11 +80,15 @@ export const DatasetRow = memo(function DatasetRow({
             ? r.reason
             : STATUS_LABEL[status];
         const isGroupEnd = !isReference && idx < columns.length - 1 && columns[idx + 1].schema !== schema;
+        const isNativeVersion = schema === "GWDM" && version === gwdmVersion;
+        const cellTooltip = isNativeVersion
+          ? `${tooltipLabel} — this dataset's metadata was originally returned as GWDM ${gwdmVersion} — open in Playground`
+          : `${tooltipLabel} — open in Playground`;
         return (
           <TableCell key={key} align="center" padding="none"
             role={!isLoading ? "button" : undefined}
             tabIndex={!isLoading ? 0 : undefined}
-            aria-label={`${schema} ${key.split(":")[1] ?? ""} — ${tooltipLabel} — open in Playground`}
+            aria-label={`${schema} ${key.split(":")[1] ?? ""} — ${cellTooltip}`}
             sx={{
               py: 0.25,
               cursor: isLoading ? "default" : "pointer",
@@ -97,8 +102,18 @@ export const DatasetRow = memo(function DatasetRow({
               if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCellClick(pid, key); }
             } : undefined}>
             {isLoading ? <CircularProgress size={14} /> : (
-              <Tooltip title={`${tooltipLabel} — open in Playground`}>
-                <span><StatusIcon status={status} /></span>
+              <Tooltip title={cellTooltip}>
+                <span style={{ position: "relative", display: "inline-block" }}>
+                  <StatusIcon status={status} />
+                  {isNativeVersion && (
+                    <Typography component="span" aria-hidden sx={{
+                      position: "absolute", top: -2, right: -6, fontSize: "0.75rem", fontWeight: 700,
+                      color: SCHEMA_ACCENT_COLOUR, lineHeight: 1,
+                    }}>
+                      *
+                    </Typography>
+                  )}
+                </span>
               </Tooltip>
             )}
           </TableCell>

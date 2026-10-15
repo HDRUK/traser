@@ -17,6 +17,7 @@ export interface Dataset {
   title: string;
   gatewayId?: string;
   status?: string;
+  gwdmVersion?: string;
 }
 
 export interface Column {

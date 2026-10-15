@@ -1,6 +1,8 @@
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import { StatusChip, type StatusChipTone } from "~/components/StatusChip";
 import { CellStatus } from "~/lib/results/enums";
+import { SCHEMA_ACCENT_COLOUR } from "~/lib/schemaGroupColours";
 import { STATUS_LABEL, STATUS_LEGEND_ORDER } from "~/lib/results/status";
 import { StatusIcon } from "./StatusIcon";
 
@@ -23,6 +25,10 @@ export function StatusLegend() {
           icon={<StatusIcon status={status} fontSize={16} />}
         />
       ))}
+      <Typography variant="caption" sx={{ display: "flex", alignItems: "center", color: "text.secondary" }}>
+        <Typography component="span" sx={{ color: SCHEMA_ACCENT_COLOUR, fontWeight: 700, mr: 0.25 }}>*</Typography>
+dataset&apos;s native GWDM version
+      </Typography>
     </Box>
   );
 }
