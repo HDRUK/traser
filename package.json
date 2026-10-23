@@ -4,6 +4,9 @@
   "description": "Metadata translation service",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.23.4"
+  },
   "scripts": {
     "build": "react-router build && node scripts/build-openapi.mjs",
     "dev": "react-router dev",

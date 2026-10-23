@@ -145,3 +145,6 @@ application_default_credentials.json
 # React Router build output and generated types
 /build/
 /.react-router/
+
+# Claude Code context exclusions (local only)
+.claudeignore
