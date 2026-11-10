@@ -9,6 +9,7 @@ jobs:
   semantic:
     uses: HDRUK/github-actions-templates/.github/workflows/semantic.yaml@main
     with:
+      environment: prod
       chart_path: chart/traser/Chart.yaml
     secrets: inherit
 
